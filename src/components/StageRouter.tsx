@@ -4,6 +4,8 @@ import type { ProgramStage } from "../types/stage";
 import { startSharedStage } from "../lib/stageActions";
 import WaitingScreen from "./WaitingScreen";
 import PlaceholderStage from "./PlaceholderStage";
+import Timer from "./Timer";
+import ProgressBar from "./ProgressBar";
 
 interface Props {
   screenNumber: number;
@@ -38,27 +40,44 @@ function StageRouter({
     }
   }, [allArrived, sharedStageStartedAt, workshopId]);
 
+  const progressBar = <ProgressBar allGroups={allGroups} myScreenNumber={screenNumber} />;
+
   if (!stage) {
     return (
       <main className="flex min-h-screen items-center justify-center p-8 text-center">
         <p className="text-xl">
           אין הגדרה לשלב {myGroup.current_stage} בתוכנית הזו.
         </p>
+        {progressBar}
       </main>
     );
   }
 
   if (stage.sync_gate && !allArrived) {
-    return <WaitingScreen stageNumber={stage.stage_number} allGroups={allGroups} />;
+    return (
+      <>
+        <WaitingScreen stageNumber={stage.stage_number} allGroups={allGroups} />
+        {progressBar}
+      </>
+    );
   }
 
+  // שלב שיתופי מתחיל לכולם באותו רגע (shared_stage_started_at); שלב עצמאי - כל קבוצה בזמן שלה.
+  const effectiveStartedAt = stage.sync_gate ? sharedStageStartedAt : myGroup.stage_started_at;
+
   return (
-    <PlaceholderStage
-      screenNumber={screenNumber}
-      myGroup={myGroup}
-      stage={stage}
-      onAdvance={onAdvance}
-    />
+    <>
+      <PlaceholderStage
+        screenNumber={screenNumber}
+        myGroup={myGroup}
+        stage={stage}
+        onAdvance={onAdvance}
+      />
+      {progressBar}
+      {effectiveStartedAt && stage.duration_minutes && (
+        <Timer startedAt={effectiveStartedAt} durationMinutes={stage.duration_minutes} />
+      )}
+    </>
   );
 }
 
