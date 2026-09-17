@@ -195,8 +195,8 @@ media            id, workshop_id, group_id, stage_number, url, created_at
 רשימה זו תישלח לחברת הסינון לאישור. **כל דומיין חדש שנוסף לפרויקט חייב להיכנס לכאן.**
 
 - [ ] דומיין האתר: _טרם נקבע_
-- [ ] `<project-ref>.supabase.co` (HTTPS)
-- [ ] `wss://<project-ref>.supabase.co` (Realtime)
+- [ ] `zbgsishvublrwfzhiail.supabase.co` (HTTPS) - REST API, Storage, Auth
+- [ ] `wss://zbgsishvublrwfzhiail.supabase.co` (Realtime)
 
 ---
 
