@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/*
+ * מיתוג זמני (עד קבלת קובץ המיתוג הסופי מהלקוחה - ראו סעיף 10 ב-CLAUDE.md).
+ * כל הצבעים והפונט מוגדרים כאן במקום אחד, כדי שהחלפה תהיה בשינוי קובץ יחיד.
+ */
+@theme {
+  --color-smoke-blue: #3a5a6b;
+  --color-smoke-blue-dark: #24404e;
+  --color-wood: #8b6f4e;
+  --color-wood-dark: #6b5439;
+  --color-accent-red: #b23a3a;
+
+  /* TODO: להחליף לפונט מקומי אמיתי כשיגיע קובץ המיתוג (סעיף 10) - כרגע גופן מערכת בלבד */
+  --font-sans: "Segoe UI", Arial, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  direction: rtl;
+  font-family: var(--font-sans);
+  background-color: var(--color-smoke-blue-dark);
+  color: white;
+  /* מונע בחירת טקסט וסימון עכבר על המסכים בחדר, ראו סעיף 2 (מצב קיוסק) */
+  user-select: none;
+  -webkit-user-select: none;
+}
