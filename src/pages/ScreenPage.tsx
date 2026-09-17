@@ -36,6 +36,7 @@ function ScreenPage() {
       allGroups={allGroups}
       stages={stages}
       workshopId={workshop.id}
+      workshopCreatedAt={workshop.created_at}
       sharedStageStartedAt={workshop.shared_stage_started_at}
       onAdvance={advanceMyStage}
     />

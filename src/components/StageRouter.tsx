@@ -13,6 +13,7 @@ interface Props {
   allGroups: Group[];
   stages: ProgramStage[];
   workshopId: string;
+  workshopCreatedAt: string;
   sharedStageStartedAt: string | null;
   onAdvance: () => void;
 }
@@ -23,6 +24,7 @@ function StageRouter({
   allGroups,
   stages,
   workshopId,
+  workshopCreatedAt,
   sharedStageStartedAt,
   onAdvance,
 }: Props) {
@@ -62,8 +64,15 @@ function StageRouter({
     );
   }
 
-  // שלב שיתופי מתחיל לכולם באותו רגע (shared_stage_started_at); שלב עצמאי - כל קבוצה בזמן שלה.
-  const effectiveStartedAt = stage.sync_gate ? sharedStageStartedAt : myGroup.stage_started_at;
+  // זמן ההתחלה תלוי בסוג השלב (סעיף 5 ב-CLAUDE.md):
+  // shared - נפתח לכולם יחד בשער הסנכרון; parallel (שלב 1) - מתחיל לכולם עם ההפעלה עצמה;
+  // independent - כל קבוצה לפי הזמן שלה.
+  const effectiveStartedAt =
+    stage.stage_type === "shared"
+      ? sharedStageStartedAt
+      : stage.stage_type === "parallel"
+        ? workshopCreatedAt
+        : myGroup.stage_started_at;
 
   return (
     <>
