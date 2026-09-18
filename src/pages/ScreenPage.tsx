@@ -1,9 +1,11 @@
 import { useParams } from "react-router-dom";
 import { useScreenData } from "../hooks/useScreenData";
 import { useProgramStages } from "../hooks/useProgramStages";
+import { useKioskMode } from "../hooks/useKioskMode";
 import StageRouter from "../components/StageRouter";
 
 function ScreenPage() {
+  useKioskMode();
   const { screenNumber: screenNumberParam } = useParams<{
     screenNumber: string;
   }>();

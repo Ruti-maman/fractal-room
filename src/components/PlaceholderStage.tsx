@@ -1,5 +1,6 @@
 import type { Group } from "../types/group";
 import type { ProgramStage } from "../types/stage";
+import { requestKioskPermissions } from "../hooks/useKioskMode";
 
 interface Props {
   screenNumber: number;
@@ -13,6 +14,12 @@ interface Props {
  * מטרתה כרגע היא רק להוכיח שמנוע השלבים עצמו (כפתור "הבא", מעבר, סנכרון) עובד.
  */
 function PlaceholderStage({ screenNumber, stage, onAdvance }: Props) {
+  function handleClick() {
+    // מסך מלא ו-Wake Lock דורשים מחוות משתמשת - זו ההזדמנות הראשונה עד לכפתור "התחילו" האמיתי.
+    requestKioskPermissions();
+    onAdvance();
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
       <h1 className="text-3xl font-bold">מסך {screenNumber}</h1>
@@ -22,7 +29,7 @@ function PlaceholderStage({ screenNumber, stage, onAdvance }: Props) {
       </p>
       <button
         className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-8 py-4 text-xl font-bold transition-transform duration-100 active:scale-90"
-        onClick={onAdvance}
+        onClick={handleClick}
       >
         הבא
       </button>
