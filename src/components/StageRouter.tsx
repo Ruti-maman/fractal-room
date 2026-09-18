@@ -5,6 +5,7 @@ import { startSharedStage } from "../lib/stageActions";
 import WaitingScreen from "./WaitingScreen";
 import PlaceholderStage from "./PlaceholderStage";
 import Stage1Opening from "./stages/Stage1Opening";
+import Stage2Identification from "./stages/Stage2Identification";
 import Timer from "./Timer";
 import ProgressBar from "./ProgressBar";
 import type { Stage1Content } from "../types/stage1Content";
@@ -57,7 +58,9 @@ function StageRouter({
     );
   }
 
-  if (stage.sync_gate && !allArrived) {
+  // שלב 2 מנהל את שער הסנכרון שלו בעצמו בתוך הרכיב (הזדהות עצמאית, מעבר רק כשכולם הזדהו) -
+  // ראו הסבר ב-CLAUDE.md, לא משתמש במסך ההמתנה הגנרי.
+  if (stage.stage_number !== 2 && stage.sync_gate && !allArrived) {
     return (
       <>
         <WaitingScreen stageNumber={stage.stage_number} allGroups={allGroups} />
@@ -81,6 +84,13 @@ function StageRouter({
       <Stage1Opening
         screenNumber={screenNumber}
         content={stage.content as unknown as Stage1Content}
+        onAdvance={onAdvance}
+      />
+    ) : stage.stage_number === 2 ? (
+      <Stage2Identification
+        screenNumber={screenNumber}
+        myGroup={myGroup}
+        allGroups={allGroups}
         onAdvance={onAdvance}
       />
     ) : (
