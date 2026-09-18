@@ -4,8 +4,10 @@ import type { ProgramStage } from "../types/stage";
 import { startSharedStage } from "../lib/stageActions";
 import WaitingScreen from "./WaitingScreen";
 import PlaceholderStage from "./PlaceholderStage";
+import Stage1Opening from "./stages/Stage1Opening";
 import Timer from "./Timer";
 import ProgressBar from "./ProgressBar";
+import type { Stage1Content } from "../types/stage1Content";
 
 interface Props {
   screenNumber: number;
@@ -74,14 +76,25 @@ function StageRouter({
         ? workshopCreatedAt
         : myGroup.stage_started_at;
 
-  return (
-    <>
+  const stageContent =
+    stage.stage_number === 1 ? (
+      <Stage1Opening
+        screenNumber={screenNumber}
+        content={stage.content as unknown as Stage1Content}
+        onAdvance={onAdvance}
+      />
+    ) : (
       <PlaceholderStage
         screenNumber={screenNumber}
         myGroup={myGroup}
         stage={stage}
         onAdvance={onAdvance}
       />
+    );
+
+  return (
+    <>
+      {stageContent}
       {progressBar}
       {effectiveStartedAt && stage.duration_minutes && (
         <Timer startedAt={effectiveStartedAt} durationMinutes={stage.duration_minutes} />
