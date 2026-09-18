@@ -87,12 +87,12 @@ function IdentificationForm({ myGroup }: { myGroup: Group }) {
   );
 }
 
-function RoomStatus({
+function RoomStatusNames({
   allGroups,
-  onAdvance,
+  onNext,
 }: {
   allGroups: Group[];
-  onAdvance: () => void;
+  onNext: () => void;
 }) {
   const groupIds = allGroups.map((g) => g.id);
   const participants = useParticipants(groupIds);
@@ -120,14 +120,10 @@ function RoomStatus({
           ))}
       </div>
 
-      <div className="flex h-40 w-72 items-center justify-center rounded-xl bg-white/10 text-white/50">
-        כאן יופיע סרטון הדילמה
-      </div>
-
       {allIdentified ? (
         <button
           className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-10 py-5 text-2xl font-bold transition-transform duration-100 active:scale-90"
-          onClick={onAdvance}
+          onClick={onNext}
         >
           הבא
         </button>
@@ -136,6 +132,40 @@ function RoomStatus({
       )}
     </main>
   );
+}
+
+function DilemmaVideo({ onAdvance }: { onAdvance: () => void }) {
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
+      <h1 className="text-3xl font-bold">סרטון הדילמה</h1>
+
+      <div className="flex h-64 w-96 items-center justify-center rounded-xl bg-white/10 text-white/50">
+        כאן יופיע סרטון הדילמה
+      </div>
+
+      <button
+        className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-10 py-5 text-2xl font-bold transition-transform duration-100 active:scale-90"
+        onClick={onAdvance}
+      >
+        הבא
+      </button>
+    </main>
+  );
+}
+
+function RoomStatus({
+  allGroups,
+  onAdvance,
+}: {
+  allGroups: Group[];
+  onAdvance: () => void;
+}) {
+  const [showingVideo, setShowingVideo] = useState(false);
+
+  if (showingVideo) {
+    return <DilemmaVideo onAdvance={onAdvance} />;
+  }
+  return <RoomStatusNames allGroups={allGroups} onNext={() => setShowingVideo(true)} />;
 }
 
 function Stage2Identification({ myGroup, allGroups, onAdvance }: Props) {
