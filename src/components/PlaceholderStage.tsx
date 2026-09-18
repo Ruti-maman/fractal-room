@@ -20,13 +20,21 @@ function PlaceholderStage({ screenNumber, stage, onAdvance }: Props) {
     onAdvance();
   }
 
+  const description = (stage.content as { description?: string })?.description;
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
-      <h1 className="text-3xl font-bold">מסך {screenNumber}</h1>
-      <p className="text-lg">
-        שלב {stage.stage_number} ({stage.stage_type})
-        {stage.sync_gate && " - שער סנכרון"}
-      </p>
+      <h1 className="text-3xl font-bold">
+        מסך {screenNumber} - שלב {stage.stage_number}
+      </h1>
+      {description ? (
+        <p className="max-w-md text-lg text-white/80">{description}</p>
+      ) : (
+        <p className="text-lg">
+          שלב {stage.stage_number} ({stage.stage_type})
+          {stage.sync_gate && " - שער סנכרון"}
+        </p>
+      )}
       <button
         className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-8 py-4 text-xl font-bold transition-transform duration-100 active:scale-90"
         onClick={handleClick}
