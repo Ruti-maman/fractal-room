@@ -6,9 +6,11 @@ import WaitingScreen from "./WaitingScreen";
 import PlaceholderStage from "./PlaceholderStage";
 import Stage1Opening from "./stages/Stage1Opening";
 import Stage2Identification from "./stages/Stage2Identification";
+import Stage3Associations from "./stages/Stage3Associations";
 import Timer from "./Timer";
 import ProgressBar from "./ProgressBar";
 import type { Stage1Content } from "../types/stage1Content";
+import type { Stage3Content } from "../types/stage3Content";
 
 interface Props {
   screenNumber: number;
@@ -91,6 +93,13 @@ function StageRouter({
         screenNumber={screenNumber}
         myGroup={myGroup}
         allGroups={allGroups}
+        onAdvance={onAdvance}
+      />
+    ) : stage.stage_number === 3 ? (
+      <Stage3Associations
+        workshopId={workshopId}
+        myGroup={myGroup}
+        content={stage.content as unknown as Stage3Content}
         onAdvance={onAdvance}
       />
     ) : (
