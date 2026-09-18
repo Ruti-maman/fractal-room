@@ -136,8 +136,11 @@ function RoomStatusNames({
 
 function DilemmaVideo({ onAdvance }: { onAdvance: () => void }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
-      <h1 className="text-3xl font-bold">סרטון הדילמה</h1>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8 text-center">
+      <h1 className="text-3xl font-bold">הדילמה הפדגוגית</h1>
+      <p className="max-w-lg text-lg text-white/80">
+        הצגת הדילמה המרכזית שאיתה נתמודד לאורך הסדנה.
+      </p>
 
       <div className="flex h-64 w-96 items-center justify-center rounded-xl bg-white/10 text-white/50">
         כאן יופיע סרטון הדילמה

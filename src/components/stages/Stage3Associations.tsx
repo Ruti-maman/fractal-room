@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Group } from "../../types/group";
 import type { Stage3Content } from "../../types/stage3Content";
 import { useInspirations } from "../../hooks/useInspirations";
@@ -32,10 +32,13 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
     save(items.map((it, i) => (i === index ? { ...it, selected: !it.selected } : it)));
   }
 
-  function handleFinish() {
-    setShowingTransition(true);
-    setTimeout(onAdvance, 2000);
-  }
+  // ברגע שנבחרה ההשראה הרביעית - עוברים אוטומטית, בלי כפתור "סיימתי" (לפי המצגת, שקף 5).
+  useEffect(() => {
+    if (selectedCount === MAX_SELECTED && !showingTransition) {
+      setShowingTransition(true);
+      setTimeout(onAdvance, 2000);
+    }
+  }, [selectedCount, showingTransition, onAdvance]);
 
   if (loading) {
     return (
@@ -93,7 +96,8 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
       </div>
 
       <p className="text-sm text-white/60">
-        סמנו (בלחיצה) עד {MAX_SELECTED} השראות נבחרות - נבחרו {selectedCount}/{MAX_SELECTED}
+        סמנו (בלחיצה) {MAX_SELECTED} השראות נבחרות - נבחרו {selectedCount}/{MAX_SELECTED}
+        {selectedCount === MAX_SELECTED - 1 && " (עוד אחת ועוברים הלאה!)"}
       </p>
 
       {/* סטריפ ההשראות הנבחרות - ילווה גם שלבים הבאים (למשל שלב 4). */}
@@ -106,15 +110,6 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
             </span>
           ))}
       </div>
-
-      {selectedCount > 0 && (
-        <button
-          className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-10 py-5 text-xl font-bold transition-transform duration-100 active:scale-90"
-          onClick={handleFinish}
-        >
-          סיימתי לבחור השראות
-        </button>
-      )}
     </main>
   );
 }
