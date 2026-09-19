@@ -7,6 +7,7 @@ import PlaceholderStage from "./PlaceholderStage";
 import Stage1Opening from "./stages/Stage1Opening";
 import Stage2Identification from "./stages/Stage2Identification";
 import Stage3Associations from "./stages/Stage3Associations";
+import Stage4Analysis from "./stages/Stage4Analysis";
 import Stage6Discussion from "./stages/Stage6Discussion";
 import Stage7Simulation from "./stages/Stage7Simulation";
 import Stage8Winner from "./stages/Stage8Winner";
@@ -14,6 +15,7 @@ import Timer from "./Timer";
 import ProgressBar from "./ProgressBar";
 import type { Stage1Content } from "../types/stage1Content";
 import type { Stage3Content } from "../types/stage3Content";
+import type { Stage4Content } from "../types/stage4Content";
 import type { Stage6Content } from "../types/stage6Content";
 
 interface Props {
@@ -119,6 +121,13 @@ function StageRouter({
         workshopId={workshopId}
         myGroup={myGroup}
         content={stage.content as unknown as Stage3Content}
+        onAdvance={onAdvance}
+      />
+    ) : stage.stage_number === 4 ? (
+      <Stage4Analysis
+        workshopId={workshopId}
+        myGroup={myGroup}
+        content={stage.content as unknown as Stage4Content}
         onAdvance={onAdvance}
       />
     ) : stage.stage_number === 6 ? (
