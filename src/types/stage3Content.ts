@@ -5,5 +5,4 @@ export interface Stage3Content {
 
 export interface InspirationItem {
   text: string;
-  selected: boolean;
 }
