@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export type MarkColor = "green" | "red" | null;
@@ -16,6 +16,12 @@ const SAFETY_NET_INTERVAL_MS = 1500;
 export function useTextMarking(workshopId: string, groupId: string) {
   const [marks, setMarks] = useState<MarkColor[]>([]);
   const [loading, setLoading] = useState(true);
+  // דוחה תשובות "ישנות": אם גרירה מהירה כותבת פעמיים ברצף, יש סיכוי של ממש
+  // שה-poll התקופתי (לא ה-mutate עצמו, שכבר קורא טרי לפני כתיבה) יחזיר תשובה
+  // מלפני הכתיבה השנייה אחרי שהיא כבר הסתיימה, וידרוס בטעות מצב עדכני בישן.
+  // כל refetch/mutate נרשם עם מספר סידורי, ותשובה שהגיעה אחרי שמישהי חדשה
+  // ממנה כבר התחילה - מתעלמים ממנה.
+  const latestOpRef = useRef(0);
 
   async function fetchRow() {
     // .order+limit(1) ולא .maybeSingle(): אם משום מה נוצרו בטעות כמה שורות
@@ -35,7 +41,9 @@ export function useTextMarking(workshopId: string, groupId: string) {
 
   useEffect(() => {
     async function refetch() {
+      const opId = ++latestOpRef.current;
       const { data } = await fetchRow();
+      if (opId !== latestOpRef.current) return; // מישהי חדשה יותר (mutate או refetch) כבר התחילה - זו תשובה ישנה
       if (data) setMarks((data.data as { marks: MarkColor[] }).marks ?? []);
       setLoading(false);
     }
@@ -70,6 +78,7 @@ export function useTextMarking(workshopId: string, groupId: string) {
   }, [workshopId, groupId]);
 
   async function mutate(mutateFn: (current: MarkColor[]) => MarkColor[]) {
+    latestOpRef.current++; // כל refetch שכבר בדרך (כולל ה-poll התקופתי) הופך מיושן מהרגע הזה
     const { data } = await fetchRow();
     const current = data ? ((data.data as { marks: MarkColor[] }).marks ?? []) : [];
     const next = mutateFn(current);

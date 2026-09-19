@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { Group } from "../../types/group";
 import type { Stage4Content } from "../../types/stage4Content";
 import { useTopInspirations } from "../../hooks/useTopInspirations";
@@ -13,16 +13,12 @@ interface Props {
 
 type Tool = "green" | "red" | "eraser";
 
-const MARK_CLASS: Record<"green" | "red", string> = {
-  green: "bg-green-700/70",
-  red: "bg-accent-red/70",
+const STROKE_COLOR: Record<"green" | "red", string> = {
+  green: "#3ba35a",
+  red: "#c9463f",
 };
-
-const BRUSH_COLOR: Record<Tool, string> = {
-  green: "#15803d",
-  red: "#b23a3a",
-  eraser: "#e5e7eb",
-};
+const STROKE_WIDTH = 30;
+const STROKE_ALPHA = 0.6;
 
 /** כפתור בצורת מרקר אמיתי - פקק, גוף עם השם כתוב עליו לאורך, וחוד. */
 function MarkerTool({
@@ -50,10 +46,7 @@ function MarkerTool({
       >
         {label}
       </div>
-      <div
-        className={`h-4 w-7 ${bodyClass}`}
-        style={{ clipPath: "polygon(50% 100%, 15% 0, 85% 0)" }}
-      />
+      <div className={`h-4 w-7 ${bodyClass}`} style={{ clipPath: "polygon(50% 100%, 15% 0, 85% 0)" }} />
       <div className={`mt-2 h-1 w-8 rounded-full ${active ? "bg-white" : "bg-transparent"}`} />
     </button>
   );
@@ -73,6 +66,16 @@ function EraserTool({ active, onClick }: { active: boolean; onClick: () => void 
   );
 }
 
+function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
 /**
  * שלב 4 - ניתוח דילמה (שקף 6 במצגת, החלק הראשון בלבד - בלי טבלת הסנכרון
  * האוטומטית ותמונת התפקוד ב-AI משקף 7, שנבנים בנפרד בהמשך).
@@ -83,39 +86,118 @@ function EraserTool({ active, onClick }: { active: boolean; onClick: () => void 
  * אדום לחסמים, עם כלי מחק נפרד (לפי ההחלטה בסעיף 12 ב-CLAUDE.md: סימון
  * מילה-מילה בגרירה, לא בחירת התחלה/סוף).
  *
- * תחושת "צביעה" - כדור מכחול קטן עוקב אחרי האצבע, וכל מילה מקבלת מעבר צבע
- * חלק (לא קפיצה חדה) ברגע שהברוש עובר מעליה, כדי שהגרירה הרציפה על פני כמה
- * מילים תרגיש כמו משיכת מרקר אחת, לא כמו כמה לחיצות נפרדות.
+ * הצביעה בפועל היא ציור freehand על canvas שקוף שיושב מעל הטקסט, עם
+ * mix-blend-mode: multiply (בדיוק כמו מרקר אמיתי על דף - הצבע נספג ב"נייר"
+ * והטקסט מתחתיו נשאר קריא) - לא עוד צביעת רקע דיסקרטית של כל מילה בנפרד.
+ * ה"נייר" הלבן מתחת חיוני לאפקט: multiply על רקע כהה היה יוצא עכור, לא בהיר.
+ * הנתון שנשמר עדיין ברמת מילה שלמה (marks[i]) כי זה מה שצריך לשלבים הבאים
+ * (למשל טבלת הסנכרון); ה-canvas רק מצייר, ומשוחזר מ-marks בכל טעינה מחדש.
  */
 function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
   const { top, loading: loadingTop } = useTopInspirations(workshopId);
   const { marks, loading: loadingMarks, mutate } = useTextMarking(workshopId, myGroup.id);
   const [activeTool, setActiveTool] = useState<Tool>("green");
-  const [localMarks, setLocalMarks] = useState<MarkColor[]>([]);
-  const [brushPos, setBrushPos] = useState<{ x: number; y: number } | null>(null);
   const marksRef = useRef<MarkColor[]>([]);
   const isDraggingRef = useRef(false);
   const activeToolRef = useRef<Tool>("green");
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const lastWordIndexRef = useRef<number | null>(null);
+  const paperRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const words = useMemo(() => content.profile_text.split(/\s+/).filter(Boolean), [content.profile_text]);
+  const loading = loadingTop || loadingMarks;
 
   useEffect(() => {
     activeToolRef.current = activeTool;
   }, [activeTool]);
 
+  function getContext() {
+    const canvas = canvasRef.current;
+    return canvas?.getContext("2d") ?? null;
+  }
+
+  /** מכינה את הרזולוציה הפנימית של ה-canvas לפי גודל התיבה בפועל ו-DPR, כדי שהקו ייצא חד גם על מסך מגע בחדות גבוהה. */
+  function setupCanvas() {
+    const canvas = canvasRef.current;
+    const paper = paperRef.current;
+    if (!canvas || !paper) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = paper.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+    const ctx = canvas.getContext("2d");
+    ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  /** מציירת מחדש את כל הסימונים לפי marks[] - קירוב מלבני חלק לכל מילה מסומנת, כי הציור החופשי המקורי לא נשמר, רק אילו מילים סומנו. */
+  function redrawFromMarks(marksArray: MarkColor[]) {
+    const ctx = getContext();
+    const paper = paperRef.current;
+    const canvas = canvasRef.current;
+    if (!ctx || !paper || !canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalCompositeOperation = "multiply";
+    ctx.globalAlpha = STROKE_ALPHA;
+    const paperRect = paper.getBoundingClientRect();
+    marksArray.forEach((color, i) => {
+      if (!color) return;
+      const wordEl = paper.querySelector<HTMLElement>(`[data-word-index="${i}"]`);
+      if (!wordEl) return;
+      const r = wordEl.getBoundingClientRect();
+      ctx.fillStyle = STROKE_COLOR[color];
+      roundRectPath(
+        ctx,
+        r.left - paperRect.left - 4,
+        r.top - paperRect.top + r.height * 0.12,
+        r.width + 8,
+        r.height * 0.76,
+        8,
+      );
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+
   // מסתנכרן מהשרת רק כשלא באמצע גרירה - כדי לא לדרוס סימון שעדיין לא נשמר.
   useEffect(() => {
     if (!isDraggingRef.current) {
-      setLocalMarks(marks);
       marksRef.current = marks;
+      // מחכה לפריים הבא כדי שה-DOM של המילים כבר יהיה בגודל הסופי לפני שממדדים אותו.
+      requestAnimationFrame(() => redrawFromMarks(marks));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marks]);
+
+  // תלוי ב-loading בכוונה, לא ב-[]: בזמן הטעינה עדיין אין canvas/paper ב-DOM
+  // בכלל (התצוגה שם היא "טוענת..."), אז effect עם [] היה נתפס לרגע ההוא -
+  // ה-refs עדיין null אז setupCanvas היה עושה כלום, ובלי תלות זה לא היה
+  // רץ שוב אף פעם. ברגע ש-loading הופך false, האלמנטים כבר קיימים באמת.
+  useEffect(() => {
+    if (loading) return;
+    setupCanvas();
+    redrawFromMarks(marksRef.current);
+    function handleResize() {
+      setupCanvas();
+      redrawFromMarks(marksRef.current);
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   useEffect(() => {
     function handleWindowPointerUp() {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
-      setBrushPos(null);
+      lastPointRef.current = null;
+      lastWordIndexRef.current = null;
       const snapshot = marksRef.current;
       mutate(() => snapshot);
     }
@@ -124,39 +206,75 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function paintWord(index: number, color: MarkColor) {
+  function markWord(index: number, color: MarkColor) {
     const next = marksRef.current.slice();
     next[index] = color;
     marksRef.current = next;
-    setLocalMarks(next);
   }
 
-  function colorForTool(tool: Tool): MarkColor {
-    return tool === "eraser" ? null : tool;
+  function canvasPoint(clientX: number, clientY: number) {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
   }
 
-  function handleWordPointerDown(index: number, clientX: number, clientY: number) {
-    isDraggingRef.current = true;
-    setBrushPos({ x: clientX, y: clientY });
-    const current = marksRef.current[index];
-    const color = colorForTool(activeToolRef.current);
-    // נגיעה בודדת (לא גרירה) על מילה שכבר בצבע הפעיל - מנקה אותה, כמו מחק.
-    paintWord(index, current === color && color !== null ? null : color);
+  /** מושכת קו חלק (round cap/join) בין שתי נקודות - זה מה שהופך גרירה מהירה לקו רציף במקום נקודות מרוסקות. */
+  function strokeTo(from: { x: number; y: number }, to: { x: number; y: number }, tool: Tool) {
+    const ctx = getContext();
+    if (!ctx) return;
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = STROKE_WIDTH;
+    if (tool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "#000000";
+    } else {
+      ctx.globalCompositeOperation = "multiply";
+      ctx.globalAlpha = STROKE_ALPHA;
+      ctx.strokeStyle = STROKE_COLOR[tool];
+    }
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    // נקודה עגולה גם בתחילת המשיכה, כדי שנגיעה בודדת (בלי תזוזה) תשאיר סימון עגול, לא כלום.
+    ctx.beginPath();
+    ctx.arc(to.x, to.y, STROKE_WIDTH / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
-  // מגע (touch) לא מפעיל pointerenter על אלמנטים שהאצבע עוברת מעליהם - כל
-  // אירועי ה-pointer נשארים "שבויים" באלמנט שבו התחילה הנגיעה. לכן בודקים
-  // איפה האצבע נמצאת עכשיו לפי קואורדינטות, ולא סומכים על pointerenter.
-  function handleContainerPointerMove(e: PointerEvent<HTMLParagraphElement>) {
-    if (!isDraggingRef.current) return;
-    setBrushPos({ x: e.clientX, y: e.clientY });
-    const el = document.elementFromPoint(e.clientX, e.clientY);
+  function updateWordAt(clientX: number, clientY: number, tool: Tool) {
+    const el = document.elementFromPoint(clientX, clientY);
     const indexAttr = el?.closest<HTMLElement>("[data-word-index]")?.dataset.wordIndex;
     if (indexAttr === undefined) return;
-    paintWord(Number(indexAttr), colorForTool(activeToolRef.current));
+    const index = Number(indexAttr);
+    if (lastWordIndexRef.current === index) return;
+    lastWordIndexRef.current = index;
+    markWord(index, tool === "eraser" ? null : tool);
   }
 
-  const loading = loadingTop || loadingMarks;
+  function handlePaperPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    isDraggingRef.current = true;
+    const point = canvasPoint(e.clientX, e.clientY);
+    lastPointRef.current = point;
+    const tool = activeToolRef.current;
+    strokeTo(point, point, tool);
+    lastWordIndexRef.current = null;
+    updateWordAt(e.clientX, e.clientY, tool);
+  }
+
+  function handlePaperPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!isDraggingRef.current) return;
+    const point = canvasPoint(e.clientX, e.clientY);
+    const tool = activeToolRef.current;
+    if (lastPointRef.current) strokeTo(lastPointRef.current, point, tool);
+    lastPointRef.current = point;
+    updateWordAt(e.clientX, e.clientY, tool);
+  }
 
   if (loading) {
     return (
@@ -184,7 +302,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
       </div>
 
       <p className="max-w-lg text-center text-sm text-white/60">
-        סמנו את הטקסט בגרירה, כמו במרקר אמיתי.
+        סמנו את הטקסט בגרירה, כמו במרקר אמיתי על דף.
       </p>
 
       <div className="flex items-end gap-6">
@@ -193,25 +311,24 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         <EraserTool active={activeTool === "eraser"} onClick={() => setActiveTool("eraser")} />
       </div>
 
-      <p
-        className="max-w-2xl text-xl leading-loose select-none"
-        style={{ touchAction: "none" }}
-        onPointerMove={handleContainerPointerMove}
+      <div
+        ref={paperRef}
+        className="relative max-w-2xl rounded-2xl p-8 shadow-2xl"
+        style={{ background: "linear-gradient(180deg, #fbf8f1 0%, #f3ede0 100%)", touchAction: "none" }}
+        onPointerDown={handlePaperPointerDown}
+        onPointerMove={handlePaperPointerMove}
       >
-        {words.map((word, i) => (
-          <span key={i}>
-            <span
-              data-word-index={i}
-              className={`inline-block cursor-pointer rounded px-1 transition-colors duration-150 ease-out ${
-                localMarks[i] === "green" ? MARK_CLASS.green : localMarks[i] === "red" ? MARK_CLASS.red : ""
-              }`}
-              onPointerDown={(e) => handleWordPointerDown(i, e.clientX, e.clientY)}
-            >
-              {word}
-            </span>{" "}
-          </span>
-        ))}
-      </p>
+        <p className="relative text-xl leading-loose text-[#2b2620] select-none">
+          {words.map((word, i) => (
+            <span key={i}>
+              <span data-word-index={i} className="inline-block cursor-pointer px-0.5">
+                {word}
+              </span>{" "}
+            </span>
+          ))}
+        </p>
+        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" style={{ pointerEvents: "none" }} />
+      </div>
 
       <button
         className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-10 py-5 text-xl font-bold transition-transform duration-100 active:scale-90"
@@ -219,21 +336,6 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
       >
         הבא
       </button>
-
-      {brushPos && (
-        <div
-          className="pointer-events-none fixed z-50 rounded-full border-2 border-white/70"
-          style={{
-            left: brushPos.x,
-            top: brushPos.y,
-            width: 22,
-            height: 22,
-            transform: "translate(-50%, -50%)",
-            backgroundColor: BRUSH_COLOR[activeTool],
-            boxShadow: "0 0 8px rgba(0,0,0,0.5)",
-          }}
-        />
-      )}
     </main>
   );
 }
