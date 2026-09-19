@@ -110,11 +110,13 @@ function RoomStatusNames({
             <div key={g.id} className="rounded-xl bg-white/10 px-6 py-4 text-center">
               <div className="mb-2 text-xl font-bold">{g.name ?? "טרם הזדהו"}</div>
               <div className="flex flex-col gap-1 text-sm text-white/70">
-                {participants
-                  .filter((p) => p.group_id === g.id)
-                  .map((p) => (
-                    <span key={p.id}>{p.name}</span>
-                  ))}
+                {(() => {
+                  const groupParticipants = participants.filter((p) => p.group_id === g.id);
+                  if (groupParticipants.length === 0) {
+                    return <span className="italic">טרם הוזנו משתתפות</span>;
+                  }
+                  return groupParticipants.map((p) => <span key={p.id}>{p.name}</span>);
+                })()}
               </div>
             </div>
           ))}
