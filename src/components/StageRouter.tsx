@@ -7,6 +7,8 @@ import PlaceholderStage from "./PlaceholderStage";
 import Stage1Opening from "./stages/Stage1Opening";
 import Stage2Identification from "./stages/Stage2Identification";
 import Stage3Associations from "./stages/Stage3Associations";
+import Stage7Simulation from "./stages/Stage7Simulation";
+import Stage8Winner from "./stages/Stage8Winner";
 import Timer from "./Timer";
 import ProgressBar from "./ProgressBar";
 import type { Stage1Content } from "../types/stage1Content";
@@ -40,12 +42,19 @@ function StageRouter({
     stage.sync_gate &&
     allGroups.every((g) => g.current_stage >= stage.stage_number);
 
-  // ברגע שכל הקבוצות הגיעו לשער סנכרון - פותחים אותו (נכתב רק פעם אחת, ראו stageActions).
+  // שלב 7 יוצא מהכלל: הטיימר (10 דקות) מתחיל לרוץ לכולן יחד ברגע שהראשונה
+  // מתחילה להקליט, לא מחכה שכולן יגיעו (כל קבוצה מקליטה בזמן שלה, אבל השעון משותף).
+  const timerShouldStart =
+    stage?.stage_number === 7
+      ? allGroups.some((g) => g.current_stage >= 7)
+      : allArrived;
+
+  // ברגע שהתנאי מתקיים - פותחים את השעון המשותף (נכתב רק פעם אחת, ראו stageActions).
   useEffect(() => {
-    if (allArrived && !sharedStageStartedAt) {
+    if (timerShouldStart && !sharedStageStartedAt) {
       startSharedStage(workshopId);
     }
-  }, [allArrived, sharedStageStartedAt, workshopId]);
+  }, [timerShouldStart, sharedStageStartedAt, workshopId]);
 
   const progressBar = <ProgressBar allGroups={allGroups} myScreenNumber={screenNumber} />;
 
@@ -60,9 +69,10 @@ function StageRouter({
     );
   }
 
-  // שלב 2 מנהל את שער הסנכרון שלו בעצמו בתוך הרכיב (הזדהות עצמאית, מעבר רק כשכולם הזדהו) -
-  // ראו הסבר ב-CLAUDE.md, לא משתמש במסך ההמתנה הגנרי.
-  if (stage.stage_number !== 2 && stage.sync_gate && !allArrived) {
+  // שלבים 2 ו-7 מנהלים את שער הסנכרון שלהם בעצמם בתוך הרכיב (הזדהות/הקלטה
+  // עצמאית, מעבר רק כשכולן סיימו) - ראו הסבר ב-CLAUDE.md, לא משתמשים במסך ההמתנה הגנרי.
+  const selfManagedGate = stage.stage_number === 2 || stage.stage_number === 7;
+  if (!selfManagedGate && stage.sync_gate && !allArrived) {
     return (
       <>
         <WaitingScreen stageNumber={stage.stage_number} allGroups={allGroups} />
@@ -100,6 +110,20 @@ function StageRouter({
         workshopId={workshopId}
         myGroup={myGroup}
         content={stage.content as unknown as Stage3Content}
+        onAdvance={onAdvance}
+      />
+    ) : stage.stage_number === 7 ? (
+      <Stage7Simulation
+        workshopId={workshopId}
+        myGroup={myGroup}
+        allGroups={allGroups}
+        onAdvance={onAdvance}
+      />
+    ) : stage.stage_number === 8 ? (
+      <Stage8Winner
+        workshopId={workshopId}
+        myGroup={myGroup}
+        allGroups={allGroups}
         onAdvance={onAdvance}
       />
     ) : (
