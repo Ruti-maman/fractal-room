@@ -22,6 +22,7 @@ interface Props {
   workshopId: string;
   workshopCreatedAt: string;
   sharedStageStartedAt: string | null;
+  sharedStageNumber: number | null;
   onAdvance: () => void;
 }
 
@@ -33,9 +34,15 @@ function StageRouter({
   workshopId,
   workshopCreatedAt,
   sharedStageStartedAt,
+  sharedStageNumber,
   onAdvance,
 }: Props) {
   const stage = stages.find((s) => s.stage_number === myGroup.current_stage);
+
+  // הזמן השמור תקף רק אם הוא שייך לשלב הנוכחי - אחרת זה "ירושה" מזמן ישן
+  // של שלב משותף קודם (2, 7, 8, 10 חולקים עמודה אחת ב-workshops).
+  const validSharedStageStartedAt =
+    stage && sharedStageNumber === stage.stage_number ? sharedStageStartedAt : null;
 
   const allArrived =
     !!stage &&
@@ -49,12 +56,12 @@ function StageRouter({
       ? allGroups.some((g) => g.current_stage >= 7)
       : allArrived;
 
-  // ברגע שהתנאי מתקיים - פותחים את השעון המשותף (נכתב רק פעם אחת, ראו stageActions).
+  // ברגע שהתנאי מתקיים - פותחים את השעון המשותף (נכתב רק פעם אחת לכל שלב, ראו stageActions).
   useEffect(() => {
-    if (timerShouldStart && !sharedStageStartedAt) {
-      startSharedStage(workshopId);
+    if (stage && timerShouldStart && !validSharedStageStartedAt) {
+      startSharedStage(workshopId, stage.stage_number);
     }
-  }, [timerShouldStart, sharedStageStartedAt, workshopId]);
+  }, [stage, timerShouldStart, validSharedStageStartedAt, workshopId]);
 
   const progressBar = <ProgressBar allGroups={allGroups} myScreenNumber={screenNumber} />;
 
@@ -86,7 +93,7 @@ function StageRouter({
   // independent - כל קבוצה לפי הזמן שלה.
   const effectiveStartedAt =
     stage.stage_type === "shared"
-      ? sharedStageStartedAt
+      ? validSharedStageStartedAt
       : stage.stage_type === "parallel"
         ? workshopCreatedAt
         : myGroup.stage_started_at;

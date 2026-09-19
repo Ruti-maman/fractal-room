@@ -8,6 +8,7 @@ interface Workshop {
   program_id: string;
   created_at: string;
   shared_stage_started_at: string | null;
+  shared_stage_number: number | null;
 }
 
 interface ScreenData {
@@ -40,7 +41,7 @@ export function useScreenData(screenNumber: number): ScreenData {
   useEffect(() => {
     supabase
       .from("workshops")
-      .select("id, program_id, created_at, shared_stage_started_at")
+      .select("id, program_id, created_at, shared_stage_started_at, shared_stage_number")
       .eq("status", "active")
       .limit(1)
       .maybeSingle()
@@ -61,7 +62,7 @@ export function useScreenData(screenNumber: number): ScreenData {
         supabase.from("groups").select("*").eq("workshop_id", workshopId),
         supabase
           .from("workshops")
-          .select("id, program_id, created_at, shared_stage_started_at")
+          .select("id, program_id, created_at, shared_stage_started_at, shared_stage_number")
           .eq("id", workshopId)
           .single(),
       ]);
