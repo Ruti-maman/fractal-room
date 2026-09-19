@@ -11,6 +11,7 @@ import Stage4Analysis from "./stages/Stage4Analysis";
 import Stage6Discussion from "./stages/Stage6Discussion";
 import Stage7Simulation from "./stages/Stage7Simulation";
 import Stage8Winner from "./stages/Stage8Winner";
+import Stage10Principles from "./stages/Stage10Principles";
 import Timer from "./Timer";
 import ProgressBar from "./ProgressBar";
 import type { Stage1Content } from "../types/stage1Content";
@@ -149,6 +150,8 @@ function StageRouter({
         allGroups={allGroups}
         onAdvance={onAdvance}
       />
+    ) : stage.stage_number === 10 ? (
+      <Stage10Principles workshopId={workshopId} myGroup={myGroup} />
     ) : (
       <PlaceholderStage
         screenNumber={screenNumber}
