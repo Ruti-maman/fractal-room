@@ -17,7 +17,12 @@ select id, 4, 'independent', false, 5,
 from programs where name = 'תוכנית לדוגמה'
 union all
 select id, 5, 'independent', false, 5,
-  '{"description": "כאן יהיו 4 כפתורי בחירת פתרון, עם פופ-אפ הסבר לכפתורים הלא-נכונים."}'::jsonb
+  '{"options": [
+    {"label": "פתרון טכני נקודתי", "correct": false, "explanation": "אינו מטפל בשורש הבעיה הפדגוגית"},
+    {"label": "שינוי פדגוגי עמוק ומובנה", "correct": true, "explanation": "זוהי הדרך הנכונה!"},
+    {"label": "התעלמות מהאתגר הקיים", "correct": false, "explanation": "מוביל להחמרת הקושי בכיתה"},
+    {"label": "העברת האחריות לגורם חיצוני", "correct": false, "explanation": "אינו מטפל בשורש הבעיה הפדגוגית"}
+  ]}'::jsonb
 from programs where name = 'תוכנית לדוגמה'
 union all
 select id, 6, 'independent', false, 5,
@@ -37,5 +42,5 @@ select id, 9, 'independent', false, null,
 from programs where name = 'תוכנית לדוגמה'
 union all
 select id, 10, 'shared', true, null,
-  '{"description": "כאן תהיה ניסוח משותף של 3 עקרונות מנחים בעזרת AI, וסיום הסדנה עם שמירת כל הנתונים."}'::jsonb
+  '{}'::jsonb  -- Stage10Principles לא קורא content בכלל, העקרונות נשמרים ב-responses.
 from programs where name = 'תוכנית לדוגמה';
