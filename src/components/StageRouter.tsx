@@ -145,7 +145,7 @@ function StageRouter({
   return (
     <>
       {stageContent}
-      {progressBar}
+      {stage.stage_number !== 1 && progressBar}
       {effectiveStartedAt && stage.duration_minutes && (
         <Timer startedAt={effectiveStartedAt} durationMinutes={stage.duration_minutes} />
       )}

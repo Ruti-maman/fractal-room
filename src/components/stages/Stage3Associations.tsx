@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Group } from "../../types/group";
-import type { Stage3Content } from "../../types/stage3Content";
+import type { Stage3Content, InspirationItem } from "../../types/stage3Content";
 import { useInspirations } from "../../hooks/useInspirations";
 
 const MAX_SELECTED = 4;
@@ -20,27 +20,40 @@ interface Props {
   onAdvance: () => void;
 }
 
+function fillSlots(items: InspirationItem[]) {
+  return Array.from({ length: 7 }, (_, i) => items[i] ?? { text: "", selected: false });
+}
+
 function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) {
-  const { items, loading, save } = useInspirations(workshopId, myGroup.id);
+  const { items, loading, mutate } = useInspirations(workshopId);
   const [showingTransition, setShowingTransition] = useState(false);
 
   // 7 משבצות קבועות (כמו במצגת) - items[i] קיים רק אחרי שנכתב בו משהו.
-  const slots = Array.from({ length: 7 }, (_, i) => items[i] ?? { text: "", selected: false });
+  const slots = fillSlots(items);
   const selectedCount = items.filter((i) => i.selected).length;
 
   function updateSlotText(index: number, text: string) {
-    const next = slots.slice();
-    next[index] = { ...next[index], text };
-    save(next);
+    if (!text.trim()) return;
+    // קוראים מחדש את המצב העדכני ממש לפני הכתיבה - כדי לא לדרוס מסך אחר שכתב כמעט באותו רגע.
+    mutate(myGroup.id, (current) => {
+      const fresh = fillSlots(current);
+      fresh[index] = { ...fresh[index], text };
+      return fresh;
+    });
   }
 
   function toggleSelected(index: number) {
-    const item = slots[index];
-    if (!item.text.trim()) return;
-    if (!item.selected && selectedCount >= MAX_SELECTED) return;
-    const next = slots.slice();
-    next[index] = { ...item, selected: !item.selected };
-    save(next);
+    const localItem = slots[index];
+    if (!localItem.text.trim()) return;
+    mutate(myGroup.id, (current) => {
+      const fresh = fillSlots(current);
+      const item = fresh[index];
+      if (!item.text.trim()) return current;
+      const freshSelectedCount = fresh.filter((s) => s.selected).length;
+      if (!item.selected && freshSelectedCount >= MAX_SELECTED) return current;
+      fresh[index] = { ...item, selected: !item.selected };
+      return fresh;
+    });
   }
 
   // ברגע שנבחרה ההשראה הרביעית - עוברים אוטומטית, בלי כפתור "סיימתי" (לפי המצגת, שקף 5).
