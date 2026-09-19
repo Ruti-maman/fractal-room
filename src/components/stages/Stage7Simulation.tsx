@@ -159,14 +159,15 @@ function SharedViewing({
   workshopId,
   myGroup,
   allGroups,
+  media,
   onAdvance,
 }: {
   workshopId: string;
   myGroup: Group;
   allGroups: Group[];
+  media: ReturnType<typeof useMedia>;
   onAdvance: () => void;
 }) {
-  const media = useMedia(workshopId, 7);
   const { myRatings, rate } = useRatings(workshopId, myGroup.id);
 
   return (
@@ -252,6 +253,7 @@ function Stage7Simulation({ workshopId, myGroup, allGroups, onAdvance }: Props) 
       workshopId={workshopId}
       myGroup={myGroup}
       allGroups={allGroups}
+      media={media}
       onAdvance={onAdvance}
     />
   );
