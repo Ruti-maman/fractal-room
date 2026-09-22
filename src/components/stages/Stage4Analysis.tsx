@@ -17,8 +17,11 @@ const STROKE_COLOR: Record<"green" | "red", string> = {
   green: "#3ba35a",
   red: "#c9463f",
 };
-const STROKE_WIDTH = 30;
+const STROKE_WIDTH = 40;
 const STROKE_ALPHA = 0.6;
+// סלחנות למגע לא מדויק - רדיוס בפיקסלים מסביב למילה שעדיין "תופס" אותה, כי
+// אצבע אמיתית על מסך ענק אף פעם לא נוגעת בול במרכז המילה (בשונה מעכבר).
+const TOUCH_TOLERANCE_PX = 28;
 
 /** כפתור בצורת מרקר אמיתי - פקק, גוף עם השם כתוב עליו לאורך, וחוד, עם צל רך שנותן תחושת עומק. */
 function MarkerTool({
@@ -36,25 +39,26 @@ function MarkerTool({
   const capClass = tool === "green" ? "bg-green-900" : "bg-red-950";
   return (
     <button
-      className={`group flex flex-col items-center transition-all duration-200 active:scale-95 ${
-        active ? "-translate-y-3" : "hover:-translate-y-1"
+      // padding מסביב לצורה עצמה - מגדיל את שטח הנגיעה בפועל בלי לנפח חזותית את הציור.
+      className={`group flex flex-col items-center rounded-2xl p-3 transition-all duration-200 active:scale-95 ${
+        active ? "-translate-y-3 bg-white/10" : "hover:-translate-y-1 hover:bg-white/5"
       }`}
       onClick={onClick}
     >
       <div
-        className={`h-5 w-9 rounded-t-md border-2 border-black/30 ${capClass} transition-shadow ${
+        className={`h-6 w-12 rounded-t-md border-2 border-black/30 ${capClass} transition-shadow ${
           active ? "shadow-[0_0_18px_rgba(255,255,255,0.35)]" : ""
         }`}
       />
       <div
-        className={`flex h-20 w-9 items-center justify-center border-2 border-black/30 text-[11px] font-bold text-white/90 ${bodyClass}`}
+        className={`flex h-24 w-12 items-center justify-center border-2 border-black/30 text-sm font-bold text-white/90 ${bodyClass}`}
         style={{ writingMode: "vertical-rl" }}
       >
         {label}
       </div>
-      <div className={`h-4 w-7 ${bodyClass}`} style={{ clipPath: "polygon(50% 100%, 15% 0, 85% 0)" }} />
+      <div className={`h-5 w-9 ${bodyClass}`} style={{ clipPath: "polygon(50% 100%, 15% 0, 85% 0)" }} />
       <div
-        className={`mt-3 h-1.5 w-10 rounded-full transition-all duration-200 ${
+        className={`mt-3 h-1.5 w-12 rounded-full transition-all duration-200 ${
           active ? "bg-white shadow-[0_0_10px_rgba(255,255,255,0.7)]" : "bg-transparent"
         }`}
       />
@@ -66,19 +70,19 @@ function MarkerTool({
 function EraserTool({ active, onClick }: { active: boolean; onClick: () => void }) {
   return (
     <button
-      className={`group flex flex-col items-center transition-all duration-200 active:scale-95 ${
-        active ? "-translate-y-3" : "hover:-translate-y-1"
+      className={`group flex flex-col items-center rounded-2xl p-3 transition-all duration-200 active:scale-95 ${
+        active ? "-translate-y-3 bg-white/10" : "hover:-translate-y-1 hover:bg-white/5"
       }`}
       onClick={onClick}
     >
       <div
-        className={`h-11 w-16 rounded-md border-2 border-black/30 bg-linear-to-b from-pink-300 to-pink-100 transition-shadow ${
+        className={`h-16 w-20 rounded-md border-2 border-black/30 bg-linear-to-b from-pink-300 to-pink-100 transition-shadow ${
           active ? "shadow-[0_0_18px_rgba(255,255,255,0.35)]" : ""
         }`}
       />
-      <span className="mt-1 text-xs font-bold">מחק</span>
+      <span className="mt-2 text-sm font-bold">מחק</span>
       <div
-        className={`mt-2 h-1.5 w-10 rounded-full transition-all duration-200 ${
+        className={`mt-2 h-1.5 w-12 rounded-full transition-all duration-200 ${
           active ? "bg-white shadow-[0_0_10px_rgba(255,255,255,0.7)]" : "bg-transparent"
         }`}
       />
@@ -112,6 +116,13 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
  * ה"נייר" הלבן מתחת חיוני לאפקט: multiply על רקע כהה היה יוצא עכור, לא בהיר.
  * הנתון שנשמר עדיין ברמת מילה שלמה (marks[i]) כי זה מה שצריך לשלבים הבאים
  * (למשל טבלת הסנכרון); ה-canvas רק מצייר, ומשוחזר מ-marks בכל טעינה מחדש.
+ *
+ * נגישות למגע: זיהוי איזו מילה האצבע "מסמנת" לא מתבסס על פגיעה פיקסלית
+ * מדויקת (document.elementFromPoint) אלא על המילה הקרובה ביותר בתוך רדיוס
+ * סלחני (TOUCH_TOLERANCE_PX) - אצבע אמיתית על מסך ענק כמעט אף פעם לא נוגעת
+ * בול במרכז מילה קצרה. רשימת מיקומי המילים נמדדת פעם אחת בתחילת כל גרירה
+ * (cacheWordRects) ולא בכל תזוזה, כי המדידה (getBoundingClientRect) יקרה
+ * יותר מהחישוב הגיאומטרי עצמו והטקסט לא זז באמצע סימון.
  */
 function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
   const { top, loading: loadingTop } = useTopInspirations(workshopId);
@@ -124,6 +135,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
   const lastWordIndexRef = useRef<number | null>(null);
   const paperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wordRectsRef = useRef<{ index: number; rect: DOMRect }[]>([]);
 
   const words = useMemo(() => content.profile_text.split(/\s+/).filter(Boolean), [content.profile_text]);
   const loading = loadingTop || loadingMarks;
@@ -267,11 +279,40 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     ctx.restore();
   }
 
+  /** ממדדת את כל המילים פעם אחת בתחילת הגרירה - זול יותר מלמדוד מחדש בכל תזוזה, ומספיק כי הטקסט לא זז תוך כדי סימון. */
+  function cacheWordRects() {
+    const paper = paperRef.current;
+    if (!paper) return;
+    const elements = paper.querySelectorAll<HTMLElement>("[data-word-index]");
+    wordRectsRef.current = Array.from(elements).map((el) => ({
+      index: Number(el.dataset.wordIndex),
+      rect: el.getBoundingClientRect(),
+    }));
+  }
+
+  /**
+   * מוצאת את המילה הקרובה ביותר לנקודת המגע, לא רק מילה שנוגעים בה בול -
+   * זו הנגישות האמיתית פה: אצבע על מסך ענק כמעט אף פעם לא מדויקת פיקסל-פיקסל,
+   * אז מרחק עד TOUCH_TOLERANCE_PX מהמילה עדיין "תופס" אותה כאילו נגעו בה.
+   */
+  function nearestWordAt(clientX: number, clientY: number): number | null {
+    let bestIndex: number | null = null;
+    let bestDist = Infinity;
+    for (const { index, rect } of wordRectsRef.current) {
+      const dx = Math.max(rect.left - clientX, 0, clientX - rect.right);
+      const dy = Math.max(rect.top - clientY, 0, clientY - rect.bottom);
+      const dist = Math.hypot(dx, dy);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIndex = index;
+      }
+    }
+    return bestDist <= TOUCH_TOLERANCE_PX ? bestIndex : null;
+  }
+
   function updateWordAt(clientX: number, clientY: number, tool: Tool) {
-    const el = document.elementFromPoint(clientX, clientY);
-    const indexAttr = el?.closest<HTMLElement>("[data-word-index]")?.dataset.wordIndex;
-    if (indexAttr === undefined) return;
-    const index = Number(indexAttr);
+    const index = nearestWordAt(clientX, clientY);
+    if (index === null) return;
     if (lastWordIndexRef.current === index) return;
     lastWordIndexRef.current = index;
     markWord(index, tool === "eraser" ? null : tool);
@@ -279,6 +320,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
 
   function handlePaperPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     isDraggingRef.current = true;
+    cacheWordRects();
     const point = canvasPoint(e.clientX, e.clientY);
     lastPointRef.current = point;
     const tool = activeToolRef.current;
@@ -344,7 +386,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         ✏️ סמנו את הטקסט בגרירה, כמו במרקר אמיתי על דף
       </p>
 
-      <div className="flex items-end gap-8 rounded-2xl bg-black/15 px-8 py-5 shadow-inner shadow-black/30">
+      <div className="flex items-end gap-10 rounded-2xl bg-black/15 px-8 py-5 shadow-inner shadow-black/30">
         <MarkerTool tool="green" label="חוזקות" active={activeTool === "green"} onClick={() => setActiveTool("green")} />
         <MarkerTool tool="red" label="חסמים" active={activeTool === "red"} onClick={() => setActiveTool("red")} />
         <EraserTool active={activeTool === "eraser"} onClick={() => setActiveTool("eraser")} />
@@ -357,10 +399,10 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         onPointerDown={handlePaperPointerDown}
         onPointerMove={handlePaperPointerMove}
       >
-        <p className="relative text-xl leading-loose text-[#2b2620] select-none">
+        <p className="relative text-2xl leading-loose text-[#2b2620] select-none">
           {words.map((word, i) => (
             <span key={i}>
-              <span data-word-index={i} className="inline-block cursor-pointer px-0.5">
+              <span data-word-index={i} className="inline-block cursor-pointer px-0.5 py-0.5">
                 {word}
               </span>{" "}
             </span>
