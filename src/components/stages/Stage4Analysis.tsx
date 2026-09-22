@@ -21,9 +21,6 @@ const STROKE_COLOR: Record<"green" | "red", string> = {
   red: "#d9776a",
 };
 const STROKE_WIDTH = 40;
-// נקודה שמסמנת נגיעה בודדת בלי גרירה - קטנה במכוון מרוחב המשיכה המלא,
-// כדי שתיראה כמו "נגיעה קלה", לא בלוק ענק.
-const TAP_DOT_RADIUS = STROKE_WIDTH * 0.32;
 const STROKE_ALPHA = 0.65;
 // טשטוש עדין בקצוות המשיכה - כמו קצה לבד רך של מרקר אמיתי, לא צורת וקטור
 // גיאומטרית חדה. אם הדפדפן לא תומך ב-ctx.filter (מסך ישן) הוא פשוט מתעלם
@@ -126,6 +123,34 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
 }
 
 /**
+ * צובעת מלבן מעוגל שתפור למידות מילה ספציפית - לא עיגול גנרי בנקודת מגע.
+ * זה מה שגם נגיעה בודדת (בלי גרירה) מצייר בפועל: סימון בצורת המילה עצמה,
+ * לא כתם עגול צף שלא מתאים לכלום מסביבו.
+ */
+function fillWordShape(
+  ctx: CanvasRenderingContext2D,
+  wordEl: HTMLElement,
+  paperRect: DOMRect,
+  tool: "green" | "red" | "eraser",
+) {
+  const r = wordEl.getBoundingClientRect();
+  ctx.save();
+  if (tool === "eraser") {
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#000000";
+  } else {
+    ctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = STROKE_ALPHA;
+    ctx.filter = `blur(${STROKE_BLUR_PX}px)`;
+    ctx.fillStyle = STROKE_COLOR[tool];
+  }
+  roundRectPath(ctx, r.left - paperRect.left - 4, r.top - paperRect.top + r.height * 0.12, r.width + 8, r.height * 0.76, 8);
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
  * שלב 4 - ניתוח דילמה (שקף 6 במצגת, החלק הראשון בלבד - בלי טבלת הסנכרון
  * האוטומטית ותמונת התפקוד ב-AI משקף 7, שנבנים בנפרד בהמשך).
  *
@@ -201,27 +226,12 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // source-over ולא multiply: שני מלבנים סמוכים שנוגעים קצת אחד בשני לא
-    // אמורים "להכפיל" זה על זה ולהכהות - ראו הסבר מלא ליד strokeTo למטה.
-    ctx.globalCompositeOperation = "source-over";
-    ctx.globalAlpha = STROKE_ALPHA;
-    ctx.filter = `blur(${STROKE_BLUR_PX}px)`;
     const paperRect = paper.getBoundingClientRect();
     marksArray.forEach((color, i) => {
       if (!color) return;
       const wordEl = paper.querySelector<HTMLElement>(`[data-word-index="${i}"]`);
       if (!wordEl) return;
-      const r = wordEl.getBoundingClientRect();
-      ctx.fillStyle = STROKE_COLOR[color];
-      roundRectPath(
-        ctx,
-        r.left - paperRect.left - 4,
-        r.top - paperRect.top + r.height * 0.12,
-        r.width + 8,
-        r.height * 0.76,
-        8,
-      );
-      ctx.fill();
+      fillWordShape(ctx, wordEl, paperRect, color);
     });
     ctx.restore();
   }
@@ -281,15 +291,16 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
   }
 
   /**
-   * מושכת קו חלק (round cap/join) בין שתי נקודות - זה מה שהופך גרירה מהירה
-   * לקו רציף במקום נקודות מרוסקות.
+   * מושכת קו חלק (round cap/join) בין שתי נקודות תוך כדי גרירה בפועל - זה מה
+   * שהופך גרירה מהירה על פני כמה מילים לקו רציף במקום נקודות מרוסקות. לא
+   * נקראת בכלל בנגיעה בודדת בלי תזוזה - זו רק updateWordAt+fillWordShape.
    *
    * שימו לב: source-over ולא multiply. multiply על ה-canvas עצמו (לא כמו
    * mix-blend-mode ב-CSS) מכפיל כל משיכה חדשה בפיקסלים שכבר צוירו *על אותו
-   * canvas* - כשנוגעים פעם אחת בלי כמעט לזוז, כל תזוזת עכבר/אצבע קטנה גוררת
-   * ctx.arc נוסף בערך על אותה נקודה, וכל "מכפלה" כזו מכהה עוד קצת, עד שהצבע
-   * מתכנס לשחור. source-over עם שקיפות פשוט מתכנס לצבע המרקר המלא כשחוזרים
-   * על אותו מקום - בדיוק ההתנהגות שמצפים לה ממרקר אמיתי, לא הכהיה.
+   * canvas* - קטעי קו סמוכים שחופפים קצת אחד בשני (טבעי בגרירה איטית) היו
+   * "מכפילים" זה את זה ומתכהים עד שחור. source-over עם שקיפות פשוט מתכנס
+   * לצבע המרקר המלא כשחוזרים על אותו מקום - בדיוק ההתנהגות שמצפים לה ממרקר
+   * אמיתי, לא הכהיה.
    */
   function strokeTo(from: { x: number; y: number }, to: { x: number; y: number }, tool: Tool) {
     const ctx = getContext();
@@ -314,13 +325,6 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
     ctx.stroke();
-    // נקודה קטנה גם בתחילת המשיכה, כדי שנגיעה בודדת (בלי תזוזה) תשאיר סימון
-    // עדין, לא כלום - אבל לא ברוחב המשיכה המלא, כדי שלא תיראה כמו בלוק ענק.
-    // בגרירה בפועל ה"עיגול" הזה נבלע לגמרי בתוך הקו עצמו (שרחב ממנו), כי
-    // ל-lineCap/lineJoin round כבר יש קצוות עגולים ברוחב המלא בכל מקרה.
-    ctx.beginPath();
-    ctx.arc(to.x, to.y, TAP_DOT_RADIUS, 0, Math.PI * 2);
-    ctx.fill();
     ctx.restore();
   }
 
@@ -355,23 +359,32 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     return bestDist <= TOUCH_TOLERANCE_PX ? bestIndex : null;
   }
 
+  /**
+   * מסמנת מילה שנחדשה - הן בנתון והן ויזואלית, מיד, בלי לחכות לסבב
+   * mutate/realtime. הציור המיידי הוא בצורת המילה עצמה (fillWordShape,
+   * אותה פונקציה בדיוק כמו בשחזור), לא עיגול/פס גנרי בנקודת המגע - כדי
+   * שגם נגיעה בודדת בלי שום גרירה תיראה כמו הדגשת מילה אמיתית, לא כתם.
+   */
   function updateWordAt(clientX: number, clientY: number, tool: Tool) {
     const index = nearestWordAt(clientX, clientY);
     if (index === null) return;
     if (lastWordIndexRef.current === index) return;
     lastWordIndexRef.current = index;
     markWord(index, tool === "eraser" ? null : tool);
+    const ctx = getContext();
+    const paper = paperRef.current;
+    const wordEl = paper?.querySelector<HTMLElement>(`[data-word-index="${index}"]`);
+    if (ctx && paper && wordEl) {
+      fillWordShape(ctx, wordEl, paper.getBoundingClientRect(), tool);
+    }
   }
 
   function handlePaperPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     isDraggingRef.current = true;
     cacheWordRects();
-    const point = canvasPoint(e.clientX, e.clientY);
-    lastPointRef.current = point;
-    const tool = activeToolRef.current;
-    strokeTo(point, point, tool);
+    lastPointRef.current = canvasPoint(e.clientX, e.clientY);
     lastWordIndexRef.current = null;
-    updateWordAt(e.clientX, e.clientY, tool);
+    updateWordAt(e.clientX, e.clientY, activeToolRef.current);
   }
 
   function handlePaperPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
@@ -453,7 +466,8 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         <p className="relative text-2xl leading-loose text-[#2b2620] select-none">
           {words.map((word, i) => (
             <span key={i}>
-              <span data-word-index={i} className="inline-block cursor-pointer px-0.5 py-0.5">
+              {/* בלי cursor-pointer כאן בכוונה - היה דורס את סמן המכחול המותאם-אישית שמוגדר על תיבת הנייר כולה. */}
+              <span data-word-index={i} className="inline-block px-0.5 py-0.5">
                 {word}
               </span>{" "}
             </span>
