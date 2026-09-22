@@ -21,11 +21,29 @@ const STROKE_COLOR: Record<"green" | "red", string> = {
   red: "#d9776a",
 };
 const STROKE_WIDTH = 40;
+// נקודה שמסמנת נגיעה בודדת בלי גרירה - קטנה במכוון מרוחב המשיכה המלא,
+// כדי שתיראה כמו "נגיעה קלה", לא בלוק ענק.
+const TAP_DOT_RADIUS = STROKE_WIDTH * 0.32;
 const STROKE_ALPHA = 0.65;
 // טשטוש עדין בקצוות המשיכה - כמו קצה לבד רך של מרקר אמיתי, לא צורת וקטור
 // גיאומטרית חדה. אם הדפדפן לא תומך ב-ctx.filter (מסך ישן) הוא פשוט מתעלם
 // ממנו ומצייר בלי טשטוש - לא נשבר, רק פחות רך.
 const STROKE_BLUR_PX = 2.5;
+const ERASER_CURSOR_COLOR = "#f6b8c4";
+
+/**
+ * הופכת את סמן העכבר עצמו למכחול קטן בצבע הכלי הפעיל, עם החוד (hotspot -
+ * הנקודה שבאמת "לוחצת") בקצה התחתון של הצורה - כדי שיהיה ברור בדיוק איפה
+ * נוגעים, בלי להסתמך רק על העיגול שמצטייר בפועל בקנבס.
+ */
+function brushCursor(color: string): string {
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="36" viewBox="0 0 26 36">` +
+    `<rect x="5" y="1" width="16" height="19" rx="3" fill="${color}" stroke="white" stroke-width="2"/>` +
+    `<polygon points="5,20 21,20 13,33" fill="${color}" stroke="white" stroke-width="2" stroke-linejoin="round"/>` +
+    `</svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 13 33, auto`;
+}
 // סלחנות למגע לא מדויק - רדיוס בפיקסלים מסביב למילה שעדיין "תופס" אותה, כי
 // אצבע אמיתית על מסך ענק אף פעם לא נוגעת בול במרכז המילה (בשונה מעכבר).
 const TOUCH_TOLERANCE_PX = 28;
@@ -296,9 +314,12 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
     ctx.stroke();
-    // נקודה עגולה גם בתחילת המשיכה, כדי שנגיעה בודדת (בלי תזוזה) תשאיר סימון עגול, לא כלום.
+    // נקודה קטנה גם בתחילת המשיכה, כדי שנגיעה בודדת (בלי תזוזה) תשאיר סימון
+    // עדין, לא כלום - אבל לא ברוחב המשיכה המלא, כדי שלא תיראה כמו בלוק ענק.
+    // בגרירה בפועל ה"עיגול" הזה נבלע לגמרי בתוך הקו עצמו (שרחב ממנו), כי
+    // ל-lineCap/lineJoin round כבר יש קצוות עגולים ברוחב המלא בכל מקרה.
     ctx.beginPath();
-    ctx.arc(to.x, to.y, STROKE_WIDTH / 2, 0, Math.PI * 2);
+    ctx.arc(to.x, to.y, TAP_DOT_RADIUS, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -419,7 +440,13 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
       <div
         ref={paperRef}
         className="relative w-full max-w-2xl rounded-3xl p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.55)]"
-        style={{ background: "linear-gradient(180deg, #fdfbf5 0%, #f3ede0 100%)", touchAction: "none" }}
+        style={{
+          background: "linear-gradient(180deg, #fdfbf5 0%, #f3ede0 100%)",
+          touchAction: "none",
+          // סמן העכבר עצמו הופך למכחול בצבע הכלי הפעיל - כדי שיהיה ברור על מה
+          // בדיוק לוחצים בלי להסתמך על נקודה שמצטיירת רק אחרי הלחיצה עצמה.
+          cursor: brushCursor(activeTool === "eraser" ? ERASER_CURSOR_COLOR : STROKE_COLOR[activeTool]),
+        }}
         onPointerDown={handlePaperPointerDown}
         onPointerMove={handlePaperPointerMove}
       >
