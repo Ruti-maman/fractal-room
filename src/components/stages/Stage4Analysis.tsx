@@ -110,10 +110,11 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
  * אדום לחסמים, עם כלי מחק נפרד (לפי ההחלטה בסעיף 12 ב-CLAUDE.md: סימון
  * מילה-מילה בגרירה, לא בחירת התחלה/סוף).
  *
- * הצביעה בפועל היא ציור freehand על canvas שקוף שיושב מעל הטקסט, עם
- * mix-blend-mode: multiply (בדיוק כמו מרקר אמיתי על דף - הצבע נספג ב"נייר"
- * והטקסט מתחתיו נשאר קריא) - לא עוד צביעת רקע דיסקרטית של כל מילה בנפרד.
- * ה"נייר" הלבן מתחת חיוני לאפקט: multiply על רקע כהה היה יוצא עכור, לא בהיר.
+ * הצביעה בפועל היא ציור freehand על canvas שקוף שיושב מעל הטקסט, בצבע
+ * מרקר עם שקיפות (לא צבע מלא) כדי שהטקסט מתחתיו יישאר קריא - לא עוד צביעת
+ * רקע דיסקרטית של כל מילה בנפרד. חשוב: הציור עצמו הוא source-over רגיל,
+ * לא multiply - ראו הסבר מפורט ליד strokeTo (multiply-על-canvas גרם לסימון
+ * להכהות עד שחור כשחוזרים על אותו מקום, למשל בנגיעה בודדת בלי גרירה).
  * הנתון שנשמר עדיין ברמת מילה שלמה (marks[i]) כי זה מה שצריך לשלבים הבאים
  * (למשל טבלת הסנכרון); ה-canvas רק מצייר, ומשוחזר מ-marks בכל טעינה מחדש.
  *
@@ -175,7 +176,9 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.globalCompositeOperation = "multiply";
+    // source-over ולא multiply: שני מלבנים סמוכים שנוגעים קצת אחד בשני לא
+    // אמורים "להכפיל" זה על זה ולהכהות - ראו הסבר מלא ליד strokeTo למטה.
+    ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = STROKE_ALPHA;
     const paperRect = paper.getBoundingClientRect();
     marksArray.forEach((color, i) => {
@@ -251,7 +254,17 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     return { x: clientX - rect.left, y: clientY - rect.top };
   }
 
-  /** מושכת קו חלק (round cap/join) בין שתי נקודות - זה מה שהופך גרירה מהירה לקו רציף במקום נקודות מרוסקות. */
+  /**
+   * מושכת קו חלק (round cap/join) בין שתי נקודות - זה מה שהופך גרירה מהירה
+   * לקו רציף במקום נקודות מרוסקות.
+   *
+   * שימו לב: source-over ולא multiply. multiply על ה-canvas עצמו (לא כמו
+   * mix-blend-mode ב-CSS) מכפיל כל משיכה חדשה בפיקסלים שכבר צוירו *על אותו
+   * canvas* - כשנוגעים פעם אחת בלי כמעט לזוז, כל תזוזת עכבר/אצבע קטנה גוררת
+   * ctx.arc נוסף בערך על אותה נקודה, וכל "מכפלה" כזו מכהה עוד קצת, עד שהצבע
+   * מתכנס לשחור. source-over עם שקיפות פשוט מתכנס לצבע המרקר המלא כשחוזרים
+   * על אותו מקום - בדיוק ההתנהגות שמצפים לה ממרקר אמיתי, לא הכהיה.
+   */
   function strokeTo(from: { x: number; y: number }, to: { x: number; y: number }, tool: Tool) {
     const ctx = getContext();
     if (!ctx) return;
@@ -264,7 +277,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
       ctx.globalAlpha = 1;
       ctx.strokeStyle = "#000000";
     } else {
-      ctx.globalCompositeOperation = "multiply";
+      ctx.globalCompositeOperation = "source-over";
       ctx.globalAlpha = STROKE_ALPHA;
       ctx.strokeStyle = STROKE_COLOR[tool];
     }
