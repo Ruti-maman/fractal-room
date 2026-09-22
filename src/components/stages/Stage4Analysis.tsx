@@ -13,12 +13,19 @@ interface Props {
 
 type Tool = "green" | "red" | "eraser";
 
+// צבעי דיו רכים וטבעיים - כמו מרקר אמיתי על נייר, לא ירוק/אדום רוויים
+// וחדים. כפתורי הכלים עצמם (MarkerTool) נשארים בצבע בולט יותר לזיהוי נוח,
+// אבל מה שנצבע בפועל על הדף רך יותר לעין.
 const STROKE_COLOR: Record<"green" | "red", string> = {
-  green: "#3ba35a",
-  red: "#c9463f",
+  green: "#7fb069",
+  red: "#d9776a",
 };
 const STROKE_WIDTH = 40;
-const STROKE_ALPHA = 0.6;
+const STROKE_ALPHA = 0.65;
+// טשטוש עדין בקצוות המשיכה - כמו קצה לבד רך של מרקר אמיתי, לא צורת וקטור
+// גיאומטרית חדה. אם הדפדפן לא תומך ב-ctx.filter (מסך ישן) הוא פשוט מתעלם
+// ממנו ומצייר בלי טשטוש - לא נשבר, רק פחות רך.
+const STROKE_BLUR_PX = 2.5;
 // סלחנות למגע לא מדויק - רדיוס בפיקסלים מסביב למילה שעדיין "תופס" אותה, כי
 // אצבע אמיתית על מסך ענק אף פעם לא נוגעת בול במרכז המילה (בשונה מעכבר).
 const TOUCH_TOLERANCE_PX = 28;
@@ -180,6 +187,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     // אמורים "להכפיל" זה על זה ולהכהות - ראו הסבר מלא ליד strokeTo למטה.
     ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = STROKE_ALPHA;
+    ctx.filter = `blur(${STROKE_BLUR_PX}px)`;
     const paperRect = paper.getBoundingClientRect();
     marksArray.forEach((color, i) => {
       if (!color) return;
@@ -280,6 +288,9 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
       ctx.globalCompositeOperation = "source-over";
       ctx.globalAlpha = STROKE_ALPHA;
       ctx.strokeStyle = STROKE_COLOR[tool];
+      // רק בצביעה, לא במחיקה - קצה רך כמו לבד של מרקר אמיתי. במחיקה קצה
+      // מטושטש היה משאיר "רוח רפאים" דהויה של הצבע במקום למחוק אותו נקי.
+      ctx.filter = `blur(${STROKE_BLUR_PX}px)`;
     }
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
