@@ -7,8 +7,10 @@
 @theme {
   --color-smoke-blue: #3a5a6b;
   --color-smoke-blue-dark: #24404e;
+  --color-smoke-blue-darker: #16262e;
   --color-wood: #8b6f4e;
   --color-wood-dark: #6b5439;
+  --color-wood-light: #b89968;
   --color-accent-red: #b23a3a;
 
   /* TODO: להחליף לפונט מקומי אמיתי כשיגיע קובץ המיתוג (סעיף 10) - כרגע גופן מערכת בלבד */

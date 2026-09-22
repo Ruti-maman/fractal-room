@@ -20,7 +20,7 @@ const STROKE_COLOR: Record<"green" | "red", string> = {
 const STROKE_WIDTH = 30;
 const STROKE_ALPHA = 0.6;
 
-/** כפתור בצורת מרקר אמיתי - פקק, גוף עם השם כתוב עליו לאורך, וחוד. */
+/** כפתור בצורת מרקר אמיתי - פקק, גוף עם השם כתוב עליו לאורך, וחוד, עם צל רך שנותן תחושת עומק. */
 function MarkerTool({
   tool,
   label,
@@ -36,10 +36,16 @@ function MarkerTool({
   const capClass = tool === "green" ? "bg-green-900" : "bg-red-950";
   return (
     <button
-      className={`flex flex-col items-center transition-transform active:scale-95 ${active ? "-translate-y-2" : ""}`}
+      className={`group flex flex-col items-center transition-all duration-200 active:scale-95 ${
+        active ? "-translate-y-3" : "hover:-translate-y-1"
+      }`}
       onClick={onClick}
     >
-      <div className={`h-5 w-9 rounded-t-md border-2 border-black/30 ${capClass}`} />
+      <div
+        className={`h-5 w-9 rounded-t-md border-2 border-black/30 ${capClass} transition-shadow ${
+          active ? "shadow-[0_0_18px_rgba(255,255,255,0.35)]" : ""
+        }`}
+      />
       <div
         className={`flex h-20 w-9 items-center justify-center border-2 border-black/30 text-[11px] font-bold text-white/90 ${bodyClass}`}
         style={{ writingMode: "vertical-rl" }}
@@ -47,7 +53,11 @@ function MarkerTool({
         {label}
       </div>
       <div className={`h-4 w-7 ${bodyClass}`} style={{ clipPath: "polygon(50% 100%, 15% 0, 85% 0)" }} />
-      <div className={`mt-2 h-1 w-8 rounded-full ${active ? "bg-white" : "bg-transparent"}`} />
+      <div
+        className={`mt-3 h-1.5 w-10 rounded-full transition-all duration-200 ${
+          active ? "bg-white shadow-[0_0_10px_rgba(255,255,255,0.7)]" : "bg-transparent"
+        }`}
+      />
     </button>
   );
 }
@@ -56,12 +66,22 @@ function MarkerTool({
 function EraserTool({ active, onClick }: { active: boolean; onClick: () => void }) {
   return (
     <button
-      className={`flex flex-col items-center transition-transform active:scale-95 ${active ? "-translate-y-2" : ""}`}
+      className={`group flex flex-col items-center transition-all duration-200 active:scale-95 ${
+        active ? "-translate-y-3" : "hover:-translate-y-1"
+      }`}
       onClick={onClick}
     >
-      <div className="h-11 w-16 rounded-md border-2 border-black/30 bg-linear-to-b from-pink-300 to-pink-100" />
+      <div
+        className={`h-11 w-16 rounded-md border-2 border-black/30 bg-linear-to-b from-pink-300 to-pink-100 transition-shadow ${
+          active ? "shadow-[0_0_18px_rgba(255,255,255,0.35)]" : ""
+        }`}
+      />
       <span className="mt-1 text-xs font-bold">מחק</span>
-      <div className={`mt-1 h-1 w-8 rounded-full ${active ? "bg-white" : "bg-transparent"}`} />
+      <div
+        className={`mt-2 h-1.5 w-10 rounded-full transition-all duration-200 ${
+          active ? "bg-white shadow-[0_0_10px_rgba(255,255,255,0.7)]" : "bg-transparent"
+        }`}
+      />
     </button>
   );
 }
@@ -276,36 +296,55 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     updateWordAt(e.clientX, e.clientY, tool);
   }
 
+  const pageBackground = {
+    background:
+      "radial-gradient(circle at 50% 15%, var(--color-smoke-blue) 0%, var(--color-smoke-blue-dark) 45%, var(--color-smoke-blue-darker) 100%)",
+  };
+
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-xl">טוענת...</p>
+      <main className="flex min-h-screen items-center justify-center" style={pageBackground}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-wood-light" />
+          <p className="text-xl text-white/80">טוענת...</p>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center gap-6 p-8">
-      <h1 className="text-2xl font-bold">ניתוח דילמה</h1>
+    <main className="flex min-h-screen flex-col items-center gap-7 p-8" style={pageBackground}>
+      <div className="flex flex-col items-center gap-1 text-center">
+        <h1 className="text-3xl font-bold tracking-tight">ניתוח דילמה</h1>
+        <p className="text-sm text-white/50">שקף 6 - זיהוי חוזקות וחסמים</p>
+      </div>
 
-      <div className="fixed top-6 left-6 max-w-xs rounded-xl bg-white/10 px-4 py-3 text-sm">
-        <p className="mb-2 font-bold">4 ההשראות המובילות</p>
+      <div className="fixed top-6 left-6 w-64 rounded-2xl border border-wood/30 bg-smoke-blue-darker/80 p-4 shadow-xl backdrop-blur-sm">
+        <div className="mb-3 flex items-center gap-2 border-b border-white/10 pb-2">
+          <span className="text-xl">🏆</span>
+          <p className="font-bold">4 ההשראות המובילות</p>
+        </div>
         {top.length === 0 ? (
-          <p className="text-white/50">עדיין לא נבחרו השראות אצל אף קבוצה</p>
+          <p className="text-sm text-white/50">עדיין לא נבחרו השראות אצל אף קבוצה</p>
         ) : (
-          <ol className="list-decimal space-y-1 pr-4">
+          <ol className="flex flex-col gap-1.5">
             {top.map((text, i) => (
-              <li key={i}>{text}</li>
+              <li key={i} className="flex items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1.5 text-sm">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-wood text-[11px] font-bold text-white">
+                  {i + 1}
+                </span>
+                <span className="truncate">{text}</span>
+              </li>
             ))}
           </ol>
         )}
       </div>
 
-      <p className="max-w-lg text-center text-sm text-white/60">
-        סמנו את הטקסט בגרירה, כמו במרקר אמיתי על דף.
+      <p className="rounded-full bg-white/5 px-5 py-2 text-sm text-white/70">
+        ✏️ סמנו את הטקסט בגרירה, כמו במרקר אמיתי על דף
       </p>
 
-      <div className="flex items-end gap-6">
+      <div className="flex items-end gap-8 rounded-2xl bg-black/15 px-8 py-5 shadow-inner shadow-black/30">
         <MarkerTool tool="green" label="חוזקות" active={activeTool === "green"} onClick={() => setActiveTool("green")} />
         <MarkerTool tool="red" label="חסמים" active={activeTool === "red"} onClick={() => setActiveTool("red")} />
         <EraserTool active={activeTool === "eraser"} onClick={() => setActiveTool("eraser")} />
@@ -313,8 +352,8 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
 
       <div
         ref={paperRef}
-        className="relative max-w-2xl rounded-2xl p-8 shadow-2xl"
-        style={{ background: "linear-gradient(180deg, #fbf8f1 0%, #f3ede0 100%)", touchAction: "none" }}
+        className="relative w-full max-w-2xl rounded-3xl p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.55)]"
+        style={{ background: "linear-gradient(180deg, #fdfbf5 0%, #f3ede0 100%)", touchAction: "none" }}
         onPointerDown={handlePaperPointerDown}
         onPointerMove={handlePaperPointerMove}
       >
@@ -331,10 +370,11 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
       </div>
 
       <button
-        className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-10 py-5 text-xl font-bold transition-transform duration-100 active:scale-90"
+        className="bg-smoke-blue active:bg-smoke-blue-dark flex items-center gap-2 rounded-xl px-10 py-5 text-xl font-bold shadow-lg shadow-black/30 transition-transform duration-100 hover:-translate-y-0.5 active:scale-90"
         onClick={onAdvance}
       >
         הבא
+        <span aria-hidden="true">←</span>
       </button>
     </main>
   );
