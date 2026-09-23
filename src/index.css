@@ -32,3 +32,136 @@ body {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/*
+ * ספריית אנימציות משותפת - CSS טהור, בלי ספרייה חיצונית (אין CDN, ראו
+ * סעיף 2 ב-CLAUDE.md). מוגדרות פעם אחת כאן כדי שכל שלב עתידי שרוצה את אותה
+ * "שפת עיצוב" (פופ-אפים/כרטיסים שקופצים בעדינות) יוכל להשתמש דרך
+ * animate-[pop-in_...] וכו', בלי לשכפל keyframes בכל קומפוננטה.
+ */
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.75) translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shake-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-10px);
+  }
+  40% {
+    transform: translateX(9px);
+  }
+  60% {
+    transform: translateX(-6px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes success-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 44px 12px rgba(74, 222, 128, 0.3);
+  }
+}
+
+/* כניסה רכה מלמטה - לשימוש עם animation-delay מדורג, כדי שהדף "יתרכב" בעדינות. */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* כתמי האור הגדולים ברקע - תנועה איטית מאוד שנותנת תחושת "חיים" בלי להסיח. */
+@keyframes aurora-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(6%, -5%) scale(1.15);
+  }
+}
+
+/* גרגרי אבק שמרחפים למעלה - קישוט אווירה. */
+@keyframes float-mote {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  15% {
+    opacity: 0.7;
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-160px) scale(1.1);
+  }
+}
+
+/* נצנוץ שעובר על פני כפתור/כרטיס - "ברק" עדין. */
+@keyframes shine-sweep {
+  0% {
+    transform: translateX(-160%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(260%) skewX(-20deg);
+  }
+}
+
+/* נשימה עדינה - לזוהר שמאחורי אלמנט מרכזי. */
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.08);
+  }
+}

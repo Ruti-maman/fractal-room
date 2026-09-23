@@ -4,9 +4,16 @@ import type { MediaItem } from "../types/media";
 
 const SAFETY_NET_INTERVAL_MS = 1500;
 
-/** שולפת ומסנכרנת את קבצי המדיה (סרטוני סימולציה) של שלב נתון בהפעלה. */
+/**
+ * שולפת ומסנכרנת את קבצי המדיה (סרטוני סימולציה) של שלב נתון בהפעלה.
+ *
+ * מחזירה גם `loading`, וזה לא קישוט: לפני שהשליפה הראשונה חוזרת הרשימה
+ * ריקה, וקוד שמחליט לפיה איזה מסך להציג יראה לרגע את המסך הלא נכון ואז
+ * יחליף אותו. בשלב 7 זה גרם למסך ההוראות להופיע לשנייה ואז להיעלם.
+ */
 export function useMedia(workshopId: string, stageNumber: number) {
   const [items, setItems] = useState<MediaItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function refetch() {
@@ -16,6 +23,7 @@ export function useMedia(workshopId: string, stageNumber: number) {
         .eq("workshop_id", workshopId)
         .eq("stage_number", stageNumber);
       if (data) setItems(data);
+      setLoading(false);
     }
 
     refetch();
@@ -36,5 +44,5 @@ export function useMedia(workshopId: string, stageNumber: number) {
     };
   }, [workshopId, stageNumber]);
 
-  return items;
+  return { items, loading };
 }

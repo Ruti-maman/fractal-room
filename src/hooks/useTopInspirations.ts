@@ -3,16 +3,22 @@ import { supabase } from "../lib/supabase";
 
 const SAFETY_NET_INTERVAL_MS = 1500;
 
+export interface RankedInspiration {
+  text: string;
+  count: number;
+}
+
 /**
  * מחשבת אילו השראות משלב 3 נבחרו הכי הרבה בסך הכל, אצל כל הקבוצות יחד (לא
- * רק אצל הקבוצה שלנו) - לתיבה "4 ההשראות מהסעיף הקודם" בראש שלב 4 (שקף 6
- * במצגת). ממוינת מהכי-נבחרת למעלה.
+ * רק אצל הקבוצה שלנו) - למד "סולם ההשראות" שמוצג משקף 6 ואילך על כל המסכים
+ * (ראו InspirationsLadder + StageRouter). ממוינת מהכי-נבחרת למעלה, עם המספר
+ * עצמו (count) כדי שאפשר יהיה לצייר את הסולם באורך יחסי לפי פופולריות.
  *
  * קוראת גם את טקסט ההשראות המשותף (useInspirations) וגם את כל שורות הבחירה
  * הנפרדות של כל קבוצה (useInspirationSelection, אחת לכל group_id) ומצרפת.
  */
 export function useTopInspirations(workshopId: string, limit = 4) {
-  const [top, setTop] = useState<string[]>([]);
+  const [items, setItems] = useState<RankedInspiration[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,8 +39,8 @@ export function useTopInspirations(workshopId: string, limit = 4) {
           .eq("type", "inspirations_selection"),
       ]);
 
-      const items = (textRow?.data as { items?: { text: string }[] } | null)?.items ?? [];
-      const counts = new Array(items.length).fill(0);
+      const rows = (textRow?.data as { items?: { text: string }[] } | null)?.items ?? [];
+      const counts = new Array(rows.length).fill(0);
       for (const row of selectionRows ?? []) {
         const selected = (row.data as { selected?: number[] })?.selected ?? [];
         for (const index of selected) {
@@ -43,13 +49,13 @@ export function useTopInspirations(workshopId: string, limit = 4) {
       }
 
       const ranked = counts
-        .map((count, index) => ({ index, count, text: items[index]?.text ?? "" }))
+        .map((count, index) => ({ index, count, text: rows[index]?.text ?? "" }))
         .filter((r) => r.text.trim() && r.count > 0)
         .sort((a, b) => b.count - a.count || a.index - b.index)
         .slice(0, limit)
-        .map((r) => r.text);
+        .map((r) => ({ text: r.text, count: r.count }));
 
-      setTop(ranked);
+      setItems(ranked);
       setLoading(false);
     }
 
@@ -72,5 +78,5 @@ export function useTopInspirations(workshopId: string, limit = 4) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workshopId, limit]);
 
-  return { top, loading };
+  return { items, loading };
 }

@@ -15,6 +15,8 @@ import Stage8Winner from "./stages/Stage8Winner";
 import Stage10Principles from "./stages/Stage10Principles";
 import Timer from "./Timer";
 import ProgressBar from "./ProgressBar";
+import InspirationsLadder from "./InspirationsLadder";
+import PracticalConclusionBanner from "./PracticalConclusionBanner";
 import type { Stage1Content } from "../types/stage1Content";
 import type { Stage3Content } from "../types/stage3Content";
 import type { Stage4Content } from "../types/stage4Content";
@@ -168,9 +170,23 @@ function StageRouter({
       />
     );
 
+  // סולם ההשראות מוצג מכאן, גלובלית לכל קומפוננטות השלב (לא כפול בכל אחת
+  // בנפרד) - לפי בקשת הלקוחה: משלב 4 (שקף 6) ועד סוף הסדנה. שלב 9 מוחרג כי
+  // הוא לא מוצג על המסך בכלל (שאלון שממולא מאחורי הקלעים, ראו content שלו).
+  const showInspirationsLadder = stage.stage_number >= 4 && stage.stage_number !== 9;
+
+  // "מסקנה מעשית" (תמונת התפקוד שנוסחה ב-AI בשלב 4) מלווה את כל השלבים
+  // הבאים - החל משלב 5 ואילך, לא בשלב 4 עצמו (שם היא מוצגת בתוך המסך
+  // הפנימי של Stage4Analysis כחלק מהזרימה, לא כרצועה חוזרת).
+  const showPracticalConclusion = stage.stage_number > 4 && stage.stage_number !== 9;
+
   return (
     <>
       {stageContent}
+      {showInspirationsLadder && <InspirationsLadder workshopId={workshopId} />}
+      {showPracticalConclusion && (
+        <PracticalConclusionBanner workshopId={workshopId} groupId={myGroup.id} />
+      )}
       {stage.stage_number !== 1 && progressBar}
       {effectiveStartedAt && stage.duration_minutes && (
         <Timer startedAt={effectiveStartedAt} durationMinutes={stage.duration_minutes} />

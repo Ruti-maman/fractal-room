@@ -3,18 +3,40 @@ import { supabase } from "../lib/supabase";
 
 export type MarkColor = "green" | "red" | null;
 
+/** קטע טקסט רציף שסומן ותויג בקטגוריה - נוצר ברגע שמסיימים גרירה על טקסט לא-מסומן. */
+export interface TaggedPhrase {
+  id: string;
+  color: "green" | "red";
+  category: string;
+  text: string;
+  startIndex: number;
+  endIndex: number;
+}
+
+export interface MarkingState {
+  marks: MarkColor[];
+  phrases: TaggedPhrase[];
+}
+
 const SAFETY_NET_INTERVAL_MS = 1500;
+const EMPTY_STATE: MarkingState = { marks: [], phrases: [] };
 
 /**
  * סימוני המרקר (ירוק=חוזקות, אדום=חסמים) על טקסט הפרופיל בשלב 4 - נפרד
  * לכל קבוצה, כי כאן (בשונה משלב 3) כל קבוצה מסמנת בעצמה את הטקסט שלה.
- * marks[i] הוא הצבע של מילה מספר i (או null אם לא סומנה).
+ * marks[i] הוא הצבע של האות מספר i בטקסט, לא ספירת רווחים (או null אם לא סומנה).
+ * הסימון ברמת אות ולא ברמת מילה שלמה, כדי שהגרירה תדגיש בדיוק את מה
+ * שהאצבע עברה עליו - כמו מרקר אמיתי, לא קפיצה מיידית למילה שלמה.
  *
- * מחזירה mutate שכותב את כל המערך בבת אחת - הקומפוננטה אוגרת שינויים מקומית
- * תוך כדי גרירה ושומרת רק פעם אחת בסיום הגרירה, כדי לא להציף את השרת בכתיבות.
+ * phrases הם הקטעים הרציפים שכבר תויגו בקטגוריה (שקף 7 - טבלת הסנכרון):
+ * כל קטע נוצר ומתויג ברגע שמסתיימת גרירה שצבעה טקסט חדש, לא בדיעבד.
+ *
+ * מחזירה mutate שכותב את כל המצב (marks+phrases) בבת אחת - הקומפוננטה אוגרת
+ * שינויים מקומית תוך כדי גרירה ושומרת רק פעם אחת בסיום הגרירה, כדי לא
+ * להציף את השרת בכתיבות.
  */
 export function useTextMarking(workshopId: string, groupId: string) {
-  const [marks, setMarks] = useState<MarkColor[]>([]);
+  const [state, setState] = useState<MarkingState>(EMPTY_STATE);
   const [loading, setLoading] = useState(true);
   // דוחה תשובות "ישנות": אם גרירה מהירה כותבת פעמיים ברצף, יש סיכוי של ממש
   // שה-poll התקופתי (לא ה-mutate עצמו, שכבר קורא טרי לפני כתיבה) יחזיר תשובה
@@ -39,12 +61,16 @@ export function useTextMarking(workshopId: string, groupId: string) {
     return { data: data?.[0] ?? null, error };
   }
 
+  function readState(data: { marks?: MarkColor[]; phrases?: TaggedPhrase[] } | undefined): MarkingState {
+    return { marks: data?.marks ?? [], phrases: data?.phrases ?? [] };
+  }
+
   useEffect(() => {
     async function refetch() {
       const opId = ++latestOpRef.current;
       const { data } = await fetchRow();
       if (opId !== latestOpRef.current) return; // מישהי חדשה יותר (mutate או refetch) כבר התחילה - זו תשובה ישנה
-      if (data) setMarks((data.data as { marks: MarkColor[] }).marks ?? []);
+      if (data) setState(readState(data.data as { marks?: MarkColor[]; phrases?: TaggedPhrase[] }));
       setLoading(false);
     }
 
@@ -61,10 +87,10 @@ export function useTextMarking(workshopId: string, groupId: string) {
             stage_number: number;
             type: string;
             group_id: string;
-            data: { marks: MarkColor[] };
+            data: { marks?: MarkColor[]; phrases?: TaggedPhrase[] };
           };
           if (row?.stage_number === 4 && row?.type === "text_marking" && row?.group_id === groupId) {
-            setMarks(row.data.marks ?? []);
+            setState(readState(row.data));
           }
         },
       )
@@ -77,15 +103,15 @@ export function useTextMarking(workshopId: string, groupId: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workshopId, groupId]);
 
-  async function mutate(mutateFn: (current: MarkColor[]) => MarkColor[]) {
+  async function mutate(mutateFn: (current: MarkingState) => MarkingState) {
     latestOpRef.current++; // כל refetch שכבר בדרך (כולל ה-poll התקופתי) הופך מיושן מהרגע הזה
     const { data } = await fetchRow();
-    const current = data ? ((data.data as { marks: MarkColor[] }).marks ?? []) : [];
+    const current = readState(data?.data as { marks?: MarkColor[]; phrases?: TaggedPhrase[] } | undefined);
     const next = mutateFn(current);
-    setMarks(next);
+    setState(next);
 
     if (data) {
-      await supabase.from("responses").update({ data: { marks: next } }).eq("id", data.id).then();
+      await supabase.from("responses").update({ data: next }).eq("id", data.id).then();
     } else {
       await supabase
         .from("responses")
@@ -94,11 +120,11 @@ export function useTextMarking(workshopId: string, groupId: string) {
           group_id: groupId,
           stage_number: 4,
           type: "text_marking",
-          data: { marks: next },
+          data: next,
         })
         .then();
     }
   }
 
-  return { marks, loading, mutate };
+  return { marks: state.marks, phrases: state.phrases, loading, mutate };
 }
