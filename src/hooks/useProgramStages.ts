@@ -7,7 +7,15 @@ export function useProgramStages(programId: string | undefined) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!programId) return;
+    // אין תוכנית (למשל כשאין הפעלה פעילה): לסיים את הטעינה ולהחזיר רשימה
+    // ריקה. בלי זה loading נשאר true לנצח, והמסך תקוע על "טוענת..." במקום
+    // להציג את ההודעה "אין הפעלה פעילה כרגע".
+    if (!programId) {
+      setStages([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     supabase
       .from("program_stages")
       .select("*")

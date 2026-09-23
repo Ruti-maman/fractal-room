@@ -8,3 +8,9 @@ dist/
 Thumbs.db
 .vscode/*
 !.vscode/extensions.json
+
+# הקלטות שנשמרות מקומית בזמן סדנה - לא נכנסות ל-Git (קבצים כבדים)
+public/recordings/
+
+# תיקיית בדיקות זמנית של סביבת הפיתוח - לא חלק מהמוצר
+.tmp_verify/
