@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import localClips from './vite-plugin-local-clips'
+import localClips from './vite-plugin-local-clips.js'
 
 // https://vite.dev/config/
 export default defineConfig({

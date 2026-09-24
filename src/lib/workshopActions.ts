@@ -45,19 +45,52 @@ async function findProgramId(): Promise<{ programId: string | null; activeId: st
 }
 
 /**
- * יוצרת הפעלה חדשה ומאפסת את שלושת המסכים לשלב 1 (סעיף 6 ב-CLAUDE.md).
- * ההפעלה הקודמת מסומנת כ-finished, הנתונים שלה לא נמחקים.
+ * מוחקת הפעלה קודמת על כל מה שנתלה בה: משתתפות, תשובות, מדיה, קבוצות.
+ * הסדר חשוב - משתתפות תלויות בקבוצות, ולכן הן נמחקות ראשונות.
+ */
+async function deleteWorkshop(workshopId: string): Promise<string | null> {
+  const { data: groups, error: groupsError } = await supabase
+    .from("groups")
+    .select("id")
+    .eq("workshop_id", workshopId);
+  if (groupsError) return groupsError.message;
+
+  const groupIds = (groups ?? []).map((g) => g.id);
+  if (groupIds.length > 0) {
+    const { error } = await supabase.from("participants").delete().in("group_id", groupIds);
+    if (error) return error.message;
+  }
+
+  for (const table of ["responses", "media"] as const) {
+    const { error } = await supabase.from(table).delete().eq("workshop_id", workshopId);
+    if (error) return error.message;
+  }
+
+  const { error: gError } = await supabase.from("groups").delete().eq("workshop_id", workshopId);
+  if (gError) return gError.message;
+
+  const { error: wError } = await supabase.from("workshops").delete().eq("id", workshopId);
+  return wError ? wError.message : null;
+}
+
+/**
+ * יוצרת הפעלה חדשה ומאפסת את שלושת המסכים לשלב 1.
+ *
+ * **ההפעלות הקודמות נמחקות לגמרי** - לפי בקשה מפורשת של הלקוחה, כדי שמסד
+ * הנתונים לא יתמלא בשאריות בדיקה. זה שינוי ממה שתוכנן במקור בסעיף 6
+ * ב-CLAUDE.md ("הנתונים הישנים נשמרים"), ולכן לפני הסדנה האמיתית חייבים
+ * ייצוא נתונים - אחרת לחיצה על "סדנה חדשה" אחרי סדנה אמיתית מוחקת הכול.
  */
 export async function startNewWorkshop(): Promise<{ error: string | null }> {
-  const { programId, activeId, error: findError } = await findProgramId();
+  const { programId, error: findError } = await findProgramId();
   if (findError || !programId) return { error: findError ?? "לא נמצאה תוכנית." };
 
-  if (activeId) {
-    const { error: finishError } = await supabase
-      .from("workshops")
-      .update({ status: "finished" })
-      .eq("id", activeId);
-    if (finishError) return { error: finishError.message };
+  // מחיקת כל ההפעלות הקודמות (כולל הפעילה), עם כל הנתונים שלהן
+  const { data: previous, error: listError } = await supabase.from("workshops").select("id");
+  if (listError) return { error: listError.message };
+  for (const w of previous ?? []) {
+    const error = await deleteWorkshop(w.id);
+    if (error) return { error };
   }
 
   const { data: newWorkshop, error: createError } = await supabase
@@ -75,6 +108,15 @@ export async function startNewWorkshop(): Promise<{ error: string | null }> {
     })),
   );
   if (groupsError) return { error: groupsError.message };
+
+  // ניקוי ההקלטות שנשמרו כקבצים בפרויקט מהפעלות קודמות. קיים רק בשרת
+  // הפיתוח (ראו vite-plugin-local-clips.ts); באתר שבענן הקריאה פשוט נכשלת
+  // בשקט ואין מה לנקות שם.
+  try {
+    await fetch(`/__clips/cleanup?keep=${newWorkshop.id}`, { method: "POST" });
+  } catch {
+    // אין תוסף/אין שרת פיתוח - לא קריטי.
+  }
 
   return { error: null };
 }
