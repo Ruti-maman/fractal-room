@@ -165,3 +165,53 @@ body {
     transform: scale(1.08);
   }
 }
+
+/* דירוג בכוכבים בשלב 7: כוכב שעף למעלה ונעלם בכל הצבעה (כמו התגובות בזום),
+   ומונה שקופץ רגע כשהמספר משתנה. */
+@keyframes star-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(-16px) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-140px) scale(0.95);
+  }
+}
+
+@keyframes count-pop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.3);
+  }
+}
+
+/* גלגול רצועת הסרט בשלב 7 - משותף למסך ההקלטה ולמסך הצפייה. */
+@keyframes film-roll-x {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* נצנוץ עדין של כוכבי הרקע - ריחוף קטן במקום, בלי לחצות את המסך. */
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: var(--star-min, 0.1);
+    transform: translateY(0) scale(0.92);
+  }
+  50% {
+    opacity: var(--star-max, 0.35);
+    transform: translateY(-8px) scale(1.08);
+  }
+}

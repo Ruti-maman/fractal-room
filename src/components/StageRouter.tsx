@@ -178,7 +178,10 @@ function StageRouter({
   // "מסקנה מעשית" (תמונת התפקוד שנוסחה ב-AI בשלב 4) מלווה את כל השלבים
   // הבאים - החל משלב 5 ואילך, לא בשלב 4 עצמו (שם היא מוצגת בתוך המסך
   // הפנימי של Stage4Analysis כחלק מהזרימה, לא כרצועה חוזרת).
-  const showPracticalConclusion = stage.stage_number > 4 && stage.stage_number !== 9;
+  // לא בשלב 9 (מסך שלא מוצג), ולא בשלב 7 לפי בקשת הלקוחה - שם הרצועה
+  // מתנגשת בסרגל הנגן ובכפתור ההקלטה שמתחת לתצוגה.
+  const showPracticalConclusion =
+    stage.stage_number > 4 && stage.stage_number !== 9 && stage.stage_number !== 7;
 
   return (
     <>

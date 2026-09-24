@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "../../lib/supabase";
 import { useMedia } from "../../hooks/useMedia";
-import { useRatings } from "../../hooks/useRatings";
+import { normalizeVotes, useRatings } from "../../hooks/useRatings";
+import { useParticipants } from "../../hooks/useParticipants";
 import { clipKey, getLocalClip, saveLocalClip } from "../../lib/localClips";
 import { listProjectClips, projectClipUrl, saveClipToProject } from "../../lib/projectClips";
 import { PlayerButton, fmtTime } from "../ClipPlayer";
@@ -597,12 +599,12 @@ function SolutionAndRecord({
             {/* כיתוב - הפתרון שהקבוצה הקלידה במסך הקודם, בסגנון כתוביות של סרט:
                 טקסט לבן על רצועה כהה בתחתית המסך. בזמן ההקלטה הוא משמש כטלפרומפטר,
                 ולכן הוא גדול ומרווח - צריך להיות קריא ממרחק של כמה מטרים. */}
-            {showCaption && (liveCaption !== "" || solution.trim() !== "") && (
+            {/* כתוביות של מה שנאמר **עכשיו** בלבד. הפתרון שהוקלד במסך הקודם
+                לא מוצג כאן כלל, לפי בקשת הלקוחה - הוא לא קשור למה שמצולם. */}
+            {showCaption && liveCaption !== "" && (
               <div className="pointer-events-none absolute inset-x-0 bottom-28 flex justify-center px-12">
                 <p className="max-w-[80%] rounded-xl bg-black/75 px-6 py-3 text-center text-2xl leading-relaxed font-bold text-white backdrop-blur-[2px]">
-                  {/* בזמן הקלטה מוצג מה שנאמר עכשיו; לפניה ואחריה - הפתרון שהוקלד,
-                      שמשמש כטלפרומפטר. */}
-                  {liveCaption !== "" ? liveCaption : solution}
+                  {liveCaption}
                 </p>
               </div>
             )}
@@ -833,16 +835,6 @@ function SolutionAndRecord({
 
       </div>
 
-      {micSilent && !error && (
-        <div className="relative flex max-w-2xl flex-col items-center gap-1 rounded-2xl border border-[#f5a25d]/50 bg-[#f5a25d]/10 px-6 py-3 text-center">
-          <p className="font-bold text-[#f5a25d]">המיקרופון לא קולט קול</p>
-          <p className="text-sm text-white/60">
-            אפשר להקליט, אבל הסרטון יישמר בלי סאונד. כדאי לבדוק את הגדרות המיקרופון של המחשב
-            ואת ההרשאה שניתנה לדפדפן.
-          </p>
-        </div>
-      )}
-
       {error && (
         <div className="relative flex max-w-xl flex-col items-center gap-1 rounded-2xl border border-[#f07b7b]/40 bg-[#f07b7b]/10 px-6 py-4">
           <p className="font-bold text-[#ff9bae]">לא הצלחנו לגשת למצלמה</p>
@@ -949,14 +941,14 @@ function GroupClip({
 
   if (failed) {
     return (
-      <div className="flex h-40 w-full flex-col items-center justify-center gap-1 rounded-lg bg-black/40 px-3 text-center">
+      <div className="flex h-[min(34vh,22rem)] w-full flex-col items-center justify-center gap-2 rounded-xl bg-black/40 px-3 text-center">
         <p className="text-sm font-bold text-[#ff9bae]">הסרטון לא נטען</p>
         <p className="text-xs text-white/50">ההקלטה נשמרה, אבל הדפדפן לא הצליח להוריד אותה</p>
       </div>
     );
   }
 
-  if (!src) return <div className="h-40 w-full animate-pulse rounded-lg bg-black/40" />;
+  if (!src) return <div className="h-[min(34vh,22rem)] w-full animate-pulse rounded-xl bg-black/40" />;
 
   // נגן ברירת המחדל של הדפדפן, לפי בקשת הלקוחה - חזרה לעיצוב שהיה קודם.
   // בקרות הקול והמסך המלא של הדפדפן זמינות כאן כרגיל.
@@ -968,10 +960,146 @@ function GroupClip({
       preload="metadata"
       title={title}
       onError={() => setFailed(true)}
-      className="h-40 w-full rounded-lg bg-black"
+      // object-cover ממלא את המסגרת: ההקלטה היא 4:3 והמסגרת רחבה יותר, ובלי
+      // זה נוספים פסים שחורים בצדדים.
+      className="h-[min(34vh,22rem)] w-full rounded-xl bg-black object-cover"
     >
       {captionsUrl && <track kind="captions" srcLang="he" label="עברית" src={captionsUrl} default />}
     </video>
+  );
+}
+
+/**
+ * שדה הכוכבים שברקע מסך הצפייה - פרוס על כל שטח המסך ומנצנץ במקום. המיקומים
+ * קבועים ולא אקראיים בזמן ריצה, כדי שהכוכבים לא "יקפצו" בכל רינדור מחדש.
+ */
+const STAR_FIELD: {
+  left: number;
+  top: number;
+  size: number;
+  min: number;
+  max: number;
+  duration: number;
+  delay: number;
+}[] = [
+  { left: 44.7, top: 53.9, size: 13, min: 0.1, max: 0.42, duration: 6.3, delay: 6.4 },
+  { left: 46.9, top: 58.9, size: 9, min: 0.07, max: 0.29, duration: 5.6, delay: 6.5 },
+  { left: 67.7, top: 6.8, size: 13, min: 0.14, max: 0.37, duration: 9.3, delay: 1.3 },
+  { left: 2.9, top: 51.1, size: 7, min: 0.06, max: 0.42, duration: 9.2, delay: 6.2 },
+  { left: 32.7, top: 56.8, size: 9, min: 0.1, max: 0.37, duration: 8.5, delay: 5.3 },
+  { left: 45.2, top: 28.3, size: 16, min: 0.14, max: 0.41, duration: 10.0, delay: 2.5 },
+  { left: 23.4, top: 29.3, size: 7, min: 0.11, max: 0.24, duration: 5.8, delay: 2.3 },
+  { left: 7.9, top: 4.5, size: 20, min: 0.06, max: 0.27, duration: 11.4, delay: 3.8 },
+  { left: 95.1, top: 39.2, size: 7, min: 0.11, max: 0.27, duration: 9.7, delay: 2.7 },
+  { left: 31.2, top: 4.4, size: 13, min: 0.12, max: 0.25, duration: 6.7, delay: 0.8 },
+  { left: 7.2, top: 75.5, size: 9, min: 0.11, max: 0.26, duration: 8.6, delay: 7.9 },
+  { left: 75.0, top: 41.1, size: 13, min: 0.07, max: 0.32, duration: 6.5, delay: 2.2 },
+  { left: 94.2, top: 76.1, size: 11, min: 0.14, max: 0.22, duration: 6.3, delay: 8.0 },
+  { left: 59.0, top: 55.5, size: 7, min: 0.14, max: 0.27, duration: 6.8, delay: 6.2 },
+  { left: 32.9, top: 30.0, size: 7, min: 0.07, max: 0.27, duration: 9.5, delay: 0.1 },
+  { left: 36.7, top: 59.6, size: 9, min: 0.14, max: 0.33, duration: 9.0, delay: 6.9 },
+  { left: 19.0, top: 17.0, size: 9, min: 0.13, max: 0.28, duration: 6.3, delay: 5.9 },
+  { left: 91.3, top: 20.9, size: 13, min: 0.13, max: 0.36, duration: 8.0, delay: 0.8 },
+  { left: 5.2, top: 90.6, size: 9, min: 0.12, max: 0.31, duration: 7.9, delay: 7.2 },
+  { left: 48.4, top: 50.3, size: 20, min: 0.14, max: 0.25, duration: 8.4, delay: 5.2 },
+  { left: 60.3, top: 9.7, size: 9, min: 0.13, max: 0.27, duration: 5.1, delay: 2.2 },
+  { left: 44.1, top: 8.5, size: 9, min: 0.08, max: 0.34, duration: 11.8, delay: 0.7 },
+  { left: 14.7, top: 44.0, size: 11, min: 0.11, max: 0.38, duration: 9.1, delay: 1.1 },
+  { left: 4.9, top: 4.6, size: 11, min: 0.12, max: 0.44, duration: 5.1, delay: 5.1 },
+  { left: 47.6, top: 69.5, size: 11, min: 0.07, max: 0.24, duration: 8.2, delay: 2.9 },
+  { left: 5.7, top: 88.2, size: 20, min: 0.12, max: 0.4, duration: 11.4, delay: 2.8 },
+  { left: 66.9, top: 85.0, size: 13, min: 0.14, max: 0.23, duration: 8.5, delay: 0.1 },
+  { left: 64.7, top: 37.5, size: 7, min: 0.11, max: 0.24, duration: 9.5, delay: 7.9 },
+  { left: 85.5, top: 69.3, size: 13, min: 0.13, max: 0.38, duration: 8.2, delay: 3.7 },
+  { left: 53.2, top: 50.2, size: 16, min: 0.06, max: 0.36, duration: 8.4, delay: 1.8 },
+  { left: 68.2, top: 48.2, size: 16, min: 0.11, max: 0.33, duration: 11.3, delay: 2.9 },
+  { left: 15.2, top: 58.7, size: 16, min: 0.07, max: 0.43, duration: 9.6, delay: 3.5 },
+  { left: 86.7, top: 32.8, size: 20, min: 0.08, max: 0.37, duration: 10.6, delay: 6.0 },
+  { left: 20.6, top: 22.5, size: 9, min: 0.11, max: 0.29, duration: 6.0, delay: 4.0 },
+];
+
+/**
+ * דירוג בכוכב אחד, בתבנית של "לייק": כל בת בקבוצה לוחצת פעם אחת, והמונה
+ * שצמוד לכוכב עולה. מספר הלחיצות המותר למסך הוא מספר המשתתפות שנרשמו
+ * בקבוצה שלו (שלב 2) - זה הכלל שקבעה הלקוחה.
+ *
+ * המספר שמוצג הוא **סך הלייקים מכל המסכים**, כדי שרואים את ההתלהבות של כל
+ * החדר מצטברת בזמן אמת. כוכב שעף כלפי מעלה בכל לחיצה נותן את המשוב המיידי,
+ * כמו התגובות בזום.
+ */
+function LikeStar({
+  totalLikes,
+  myVotes,
+  maxVotes,
+  onVote,
+}: {
+  totalLikes: number;
+  myVotes: number;
+  maxVotes: number;
+  onVote: () => void;
+}) {
+  const [floats, setFloats] = useState<{ id: number; offset: number }[]>([]);
+  const full = myVotes >= maxVotes;
+
+  function like() {
+    if (full) return;
+    onVote();
+    const id = Date.now() + Math.random();
+    setFloats((current) => [...current, { id, offset: Math.random() * 50 - 25 }]);
+    window.setTimeout(() => setFloats((current) => current.filter((f) => f.id !== id)), 1500);
+  }
+
+  return (
+    <div className="relative mt-auto flex flex-col items-center gap-1">
+      {/* הכוכבים המעופפים - מרחפים מעל הכפתור */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-full flex justify-center">
+        {floats.map((f) => (
+          <span
+            key={f.id}
+            className="absolute text-3xl"
+            style={{
+              marginInlineStart: f.offset,
+              filter: "drop-shadow(0 0 10px rgba(255,200,60,0.9))",
+              animation: "star-rise 1.5s ease-out forwards",
+            }}
+          >
+            ⭐
+          </span>
+        ))}
+      </div>
+
+      {/* צ'יפ תגובה בסגנון המוכר מטימס/וואטסאפ: אימוג'י כוכב אמיתי ולידו
+          המספר, קומפקטי. הכוכב הוא תו האימוג'י ⭐ ולא ציור או תו טקסט, כדי
+          שייראה בדיוק כמו כוכב אמיתי בכל מכשיר. */}
+      <button
+        onClick={like}
+        disabled={full}
+        aria-label={full ? "כל הבנות כבר דירגו" : "אהבנו"}
+        className={`flex items-center gap-2 rounded-full px-4 py-2 transition-all duration-150 ${
+          full
+            ? "cursor-not-allowed bg-white/40"
+            : "bg-white shadow-[0_2px_10px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 hover:shadow-[0_4px_18px_rgba(255,215,94,0.45)] active:scale-95"
+        }`}
+      >
+        <span
+          className="text-2xl leading-none"
+          style={{ filter: totalLikes > 0 ? "drop-shadow(0 0 7px rgba(255,200,60,0.9))" : "none" }}
+        >
+          ⭐
+        </span>
+        <span
+          key={totalLikes}
+          className={`min-w-[1ch] text-lg font-black tabular-nums ${totalLikes > 0 ? "text-black" : "text-black/40"}`}
+          style={{ animation: "count-pop 0.35s ease-out" }}
+        >
+          {totalLikes}
+        </span>
+      </button>
+
+      <p className="rounded-full bg-black/55 px-2.5 py-0.5 text-[11px] font-bold text-white/85 backdrop-blur-sm">
+        {full ? `כל ${maxVotes} הבנות סימנו` : `${myVotes}/${maxVotes} בנות סימנו`}
+      </p>
+    </div>
   );
 }
 
@@ -988,7 +1116,23 @@ function SharedViewing({
   media: MediaItem[];
   onAdvance: () => void;
 }) {
-  const { myRatings, rate } = useRatings(workshopId, myGroup.id);
+  const { rows, myVotes, pending, castVote } = useRatings(workshopId, myGroup.id);
+
+  // סך הלייקים לכל קבוצה, מכל המסכים יחד
+  const likesByGroup = useMemo(() => {
+    const totals: Record<string, number> = {};
+    for (const row of rows) {
+      for (const [groupId, votes] of Object.entries(normalizeVotes(row.data))) {
+        totals[groupId] = (totals[groupId] ?? 0) + votes.length;
+      }
+    }
+    return totals;
+  }, [rows]);
+  // מספר הבנות בקבוצה שלנו הוא גם מספר ההצבעות המותר לכל סרטון
+  const participants = useParticipants([myGroup.id]);
+  // אם לא נרשמו משתתפות (למשל בבדיקה שדילגה על שלב 2) - מאפשרים הצבעה אחת,
+  // כדי שהמסך לא ייתקע במצב שאי אפשר לדרג בו בכלל.
+  const maxVotes = participants.length > 0 ? participants.length : 1;
   const transcripts = useClipTranscripts(workshopId);
   // אילו הקלטות שמורות כקבצים בתוך הפרויקט (ראו src/lib/projectClips.ts)
   const [projectClips, setProjectClips] = useState<string[]>([]);
@@ -999,50 +1143,134 @@ function SharedViewing({
 
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
-      <h1 className="text-2xl font-bold">צפייה משותפת בכל ההסרטות</h1>
+    <main
+      className="relative flex min-h-screen flex-col items-center justify-center gap-8 overflow-hidden px-8 py-10 text-center"
+      style={{
+        background:
+          "radial-gradient(circle at 50% 12%, var(--color-smoke-blue) 0%, var(--color-smoke-blue-dark) 62%, var(--color-smoke-blue-darker) 100%)",
+      }}
+    >
+      {/* כתמי אור שנעים לאט מאוד - נותנים לרקע תחושת חיים בלי להסיח את העין
+          מהסרטונים. התנועה איטית בכוונה (30-40 שניות למחזור). */}
+      <div
+        className="pointer-events-none absolute top-[-14%] left-[-6%] h-[30rem] w-[30rem] rounded-full bg-[#5bc0eb]/12 blur-[120px]"
+        style={{ animation: "aurora-drift 34s ease-in-out infinite" }}
+      />
+      <div
+        className="pointer-events-none absolute right-[-8%] bottom-[-16%] h-[32rem] w-[32rem] rounded-full bg-[#f5a25d]/10 blur-[130px]"
+        style={{ animation: "aurora-drift 41s ease-in-out infinite reverse" }}
+      />
 
-      <div className="flex flex-wrap justify-center gap-6">
+      {/* שדה כוכבים על כל המסך - אותו מוטיב של הדירוג, בצבעי הפלטה. הם
+          מרחפים לאט מלמטה למעלה בכל רוחב העמוד, בשקיפות נמוכה, כדי שייתנו
+          עומק לרקע בלי למשוך את העין מהסרטונים. */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        {STAR_FIELD.map((star, i) => (
+          <span
+            key={`${star.left}-${star.top}`}
+            className="absolute select-none"
+            style={
+              {
+                insetInlineStart: `${star.left}%`,
+                top: `${star.top}%`,
+                color: PALETTE[i % PALETTE.length],
+                fontSize: star.size,
+                textShadow: `0 0 ${star.size}px currentColor`,
+                "--star-min": star.min,
+                "--star-max": star.max,
+                animation: `star-twinkle ${star.duration}s ${star.delay}s ease-in-out infinite`,
+              } as CSSProperties
+            }
+          >
+            ★
+          </span>
+        ))}
+      </div>
+
+      {/* קו צבעים דק בראש העמוד - אותה פלטה של טבעת ההקלטה, כחתימה של השלב */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-1"
+        style={{ background: `linear-gradient(90deg, ${PALETTE.join(", ")})`, opacity: 0.55 }}
+      />
+
+      <div
+        className="relative flex flex-col items-center gap-4"
+        style={{ animation: "fade-up 0.7s ease-out both" }}
+      >
+        <span className="rounded-full border border-[#5bc0eb]/40 px-5 py-1.5 text-xs font-bold tracking-widest text-[#5bc0eb] uppercase">
+          שלב 7 · צפייה משותפת
+        </span>
+        <h1 className="text-4xl font-black tracking-tight">צפייה משותפת בכל ההסרטות</h1>
+        <p className="text-sm text-white/45">צפו בהקלטות של שאר הקבוצות, ודרגו כל אחת מהן בכוכבים.</p>
+      </div>
+
+      <div className="relative flex w-full max-w-[108rem] flex-wrap items-stretch justify-center gap-8">
         {allGroups
           .slice()
           .sort((a, b) => a.screen_number - b.screen_number)
-          .map((g) => {
+          .map((g, i) => {
             const clip = media.find((m) => m.group_id === g.id);
-            const myStars = myRatings[g.id] ?? 0;
+            const votes = myVotes[g.id] ?? [];
             return (
-              <div key={g.id} className="w-64 rounded-xl bg-white/10 p-4">
-                <div className="mb-2 font-bold">{g.name ?? `מסך ${g.screen_number}`}</div>
+              <div
+                key={g.id}
+                className="group flex w-[min(30vw,32rem)] flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.9)] backdrop-blur-sm transition-transform duration-200 hover:-translate-y-1"
+                style={{ animation: `fade-up 0.8s ${0.15 + i * 0.12}s ease-out both` }}
+              >
+                <div className="flex items-center justify-center gap-3">
+                  <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-bold text-white/50">
+                    מסך {g.screen_number}
+                  </span>
+                  <span className="text-2xl font-bold">{g.name ?? `מסך ${g.screen_number}`}</span>
+                </div>
                 {clip ? (
-                  <GroupClip
+                  <div
+                    className="relative rounded-2xl p-[2px] shadow-[0_0_26px_-6px_rgba(91,192,235,0.45)] transition-shadow duration-300 group-hover:shadow-[0_0_44px_-4px_rgba(245,162,93,0.6)]"
+                    style={{
+                      background: `linear-gradient(135deg, ${PALETTE[0]}, ${PALETTE[2]}, ${PALETTE[4]})`,
+                    }}
+                  >
+                    <div className="overflow-hidden rounded-[calc(1rem-2px)] bg-black">
+                      <GroupClip
                     workshopId={workshopId}
                     groupId={g.id}
                     url={clip.url}
                     title={g.name ?? `מסך ${g.screen_number}`}
-                    inProject={projectClips.includes(g.id)}
-                    segments={transcripts[g.id]}
-                  />
+                        inProject={projectClips.includes(g.id)}
+                        segments={transcripts[g.id]}
+                      />
+                    </div>
+
+                    {/* תגית הדירוג יושבת על הסרטון עצמו, כמו תגובה על מדיה
+                        באפליקציות המוכרות - ולא כשורה נפרדת מתחתיו. */}
+                    <div className="absolute top-3 left-3 z-10">
+                      <LikeStar
+                        totalLikes={(likesByGroup[g.id] ?? 0) + (pending[g.id]?.length ?? 0)}
+                        myVotes={votes.length}
+                        maxVotes={maxVotes}
+                        onVote={() => castVote(g.id, 1)}
+                      />
+                    </div>
+                  </div>
                 ) : (
-                  <div className="flex h-40 w-full items-center justify-center rounded-lg bg-black/40 text-sm text-white/50">
+                  <div className="flex h-[min(34vh,22rem)] w-full items-center justify-center rounded-xl bg-black/40 text-base text-white/50">
                     עדיין מקליטה...
                   </div>
                 )}
-                <div className="mt-2 flex justify-center gap-1 text-2xl">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button key={n} onClick={() => rate(g.id, n)}>
-                      {n <= myStars ? "★" : "☆"}
-                    </button>
-                  ))}
-                </div>
               </div>
             );
           })}
       </div>
 
       <button
-        className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-10 py-5 text-xl font-bold active:scale-90"
+        className="group relative flex items-center gap-3 rounded-full bg-[#5bc0eb] px-16 py-5 text-2xl font-bold text-white shadow-[0_10px_30px_-8px_rgba(91,192,235,0.7)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#4fb2dd] active:scale-95"
+        style={{ animation: "fade-up 0.9s 0.5s ease-out both" }}
         onClick={onAdvance}
       >
         הבא
+        <span className="transition-transform duration-200 group-hover:-translate-x-1" aria-hidden="true">
+          ←
+        </span>
       </button>
     </main>
   );
