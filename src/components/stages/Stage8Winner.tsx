@@ -116,7 +116,7 @@ function Trophy() {
   );
 }
 
-function Stage8Winner({ workshopId, myGroup, allGroups, onAdvance }: Props) {
+function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
   const { rows } = useRatings(workshopId, myGroup.id);
 
   // הדירוג בשלב 7 הוא "לייק": כל בת מסמנת כוכב אחד, ולכן המנצחת היא מי
@@ -292,16 +292,6 @@ function Stage8Winner({ workshopId, myGroup, allGroups, onAdvance }: Props) {
         </div>
       )}
 
-      <button
-        className="group relative mt-3 flex items-center gap-3 rounded-full bg-[#5bc0eb] px-14 py-4 text-xl font-bold text-white shadow-[0_10px_30px_-8px_rgba(91,192,235,0.7)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#4fb2dd] active:scale-95"
-        style={{ animation: "fade-up 0.9s 1s ease-out both" }}
-        onClick={onAdvance}
-      >
-        הבא
-        <span className="transition-transform duration-200 group-hover:-translate-x-1" aria-hidden="true">
-          ←
-        </span>
-      </button>
     </main>
   );
 }

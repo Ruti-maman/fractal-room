@@ -105,6 +105,9 @@ export async function startNewWorkshop(): Promise<{ error: string | null }> {
       workshop_id: newWorkshop.id,
       screen_number,
       current_stage: 1,
+      // זמן ההתחלה נקבע כבר עכשיו, כדי שהטיימר של שלב 1 ירוץ מהרגע שהסדנה
+      // נפתחת ולא יישאר ריק עד הלחיצה הראשונה.
+      stage_started_at: new Date().toISOString(),
     })),
   );
   if (groupsError) return { error: groupsError.message };

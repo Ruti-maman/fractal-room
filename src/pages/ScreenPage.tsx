@@ -10,7 +10,8 @@ function ScreenPage() {
     screenNumber: string;
   }>();
   const screenNumber = Number(screenNumberParam);
-  const { loading, workshop, myGroup, allGroups, advanceMyStage } = useScreenData(screenNumber);
+  const { loading, workshop, myGroup, allGroups, advanceMyStage, goBackStage } =
+    useScreenData(screenNumber);
   const { stages, loading: stagesLoading } = useProgramStages(workshop?.program_id);
 
   if (loading || stagesLoading) {
@@ -42,6 +43,7 @@ function ScreenPage() {
       sharedStageStartedAt={workshop.shared_stage_started_at}
       sharedStageNumber={workshop.shared_stage_number}
       onAdvance={advanceMyStage}
+      onGoBack={goBackStage}
     />
   );
 }

@@ -3,10 +3,12 @@ import type { Group } from "../types/group";
 interface Props {
   allGroups: Group[];
   myScreenNumber: number;
+  /** מספר השלבים בתוכנית - כדי להציג "שלב 2 מתוך 10" ולא רק "שלב 2". */
+  totalStages: number;
 }
 
 /** מד התקדמות קבוצתי - מציג איפה נמצאת כל קבוצה, צד שמאל למטה (סעיף 5 ב-CLAUDE.md). */
-function ProgressBar({ allGroups, myScreenNumber }: Props) {
+function ProgressBar({ allGroups, myScreenNumber, totalStages }: Props) {
   const sorted = allGroups.slice().sort((a, b) => a.screen_number - b.screen_number);
 
   return (
@@ -16,7 +18,7 @@ function ProgressBar({ allGroups, myScreenNumber }: Props) {
           key={g.id}
           className={g.screen_number === myScreenNumber ? "font-bold" : "text-white/70"}
         >
-          {g.name ?? `מסך ${g.screen_number}`} - שלב {g.current_stage}
+          {g.name ?? `מסך ${g.screen_number}`} - שלב {g.current_stage} מתוך {totalStages}
         </div>
       ))}
     </div>

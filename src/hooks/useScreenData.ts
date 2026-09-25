@@ -17,6 +17,7 @@ interface ScreenData {
   myGroup: Group | null;
   allGroups: Group[];
   advanceMyStage: () => void;
+  goBackStage: () => void;
 }
 
 /**
@@ -174,5 +175,28 @@ export function useScreenData(screenNumber: number): ScreenData {
       });
   }
 
-  return { loading, workshop, myGroup, allGroups, advanceMyStage };
+  /**
+   * חזרה לשלב הקודם - לצפייה בלבד. לפי תשובת הלקוחה: כשהטיימר נגמר המסך
+   * עובר לשלב הבא אוטומטית, "עם אופציה לחזור אחורה לצפייה".
+   * הזמן לא מתאפס: שומרים את stage_started_at המקורי אם הוא קיים, אחרת
+   * הטיימר של השלב הקודם היה מתחיל מחדש בכל חזרה.
+   */
+  function goBackStage() {
+    if (!myGroup || myGroup.current_stage <= 1) return;
+    const previousStage = myGroup.current_stage - 1;
+
+    setAllGroups((current) =>
+      current.map((g) => (g.id === myGroup.id ? { ...g, current_stage: previousStage } : g)),
+    );
+
+    supabase
+      .from("groups")
+      .update({ current_stage: previousStage })
+      .eq("id", myGroup.id)
+      .then(({ error }) => {
+        if (error) console.error("goBackStage failed:", error);
+      });
+  }
+
+  return { loading, workshop, myGroup, allGroups, advanceMyStage, goBackStage };
 }

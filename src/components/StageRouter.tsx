@@ -33,6 +33,7 @@ interface Props {
   sharedStageStartedAt: string | null;
   sharedStageNumber: number | null;
   onAdvance: () => void;
+  onGoBack?: () => void;
 }
 
 function StageRouter({
@@ -45,6 +46,7 @@ function StageRouter({
   sharedStageStartedAt,
   sharedStageNumber,
   onAdvance,
+  onGoBack,
 }: Props) {
   const stage = stages.find((s) => s.stage_number === myGroup.current_stage);
 
@@ -72,7 +74,18 @@ function StageRouter({
     }
   }, [stage, timerShouldStart, validSharedStageStartedAt, workshopId]);
 
-  const progressBar = <ProgressBar allGroups={allGroups} myScreenNumber={screenNumber} />;
+  // מספר השלבים נלקח מהתוכנית עצמה ולא מקובע ל-10, כדי שתוכנית עם מספר
+  // שלבים אחר תציג את המספר הנכון.
+  // "מתוך" לפי מספר השלב האחרון בתוכנית ולא לפי כמות השורות - מספרי השלבים
+  // לא בהכרח רציפים (שלב 9 הוסר), ואז "שלב 10 מתוך 9" היה נראה שבור.
+  const lastStageNumber = stages.reduce((max, st) => Math.max(max, st.stage_number), 0);
+  const progressBar = (
+    <ProgressBar
+      allGroups={allGroups}
+      myScreenNumber={screenNumber}
+      totalStages={lastStageNumber}
+    />
+  );
 
   if (!stage) {
     return (
@@ -85,6 +98,36 @@ function StageRouter({
     );
   }
 
+  // הטיימר וכפתור החזרה מוגדרים כאן, לפני ההחזרות המוקדמות, כדי שיופיעו
+  // **בכל** מסך - כולל מסך ההמתנה בשער סנכרון.
+  const stageStartedAt =
+    stage.stage_type === "shared"
+      ? validSharedStageStartedAt
+      : stage.stage_type === "parallel"
+        ? // שלב 1: מעדיפים את זמן ההתחלה של הקבוצה עצמה. workshopCreatedAt
+          // הוא רק גיבוי - הפעלה שנוצרה לפני שעות הייתה מתחילה עם טיימר שפג.
+          (myGroup.stage_started_at ?? workshopCreatedAt)
+        : myGroup.stage_started_at;
+
+  const waitingTimer =
+    stageStartedAt && stage.duration_minutes ? (
+      <Timer
+        startedAt={stageStartedAt}
+        durationMinutes={stage.duration_minutes}
+        onTimeUp={onAdvance}
+      />
+    ) : null;
+
+  const backButton =
+    myGroup.current_stage > 1 && onGoBack ? (
+      <button
+        onClick={onGoBack}
+        className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full border border-white/15 bg-black/35 px-5 py-2 text-sm font-bold text-white/60 backdrop-blur-sm transition-colors hover:bg-black/55 hover:text-white/90"
+      >
+        ← חזרה לשלב הקודם
+      </button>
+    ) : null;
+
   // שלבים 2 ו-7 מנהלים את שער הסנכרון שלהם בעצמם בתוך הרכיב (הזדהות/הקלטה
   // עצמאית, מעבר רק כשכולן סיימו) - ראו הסבר ב-CLAUDE.md, לא משתמשים במסך ההמתנה הגנרי.
   const selfManagedGate = stage.stage_number === 2 || stage.stage_number === 7;
@@ -93,19 +136,11 @@ function StageRouter({
       <>
         <WaitingScreen stageNumber={stage.stage_number} allGroups={allGroups} />
         {progressBar}
+        {waitingTimer}
+        {backButton}
       </>
     );
   }
-
-  // זמן ההתחלה תלוי בסוג השלב (סעיף 5 ב-CLAUDE.md):
-  // shared - נפתח לכולם יחד בשער הסנכרון; parallel (שלב 1) - מתחיל לכולם עם ההפעלה עצמה;
-  // independent - כל קבוצה לפי הזמן שלה.
-  const effectiveStartedAt =
-    stage.stage_type === "shared"
-      ? validSharedStageStartedAt
-      : stage.stage_type === "parallel"
-        ? workshopCreatedAt
-        : myGroup.stage_started_at;
 
   const stageContent =
     stage.stage_number === 1 ? (
@@ -119,6 +154,7 @@ function StageRouter({
         screenNumber={screenNumber}
         myGroup={myGroup}
         allGroups={allGroups}
+        content={stage.content as { dilemma_video_url?: string; dilemma_title?: string; dilemma_text?: string }}
         onAdvance={onAdvance}
       />
     ) : stage.stage_number === 3 ? (
@@ -180,12 +216,10 @@ function StageRouter({
   // הפנימי של Stage4Analysis כחלק מהזרימה, לא כרצועה חוזרת).
   // לא בשלב 9 (מסך שלא מוצג), ולא בשלב 7 לפי בקשת הלקוחה - שם הרצועה
   // מתנגשת בסרגל הנגן ובכפתור ההקלטה שמתחת לתצוגה.
-  // לא בשלבים 7 ו-8: שם הרצועה חוצה את סרגל הנגן ואת הפודיום.
-  const showPracticalConclusion =
-    stage.stage_number > 4 &&
-    stage.stage_number !== 9 &&
-    stage.stage_number !== 7 &&
-    stage.stage_number !== 8;
+  // מלווה את כל השלבים משלב 5 ואילך, כולל 7, 8 ו-10 - לפי בקשת הלקוחה
+  // שהמסקנה תהיה צמודה עד הסוף. הרצועה עצמה קומפקטית ויושבת בקצה העליון,
+  // כדי שלא תחצה את סרגל הנגן בשלב 7 ואת הפודיום בשלב 8.
+  const showPracticalConclusion = stage.stage_number > 4;
 
   return (
     <>
@@ -194,10 +228,9 @@ function StageRouter({
       {showPracticalConclusion && (
         <PracticalConclusionBanner workshopId={workshopId} groupId={myGroup.id} />
       )}
-      {stage.stage_number !== 1 && progressBar}
-      {effectiveStartedAt && stage.duration_minutes && (
-        <Timer startedAt={effectiveStartedAt} durationMinutes={stage.duration_minutes} />
-      )}
+      {progressBar}
+      {waitingTimer}
+      {backButton}
     </>
   );
 }

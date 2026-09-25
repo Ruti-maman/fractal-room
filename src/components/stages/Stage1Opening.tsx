@@ -1,6 +1,7 @@
-import { useState } from "react";
 import type { Stage1Content } from "../../types/stage1Content";
 import { requestKioskPermissions } from "../../hooks/useKioskMode";
+import { primeAudio } from "../../lib/audioUnlock";
+import AutoPlayVideo from "../AutoPlayVideo";
 
 interface Props {
   screenNumber: number;
@@ -42,7 +43,7 @@ function ScreenContent({ screen }: { screen: Stage1Content["screens"][string] | 
   }
   if (screen.type === "video") {
     return screen.video_url ? (
-      <video src={screen.video_url} controls className="max-h-80" />
+      <AutoPlayVideo src={screen.video_url} className="max-h-[62vh] rounded-2xl" />
     ) : (
       <div className="flex h-48 w-80 items-center justify-center rounded-xl bg-white/10 text-white/50">
         כאן יופיע סרטון
@@ -58,22 +59,15 @@ function ScreenContent({ screen }: { screen: Stage1Content["screens"][string] | 
 }
 
 function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
-  const [showingTransition, setShowingTransition] = useState(false);
   const screen = content.screens[String(screenNumber)];
 
   function handleStart() {
+    primeAudio();
     requestKioskPermissions();
     playTransitionSound();
-    setShowingTransition(true);
-    setTimeout(onAdvance, 2500);
-  }
-
-  if (showingTransition) {
-    return (
-      <main className="flex min-h-screen items-center justify-center p-8 text-center">
-        <p className="text-3xl font-bold">{content.transition_text}</p>
-      </main>
-    );
+    // מסך משפט המעבר הוסר לפי בקשת הלקוחה - עוברים ישר לשלב הבא.
+    // צליל המעבר נשאר, כי הוא גם מה שפותח את הרשאת הקול לכל הסדנה.
+    onAdvance();
   }
 
   return (

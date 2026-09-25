@@ -2,13 +2,22 @@ import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useParticipants } from "../../hooks/useParticipants";
 import type { Group } from "../../types/group";
+import AutoPlayVideo from "../AutoPlayVideo";
 
 const MAX_PARTICIPANTS = 15;
+
+interface Stage2Content {
+  /** כתובת סרטון הדילמה. נקראת מהמסד ולא כתובה בקוד. */
+  dilemma_video_url?: string;
+  dilemma_title?: string;
+  dilemma_text?: string;
+}
 
 interface Props {
   screenNumber: number;
   myGroup: Group;
   allGroups: Group[];
+  content?: Stage2Content;
   onAdvance: () => void;
 }
 
@@ -127,8 +136,8 @@ function RoomStatusNames({
           className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-10 py-5 text-2xl font-bold transition-transform duration-100 active:scale-90"
           onClick={onNext}
         >
-          הבא
-        </button>
+        לסרטון הדילמה
+      </button>
       ) : (
         <p className="text-white/70">ממתינים שכל הקבוצות יזדהו...</p>
       )}
@@ -136,48 +145,56 @@ function RoomStatusNames({
   );
 }
 
-function DilemmaVideo({ onAdvance }: { onAdvance: () => void }) {
+function DilemmaVideo({
+  content,
+}: {
+  content?: Stage2Content;
+  onAdvance: () => void;
+}) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8 text-center">
-      <h1 className="text-3xl font-bold">הדילמה הפדגוגית</h1>
+      <h1 className="text-3xl font-bold">{content?.dilemma_title ?? "הדילמה הפדגוגית"}</h1>
       <p className="max-w-lg text-lg text-white/80">
-        הצגת הדילמה המרכזית שאיתה נתמודד לאורך הסדנה.
+        {content?.dilemma_text ?? "הצגת הדילמה המרכזית שאיתה נתמודד לאורך הסדנה."}
       </p>
 
-      <div className="flex h-64 w-96 items-center justify-center rounded-xl bg-white/10 text-white/50">
-        כאן יופיע סרטון הדילמה
-      </div>
+      {content?.dilemma_video_url ? (
+        <AutoPlayVideo
+          src={content.dilemma_video_url}
+          className="max-h-[58vh] max-w-[85vw] rounded-2xl shadow-[0_24px_60px_-25px_rgba(0,0,0,0.9)]"
+        />
+      ) : (
+        <div className="flex h-64 w-96 items-center justify-center rounded-xl bg-white/10 text-white/50">
+          כאן יופיע סרטון הדילמה
+        </div>
+      )}
 
-      <button
-        className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-10 py-5 text-2xl font-bold transition-transform duration-100 active:scale-90"
-        onClick={onAdvance}
-      >
-        הבא
-      </button>
     </main>
   );
 }
 
 function RoomStatus({
   allGroups,
+  content,
   onAdvance,
 }: {
   allGroups: Group[];
+  content?: Stage2Content;
   onAdvance: () => void;
 }) {
   const [showingVideo, setShowingVideo] = useState(false);
 
   if (showingVideo) {
-    return <DilemmaVideo onAdvance={onAdvance} />;
+    return <DilemmaVideo content={content} onAdvance={onAdvance} />;
   }
   return <RoomStatusNames allGroups={allGroups} onNext={() => setShowingVideo(true)} />;
 }
 
-function Stage2Identification({ myGroup, allGroups, onAdvance }: Props) {
+function Stage2Identification({ myGroup, allGroups, content, onAdvance }: Props) {
   if (!myGroup.name) {
     return <IdentificationForm myGroup={myGroup} />;
   }
-  return <RoomStatus allGroups={allGroups} onAdvance={onAdvance} />;
+  return <RoomStatus allGroups={allGroups} content={content} onAdvance={onAdvance} />;
 }
 
 export default Stage2Identification;

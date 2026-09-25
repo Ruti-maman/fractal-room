@@ -91,7 +91,7 @@ interface Props {
  *
  * הפריסה לפי בקשת הלקוחה: המשפט למעלה, ורוב הדף הוא שעון החול המרכזי.
  */
-function Stage6Discussion({ content, onAdvance }: Props) {
+function Stage6Discussion({ content }: Props) {
   return (
     <main
       className="relative flex min-h-screen flex-col items-center justify-between overflow-hidden px-8 py-12 text-center"
@@ -153,15 +153,6 @@ function Stage6Discussion({ content, onAdvance }: Props) {
       >
         <p className="text-sm text-white/45">הדיון מהווה את הבסיס המקדים לשלב הסימולציות הבא.</p>
 
-        <button
-          className="group flex items-center gap-3 rounded-full bg-[#5bc0eb] px-16 py-5 text-2xl font-bold text-white shadow-[0_10px_30px_-8px_rgba(91,192,235,0.7)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#4fb2dd] active:scale-95"
-          onClick={onAdvance}
-        >
-          הבא
-          <span className="transition-transform duration-200 group-hover:-translate-x-1" aria-hidden="true">
-            ←
-          </span>
-        </button>
       </div>
     </main>
   );

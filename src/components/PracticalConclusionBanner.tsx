@@ -18,9 +18,9 @@ function PracticalConclusionBanner({ workshopId, groupId }: Props) {
   if (loading || !result?.group_conclusion) return null;
 
   return (
-    <div className="fixed bottom-20 left-1/2 z-20 w-[min(90vw,42rem)] -translate-x-1/2 rounded-2xl border border-wood/40 bg-smoke-blue-darker/90 px-6 py-3 text-center shadow-lg shadow-black/30">
-      <p className="text-xs font-bold text-white/50">מסקנה מעשית</p>
-      <p className="text-base font-bold text-white">{result.group_conclusion}</p>
+    <div className="fixed top-3 left-1/2 z-20 flex w-[min(92vw,46rem)] -translate-x-1/2 items-baseline justify-center gap-3 rounded-full border border-wood/40 bg-smoke-blue-darker/90 px-6 py-2 text-center shadow-lg shadow-black/30 backdrop-blur-sm">
+      <p className="shrink-0 text-[11px] font-bold text-white/45">מסקנה מעשית</p>
+      <p className="truncate text-sm font-bold text-white">{result.group_conclusion}</p>
     </div>
   );
 }

@@ -41,7 +41,7 @@ function XIcon() {
  * ב-src/index.css כספרייה משותפת, לא כאן - כדי שאפשר יהיה להשתמש באותה
  * "שפת עיצוב" גם בשלבים עתידיים בלי לשכפל keyframes.
  */
-function Stage5Solutions({ content, onAdvance }: Props) {
+function Stage5Solutions({ content }: Props) {
   const [chosen, setChosen] = useState<SolutionOption | null>(null);
 
   return (
@@ -119,15 +119,8 @@ function Stage5Solutions({ content, onAdvance }: Props) {
 
             <p className="relative mb-8 text-2xl leading-relaxed font-bold">{chosen.explanation}</p>
 
-            {chosen.correct ? (
-              <button
-                className="from-smoke-blue to-wood-dark relative flex w-full items-center justify-center gap-2 rounded-full bg-linear-to-l px-8 py-5 text-xl font-bold shadow-lg shadow-black/30 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
-                onClick={onAdvance}
-              >
-                המשך לפתרון המערכתי
-                <span aria-hidden="true">←</span>
-              </button>
-            ) : (
+            {/* כשצודקים - אין כפתור: הטיימר מעביר לשלב הבא לבד */}
+            {chosen.correct ? null : (
               <button
                 className="relative w-full rounded-full bg-white/10 px-8 py-5 text-xl font-bold transition-transform duration-150 hover:bg-white/15 active:scale-95"
                 onClick={() => setChosen(null)}

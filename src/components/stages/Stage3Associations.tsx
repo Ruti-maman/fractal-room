@@ -136,11 +136,15 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
 
       <div className="relative my-6" style={{ width: RADIUS * 2 + 160, height: RADIUS * 2 + 60 }}>
         {/* השמש - עיגול מרכזי */}
+        {/* מרכז השמש - הדילמה עצמה, נקראת מהמסד ולא כתובה בקוד (כלל הברזל
+            בסעיף 4 ב-CLAUDE.md). העיגול גדל כדי שהטקסט המלא ייכנס. */}
         <div
-          className="absolute flex h-40 w-40 items-center justify-center rounded-full bg-wood/60 text-center text-lg font-bold"
+          className="absolute flex h-56 w-56 items-center justify-center rounded-full bg-wood/60 p-5 text-center leading-snug font-bold"
           style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
         >
-          הדילמה שלנו
+          <span className={content.dilemma_text ? "text-sm" : "text-lg"}>
+            {content.dilemma_text || "הדילמה שלנו"}
+          </span>
         </div>
 
         {/* קווי הקרניים (מהעיגול החוצה) */}
