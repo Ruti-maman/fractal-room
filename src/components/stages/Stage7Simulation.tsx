@@ -26,7 +26,7 @@ import StageShell from "../StageShell";
 const RECORD_SECONDS = 10;
 
 /** סולם הטורקיז של לבנת הזכוכית - אותם ערכים שמשמשים את שעון החול בשלב 6. */
-const PALETTE = ["#c7f5f4", "#a7e9e5", "#84c7c1", "#6bacA6", "#4e8f8b"];
+const PALETTE = ["#c7f5f4", "#a7e9e5", "#84c7c1", "#6baca6", "#4e8f8b"];
 
 /**
  * ההוראות מופיעות אחת אחרי השנייה, ורק בסוף נחשפת תיבת ההקלדה - לפי

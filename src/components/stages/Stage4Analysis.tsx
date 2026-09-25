@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { Group } from "../../types/group";
 import type { Stage4Content } from "../../types/stage4Content";
+import StageShell from "../StageShell";
+import Icon from "../ui/Icon";
+import GlassModal from "../ui/GlassModal";
+import { GlassButton, Spinner } from "../ui/Glass";
+import { InlineNotice, LoadingState } from "../ui/Feedback";
+import { cx } from "../../lib/cx";
 import { useTextMarking, type MarkColor, type TaggedPhrase } from "../../hooks/useTextMarking";
 import { useFunctioningPicture } from "../../hooks/useFunctioningPicture";
 
@@ -73,32 +79,51 @@ function MarkerTool({
   active: boolean;
   onClick: () => void;
 }) {
-  const bodyClass = tool === "green" ? "bg-green-700" : "bg-accent-red";
-  const capClass = tool === "green" ? "bg-green-900" : "bg-red-950";
+  // צבע המרקר הוא בדיוק הצבע שייצבע על הדף - כך הכלי ביד "מבטיח" את
+  // התוצאה, וזו הסיבה שהוא נלקח מאותו קבוע (STROKE_COLOR) ולא מוגדר פעמיים.
+  const ink = STROKE_COLOR[tool];
+
   return (
     <button
+      type="button"
+      aria-pressed={active}
       // padding מסביב לצורה עצמה - מגדיל את שטח הנגיעה בפועל בלי לנפח חזותית את הציור.
-      className={`group flex flex-col items-center rounded-2xl p-3 transition-all duration-200 active:scale-95 ${
-        active ? "-translate-y-3 bg-white/10" : "hover:-translate-y-1 hover:bg-white/5"
-      }`}
+      className={cx(
+        "glass glass-interactive group flex flex-col items-center rounded-xl p-3",
+        active ? "glass-active -translate-y-3" : "hover:-translate-y-1",
+      )}
       onClick={onClick}
     >
+      {/* הפקק */}
       <div
-        className={`h-6 w-12 rounded-t-md border-2 border-black/30 ${capClass} transition-shadow ${
-          active ? "shadow-[0_0_18px_rgba(255,255,255,0.35)]" : ""
-        }`}
+        className="h-6 w-12 rounded-t-md"
+        style={{
+          background: `linear-gradient(180deg, ${ink}, color-mix(in srgb, ${ink} 55%, #061f1e))`,
+          boxShadow: active ? `0 0 18px ${ink}` : "none",
+        }}
       />
+      {/* גוף המרקר, עם השם כתוב עליו לאורך */}
       <div
-        className={`flex h-24 w-12 items-center justify-center border-2 border-black/30 text-sm font-bold text-white/90 ${bodyClass}`}
-        style={{ writingMode: "vertical-rl" }}
+        className="flex h-24 w-12 items-center justify-center text-sm font-extrabold"
+        style={{
+          writingMode: "vertical-rl",
+          background: `linear-gradient(90deg, color-mix(in srgb, ${ink} 70%, #061f1e), ${ink})`,
+          color: "#08201f",
+        }}
       >
         {label}
       </div>
-      <div className={`h-5 w-9 ${bodyClass}`} style={{ clipPath: "polygon(50% 100%, 15% 0, 85% 0)" }} />
+      {/* החוד */}
       <div
-        className={`mt-3 h-1.5 w-12 rounded-full transition-all duration-200 ${
-          active ? "bg-white shadow-[0_0_10px_rgba(255,255,255,0.7)]" : "bg-transparent"
-        }`}
+        className="h-5 w-9"
+        style={{ background: ink, clipPath: "polygon(50% 100%, 15% 0, 85% 0)" }}
+      />
+      <div
+        className="mt-3 h-1.5 w-12 rounded-full transition-all duration-200"
+        style={{
+          background: active ? ink : "transparent",
+          boxShadow: active ? `0 0 10px ${ink}` : "none",
+        }}
       />
     </button>
   );
@@ -108,21 +133,28 @@ function MarkerTool({
 function EraserTool({ active, onClick }: { active: boolean; onClick: () => void }) {
   return (
     <button
-      className={`group flex flex-col items-center rounded-2xl p-3 transition-all duration-200 active:scale-95 ${
-        active ? "-translate-y-3 bg-white/10" : "hover:-translate-y-1 hover:bg-white/5"
-      }`}
+      type="button"
+      aria-pressed={active}
+      className={cx(
+        "glass glass-interactive group flex flex-col items-center rounded-xl p-3",
+        active ? "glass-active -translate-y-3" : "hover:-translate-y-1",
+      )}
       onClick={onClick}
     >
       <div
-        className={`h-16 w-20 rounded-md border-2 border-black/30 bg-linear-to-b from-pink-300 to-pink-100 transition-shadow ${
-          active ? "shadow-[0_0_18px_rgba(255,255,255,0.35)]" : ""
-        }`}
+        className="h-16 w-20 rounded-md"
+        style={{
+          background: `linear-gradient(180deg, ${ERASER_CURSOR_COLOR}, color-mix(in srgb, ${ERASER_CURSOR_COLOR} 60%, #061f1e))`,
+          boxShadow: active ? `0 0 18px ${ERASER_CURSOR_COLOR}` : "none",
+        }}
       />
-      <span className="mt-2 text-sm font-bold">מחק</span>
+      <span className="mt-2 text-sm font-extrabold">מחק</span>
       <div
-        className={`mt-2 h-1.5 w-12 rounded-full transition-all duration-200 ${
-          active ? "bg-white shadow-[0_0_10px_rgba(255,255,255,0.7)]" : "bg-transparent"
-        }`}
+        className="mt-2 h-1.5 w-12 rounded-full transition-all duration-200"
+        style={{
+          background: active ? ERASER_CURSOR_COLOR : "transparent",
+          boxShadow: active ? `0 0 10px ${ERASER_CURSOR_COLOR}` : "none",
+        }}
       />
     </button>
   );
@@ -203,41 +235,55 @@ function CategoryPopup({
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-8">
-      <div className="flex max-w-lg flex-col items-center gap-6 rounded-3xl bg-smoke-blue-dark p-10 text-center shadow-2xl">
-        <p className="text-sm text-white/60">
-          {pending.color === "green" ? "סימנתם חוזקה - לאיזו קטגוריה שייך?" : "סימנתם חסם - לאיזו קטגוריה שייך?"}
-        </p>
-        <p className="rounded-xl bg-white/5 px-5 py-3 text-xl font-bold">"{pending.text}"</p>
-        {categories.length === 0 ? (
-          <p className="text-sm text-accent-red">לא הוגדרו קטגוריות בתוכן השלב</p>
-        ) : (
-          <div className="flex flex-wrap justify-center gap-3">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className="active:bg-smoke-blue rounded-xl bg-white/10 px-5 py-3 text-lg font-bold transition-transform active:scale-90"
-                onClick={() => onChoose(category)}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        )}
-        <button className="text-sm text-white/50 underline" onClick={onCancel}>
-          ביטול (להשאיר מסומן בלי תיוג)
-        </button>
-      </div>
-    </div>
+    <GlassModal
+      open
+      onClose={onCancel}
+      tone={pending.color === "green" ? "ok" : "warn"}
+      icon="marker"
+      title={pending.color === "green" ? "סימנתן חוזקה" : "סימנתן חסם"}
+      description="לאיזו קטגוריה זה שייך?"
+      cancelLabel="ביטול (להשאיר מסומן בלי תיוג)"
+    >
+      <p className="glass glass-dim text-ink rounded-lg px-5 py-4 text-xl font-bold">
+        "{pending.text}"
+      </p>
+
+      {categories.length === 0 ? (
+        <InlineNotice tone="warn" className="mt-5">
+          לא הוגדרו קטגוריות בתוכן השלב.
+        </InlineNotice>
+      ) : (
+        <div className="mt-5 flex flex-wrap justify-center gap-3">
+          {categories.map((category) => (
+            <GlassButton key={category} size="sm" onClick={() => onChoose(category)}>
+              {category}
+            </GlassButton>
+          ))}
+        </div>
+      )}
+    </GlassModal>
   );
 }
 
 // כותרת הקטגוריה בטבלה מודגשת במסגרת שצמודה לצורת האות עצמה - לא תיבה/
 // מלבן מסביבה (כמו מסגרת תמונה), אלא קו שעוקב אחרי קו המתאר של האות עצמה
 // (כמו מסגרת שיש לצורה) - ר' FramedCategoryLabel למטה.
-const PHRASE_COLUMN_STYLES: Record<"green" | "red", { header: string; strokeColor: string; fillColor: string }> = {
-  green: { header: "bg-green-900/50 text-green-200", strokeColor: "#4ade80", fillColor: "#eafcef" },
-  red: { header: "bg-red-950/50 text-red-200", strokeColor: "#ff6b5b", fillColor: "#fff0ee" },
+const PHRASE_COLUMN_STYLES: Record<
+  "green" | "red",
+  { header: string; icon: "check" | "alert"; strokeColor: string; fillColor: string }
+> = {
+  green: {
+    header: "text-ok",
+    icon: "check",
+    strokeColor: STROKE_COLOR.green,
+    fillColor: "#effef6",
+  },
+  red: {
+    header: "text-warn",
+    icon: "alert",
+    strokeColor: STROKE_COLOR.red,
+    fillColor: "#fff3f0",
+  },
 };
 
 /**
@@ -273,25 +319,39 @@ function PhraseColumn({
 }) {
   const styles = PHRASE_COLUMN_STYLES[color];
   return (
-    <div className="flex-1 overflow-hidden rounded-2xl border border-white/10 bg-black/15 shadow-inner shadow-black/30">
-      <div className={`px-5 py-4 text-xl font-extrabold tracking-tight ${styles.header}`}>{title}</div>
+    <div className="glass glass-brick flex-1 overflow-hidden rounded-2xl">
+      <div
+        className={cx(
+          "border-edge-dim flex items-center gap-2.5 border-b px-5 py-4 text-xl font-extrabold",
+          styles.header,
+        )}
+      >
+        <Icon name={styles.icon} size={20} />
+        {title}
+        <span className="text-ink-3 ms-auto text-sm font-bold tabular-nums">
+          {phrases.length}
+        </span>
+      </div>
+
       {phrases.length === 0 ? (
-        <p className="px-5 py-6 text-center text-sm text-white/40">עדיין לא סומן כאן כלום</p>
+        <p className="text-ink-3 px-5 py-8 text-center text-sm">עדיין לא סומן כאן כלום</p>
       ) : (
         <table className="w-full border-collapse text-right">
           <thead>
-            <tr className="text-sm text-white/70">
-              <th className="border-b border-white/10 px-4 py-2 font-extrabold">קטגוריה</th>
-              <th className="border-b border-white/10 px-4 py-2 font-extrabold">משפט</th>
+            <tr className="text-ink-3 text-sm">
+              <th className="border-edge-dim border-b px-4 py-2 font-extrabold">קטגוריה</th>
+              <th className="border-edge-dim border-b px-4 py-2 font-extrabold">משפט</th>
             </tr>
           </thead>
           <tbody>
             {phrases.map((p) => (
-              <tr key={p.id} className="align-top odd:bg-white/3">
-                <td className="border-b border-white/5 px-4 py-3 whitespace-nowrap">
+              <tr key={p.id} className="align-top odd:bg-glass">
+                <td className="border-edge-dim border-b px-4 py-3 whitespace-nowrap">
                   <FramedCategoryLabel text={p.category} color={color} />
                 </td>
-                <td className="border-b border-white/5 px-4 py-3 text-base">{p.text}</td>
+                <td className="border-edge-dim text-ink border-b px-4 py-3 text-base">
+                  {p.text}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -352,70 +412,98 @@ function FunctioningPictureStep({
     onAdvance();
   }
 
-  const pageBackground = {
-    background:
-      "radial-gradient(circle at 50% 15%, var(--color-smoke-blue) 0%, var(--color-smoke-blue-dark) 45%, var(--color-smoke-blue-darker) 100%)",
-  };
-
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-7 p-8" style={pageBackground}>
-      <div className="flex flex-col items-center gap-1 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">תמונת תפקוד כוללת ומסקנה מעשית</h1>
-        <p className="text-sm text-white/50">שקף 8 - המשך שלב 4</p>
-      </div>
-
+    <StageShell
+      stage={4}
+      kicker="שקף 8 · תמונת תפקוד"
+      icon="sparkles"
+      title="תמונת תפקוד כוללת ומסקנה מעשית"
+      width="normal"
+      actions={
+        result && !generating ? (
+          <GlassButton
+            variant="primary"
+            size="lg"
+            iconAfter="arrowNext"
+            onClick={handleAdvance}
+            loading={advancing}
+          >
+            המשך
+          </GlassButton>
+        ) : null
+      }
+    >
       {(loading || generating) && (
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-wood-light" />
-          <p className="text-xl text-white/80">מנסחת...</p>
+        <div className="flex flex-col items-center gap-5">
+          <div className="relative flex h-20 w-20 items-center justify-center">
+            <div
+              className="bg-glow-soft absolute inset-0 rounded-full blur-xl"
+              style={{ animation: "soft-pulse 2.4s ease-in-out infinite" }}
+            />
+            <Spinner size={52} className="relative" />
+          </div>
+          <p className="text-ink-2 text-xl">מנסחת...</p>
         </div>
       )}
 
       {error && !generating && (
-        <div className="flex flex-col items-center gap-4">
-          <p className="text-lg text-accent-red">{error}</p>
-          <button
-            className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-8 py-4 text-lg font-bold shadow-lg shadow-black/30"
-            onClick={generate}
-          >
+        <div className="flex w-full max-w-xl flex-col items-center gap-4">
+          <InlineNotice tone="warn" title="לא הצלחנו לנסח">
+            {error}
+          </InlineNotice>
+          <GlassButton icon="refresh" onClick={generate}>
             נסו שוב
-          </button>
+          </GlassButton>
         </div>
       )}
 
       {result && !generating && (
-        <>
-          <div className="w-full max-w-3xl rounded-3xl border border-white/10 bg-black/15 p-8 text-xl leading-relaxed shadow-inner shadow-black/30">
-            <p>1. {result.sentence1}</p>
-            <p className="mt-3">2. {result.sentence2}</p>
-          </div>
+        <div className="flex w-full flex-col gap-6">
+          {/* שני המשפטים שה-AI ניסח - ממוספרים כלבנים נפרדות, כדי שיהיה
+              ברור שאלו שתי אמירות ולא פסקה אחת ארוכה. */}
+          <ol className="flex flex-col gap-3">
+            {[result.sentence1, result.sentence2].map((sentence, i) => (
+              <li
+                key={i}
+                className="glass glass-brick flex items-start gap-4 rounded-2xl p-6"
+                style={{
+                  animation: `glass-in var(--ds-dur-slow) ${i * 120}ms var(--ds-ease) both`,
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="glass glass-active flex h-9 w-9 flex-none items-center justify-center rounded-full text-sm font-extrabold"
+                >
+                  {i + 1}
+                </span>
+                <p className="text-ink text-xl leading-relaxed">{sentence}</p>
+              </li>
+            ))}
+          </ol>
 
           {/* לפי בקשת הלקוחה: לא הצעת AI מוצגת כאן - תיבה ריקה שהקבוצה
-              עצמה מקלידה לתוכה את המסקנה המעשית שלה. */}
-          <div className="w-full max-w-3xl rounded-3xl border-2 border-wood/60 bg-wood/20 p-6">
-            <p className="text-center text-sm font-bold text-wood-light">
-              על סמך ההבנות למעלה - כתבו מסקנה מעשית שתלווה את כל השלבים הבאים:
-            </p>
+              עצמה מקלידה לתוכה את המסקנה המעשית שלה. הלבנה הזו מודגשת
+              (glass-strong) כי היא הפעולה היחידה במסך. */}
+          <div className="glass glass-strong glass-brick rounded-2xl p-6">
+            <label
+              htmlFor="group-conclusion"
+              className="text-accent-soft mb-3 flex items-center justify-center gap-2 text-center text-sm font-bold"
+            >
+              <Icon name="lightbulb" size={16} />
+              על סמך ההבנות למעלה - כתבו מסקנה מעשית שתלווה את כל השלבים הבאים
+            </label>
             <textarea
-              className="mt-3 w-full rounded-xl border border-wood/40 bg-black/20 p-4 text-lg text-white placeholder:text-white/40 focus:outline-none"
+              id="group-conclusion"
+              className="glass-input h-28 w-full resize-none !rounded-xl py-4 !text-lg"
               rows={3}
               value={groupConclusion}
               onChange={(e) => setGroupConclusion(e.target.value)}
               placeholder="הקלידו כאן..."
             />
           </div>
-
-          <button
-            className="bg-smoke-blue active:bg-smoke-blue-dark flex items-center gap-2 rounded-xl px-10 py-5 text-xl font-bold shadow-lg shadow-black/30 transition-transform duration-100 hover:-translate-y-0.5 active:scale-90 disabled:opacity-50"
-            onClick={handleAdvance}
-            disabled={advancing}
-          >
-            המשך
-            <span aria-hidden="true">←</span>
-          </button>
-        </>
+        </div>
       )}
-    </main>
+    </StageShell>
   );
 }
 
@@ -908,20 +996,8 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     lastClientPointRef.current = to;
   }
 
-  const pageBackground = {
-    background:
-      "radial-gradient(circle at 50% 15%, var(--color-smoke-blue) 0%, var(--color-smoke-blue-dark) 45%, var(--color-smoke-blue-darker) 100%)",
-  };
-
   if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center" style={pageBackground}>
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-wood-light" />
-          <p className="text-xl text-white/80">טוענת...</p>
-        </div>
-      </main>
-    );
+    return <LoadingState title="רגע אחד" description="טוענת את הטקסט ואת הסימונים..." />;
   }
 
   // שקף 7 - טבלת הסנכרון האוטומטית: נבנית מהקטעים המתויגים שכבר נאספו
@@ -932,25 +1008,29 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     const strengths = phrases.filter((p) => p.color === "green");
     const blockers = phrases.filter((p) => p.color === "red");
     return (
-      <main className="flex min-h-screen flex-col items-center gap-7 p-8" style={pageBackground}>
-        <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">טבלת סנכרון אוטומטית</h1>
-          <p className="text-sm text-white/50">שקף 7 - חוזקות וחסמים שזוהו</p>
+      <StageShell
+        stage={4}
+        kicker="שקף 7 · חוזקות וחסמים"
+        icon="ladder"
+        title="טבלת סנכרון אוטומטית"
+        subtitle="הטבלה נבנתה לבד ממה שסימנתן. אם משהו חסר, אפשר לחזור ולסמן."
+        width="wide"
+        actions={
+          <GlassButton
+            variant="primary"
+            size="lg"
+            iconAfter="arrowNext"
+            onClick={() => setStep("functioning_picture")}
+          >
+            המשך לניסוח תמונת תפקוד כוללת
+          </GlassButton>
+        }
+      >
+        <div className="flex w-full flex-col gap-6 lg:flex-row">
+          <PhraseColumn title="חוזקות שזוהו" color="green" phrases={strengths} />
+          <PhraseColumn title="חסמים שזוהו" color="red" phrases={blockers} />
         </div>
-
-        <div className="flex w-full max-w-5xl gap-6">
-          <PhraseColumn title="טור חוזקות שזוהו (סומנו בירוק)" color="green" phrases={strengths} />
-          <PhraseColumn title="טור חסמים שזוהו (סומנו באדום)" color="red" phrases={blockers} />
-        </div>
-
-        <button
-          className="bg-smoke-blue active:bg-smoke-blue-dark flex items-center gap-2 rounded-xl px-10 py-5 text-xl font-bold shadow-lg shadow-black/30 transition-transform duration-100 hover:-translate-y-0.5 active:scale-90"
-          onClick={() => setStep("functioning_picture")}
-        >
-          המשך לניסוח תמונת תפקוד כוללת
-          <span aria-hidden="true">←</span>
-        </button>
-      </main>
+      </StageShell>
     );
   }
 
@@ -961,75 +1041,107 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center gap-7 p-8" style={pageBackground}>
-      <div className="flex flex-col items-center gap-1 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">ניתוח דילמה</h1>
-        <p className="text-sm text-white/50">שקף 6 - זיהוי חוזקות וחסמים</p>
-      </div>
-
-      <p className="rounded-full bg-white/5 px-5 py-2 text-sm text-white/70">
-        ✏️ סמנו את הטקסט בגרירה, כמו במרקר אמיתי על דף
-      </p>
-
-      <div className="flex items-end gap-10 rounded-2xl bg-black/15 px-8 py-5 shadow-inner shadow-black/30">
-        <MarkerTool tool="green" label="חוזקות" active={activeTool === "green"} onClick={() => setActiveTool("green")} />
-        <MarkerTool tool="red" label="חסמים" active={activeTool === "red"} onClick={() => setActiveTool("red")} />
+    <StageShell
+      stage={4}
+      kicker="שקף 6 · זיהוי חוזקות וחסמים"
+      icon="marker"
+      title="ניתוח דילמה"
+      subtitle="סמנו את הטקסט בגרירה, כמו במרקר אמיתי על דף."
+      width="normal"
+      actions={
+        <GlassButton
+          variant="primary"
+          size="lg"
+          iconAfter="arrowNext"
+          onClick={() => setStep("table")}
+        >
+          הבא
+        </GlassButton>
+      }
+      overlay={
+        pendingPhrase ? (
+          <CategoryPopup
+            pending={pendingPhrase}
+            categories={content.categories ?? []}
+            onChoose={confirmCategory}
+            onCancel={() => setPendingPhrase(null)}
+          />
+        ) : null
+      }
+    >
+      {/* קופסת הכלים - שלושת המרקרים יושבים בתוך לבנה אחת, כמו מודול
+          הכפתורים בלוח הבקרה, ולא מרחפים בנפרד על הדף. */}
+      <div className="glass glass-brick mb-7 flex items-end gap-6 rounded-2xl px-8 py-5 sm:gap-10">
+        <MarkerTool
+          tool="green"
+          label="חוזקות"
+          active={activeTool === "green"}
+          onClick={() => setActiveTool("green")}
+        />
+        <MarkerTool
+          tool="red"
+          label="חסמים"
+          active={activeTool === "red"}
+          onClick={() => setActiveTool("red")}
+        />
         <EraserTool active={activeTool === "eraser"} onClick={() => setActiveTool("eraser")} />
       </div>
 
-      <div
-        ref={paperRef}
-        className="relative w-full max-w-2xl rounded-3xl p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.55)]"
-        style={{
-          background: "linear-gradient(180deg, #fdfbf5 0%, #f3ede0 100%)",
-          touchAction: "none",
-          // סמן העכבר עצמו הופך למכחול בצבע הכלי הפעיל - כדי שיהיה ברור על מה
-          // בדיוק לוחצים בלי להסתמך על נקודה שמצטיירת רק אחרי הלחיצה עצמה.
-          cursor: brushCursor(activeTool === "eraser" ? ERASER_CURSOR_COLOR : STROKE_COLOR[activeTool]),
-        }}
-        onPointerDown={handlePaperPointerDown}
-        onPointerMove={handlePaperPointerMove}
-      >
-        {/* z-10 מעל ה-canvas בכוונה: הטקסט מצויר מעל שכבת הצביעה, לא מתחתיה -
-            כמו רקע-הדגשה אמיתי (mark/highlight), כדי שהאותיות תמיד יישארו
-            חדות וקריאות במלואן, גם כשהרקע הצבוע מתחתן מלא/חזק ולא שקוף. */}
-        <p className="relative z-10 text-2xl leading-loose text-[#2b2620] select-none">
-          {wordGroups.map((chars, wi) => (
-            <span key={wi}>
-              {/* עטיפת nowrap סביב אותיות המילה - כל אות היא span נפרד לצביעה
-                  עצמאית, אבל המילה כולה לא נשברת לשתי שורות. בלי cursor-pointer
-                  בכוונה - היה דורס את סמן המכחול המותאם-אישית שמוגדר על תיבת
-                  הנייר כולה. */}
-              <span style={{ whiteSpace: "nowrap" }}>
-                {chars.map(({ ch, index }) => (
-                  <span key={index} data-char-index={index}>
-                    {ch}
-                  </span>
-                ))}
-              </span>{" "}
-            </span>
-          ))}
-        </p>
-        <canvas ref={canvasRef} className="absolute inset-0 z-0 h-full w-full" style={{ pointerEvents: "none" }} />
+      {/*
+        הדף.
+
+        הוא נשאר **בהיר** ולא הופך לזכוכית כהה, וזו החלטה ולא פשרה: מרקר
+        עובד על נייר. צבעי ההדגשה (ירוק לחוזקה, אדום לחסם) נקראים רק על
+        משטח בהיר, והמטאפורה כולה - יד שמעבירה מרקר על טקסט - נשענת על כך
+        שזה נראה כמו דף. מה שהשתנה: הנייר כבר לא בז' חמים אלא מנטה חיוור,
+        כך שהוא יושב בתוך שפת הזכוכית במקום להיראות כמו גזיר מפרויקט אחר,
+        והוא ממוסגר בלבנת זכוכית שמחזיקה אותו.
+      */}
+      <div className="glass glass-brick w-full rounded-2xl p-3">
+        <div
+          ref={paperRef}
+          className="relative w-full rounded-xl p-8 sm:p-10"
+          style={{
+            background: "linear-gradient(180deg, #f8fffd 0%, #e9f7f4 100%)",
+            boxShadow: "inset 0 2px 20px -8px rgba(8, 48, 45, 0.35)",
+            touchAction: "none",
+            // סמן העכבר עצמו הופך למכחול בצבע הכלי הפעיל - כדי שיהיה ברור על מה
+            // בדיוק לוחצים בלי להסתמך על נקודה שמצטיירת רק אחרי הלחיצה עצמה.
+            cursor: brushCursor(
+              activeTool === "eraser" ? ERASER_CURSOR_COLOR : STROKE_COLOR[activeTool],
+            ),
+          }}
+          onPointerDown={handlePaperPointerDown}
+          onPointerMove={handlePaperPointerMove}
+        >
+          {/* z-10 מעל ה-canvas בכוונה: הטקסט מצויר מעל שכבת הצביעה, לא מתחתיה -
+              כמו רקע-הדגשה אמיתי (mark/highlight), כדי שהאותיות תמיד יישארו
+              חדות וקריאות במלואן, גם כשהרקע הצבוע מתחתן מלא/חזק ולא שקוף. */}
+          <p className="relative z-10 text-2xl leading-loose text-[#08302d] select-none">
+            {wordGroups.map((chars, wi) => (
+              <span key={wi}>
+                {/* עטיפת nowrap סביב אותיות המילה - כל אות היא span נפרד לצביעה
+                    עצמאית, אבל המילה כולה לא נשברת לשתי שורות. בלי cursor-pointer
+                    בכוונה - היה דורס את סמן המכחול המותאם-אישית שמוגדר על תיבת
+                    הנייר כולה. */}
+                <span style={{ whiteSpace: "nowrap" }}>
+                  {chars.map(({ ch, index }) => (
+                    <span key={index} data-char-index={index}>
+                      {ch}
+                    </span>
+                  ))}
+                </span>{" "}
+              </span>
+            ))}
+          </p>
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 z-0 h-full w-full"
+            style={{ pointerEvents: "none" }}
+          />
+        </div>
       </div>
-
-      <button
-        className="bg-smoke-blue active:bg-smoke-blue-dark flex items-center gap-2 rounded-xl px-10 py-5 text-xl font-bold shadow-lg shadow-black/30 transition-transform duration-100 hover:-translate-y-0.5 active:scale-90"
-        onClick={() => setStep("table")}
-      >
-        הבא
-        <span aria-hidden="true">←</span>
-      </button>
-
-      {pendingPhrase && (
-        <CategoryPopup
-          pending={pendingPhrase}
-          categories={content.categories ?? []}
-          onChoose={confirmCategory}
-          onCancel={() => setPendingPhrase(null)}
-        />
-      )}
-    </main>
+    </StageShell>
   );
 }
 
