@@ -3,6 +3,11 @@ import type { Group } from "../../types/group";
 import type { Stage3Content, InspirationItem } from "../../types/stage3Content";
 import { useInspirations } from "../../hooks/useInspirations";
 import { useInspirationSelection } from "../../hooks/useInspirationSelection";
+import StageShell from "../StageShell";
+import Icon from "../ui/Icon";
+import GlassModal from "../ui/GlassModal";
+import { Spinner } from "../ui/Glass";
+import { cx } from "../../lib/cx";
 
 const MAX_SELECTED = 4;
 const FLY_DURATION_MS = 550;
@@ -10,7 +15,7 @@ const FLY_DURATION_MS = 550;
 /**
  * זוויות 7 הקרניים סביב השמש (מעלות, 0=ימין, סיבוב נגד כיוון השעון) - חולצו
  * ישירות ממיקומי הצורות בשקף 5 במצגת (docs/מצגת.pptx). שימו לב לפער למעלה -
- * זה במקור, לא טעות.
+ * זה במקור, לא טעות. **אסור לשנות** - זה המיקום המדויק מהמצגת של הלקוחה.
  */
 const RAY_ANGLES = [42, 4, -32, -90, -148, 176, 143];
 const RADIUS = 230;
@@ -46,7 +51,7 @@ function FlyingChipEl({ chip }: { chip: FlyingChip }) {
 
   return (
     <span
-      className="pointer-events-none fixed z-50 rounded-full bg-accent-red px-3 py-1 text-xs font-bold whitespace-nowrap text-white transition-all ease-in"
+      className="glass glass-active pointer-events-none fixed z-50 rounded-full px-3.5 py-1.5 text-xs font-bold whitespace-nowrap transition-all ease-in"
       style={{
         left: pos.x,
         top: pos.y,
@@ -60,6 +65,24 @@ function FlyingChipEl({ chip }: { chip: FlyingChip }) {
   );
 }
 
+/**
+ * שלב 3 - שמש האסוציאציות (שקף 5 במצגת).
+ *
+ * ההשראות עצמן **משותפות לשלוש הקבוצות** (מה שקבוצה אחת מקלידה מופיע אצל
+ * כולן), אבל ה**בחירה** היא של כל קבוצה בנפרד, וכך גם המעבר לשלב הבא.
+ * ראו ההסבר המלא בסעיף 8.5 ב-CLAUDE.md.
+ *
+ * ----------------------------------------------------------------------------
+ * העיצוב: שמש שבאמת מאירה
+ * ----------------------------------------------------------------------------
+ * המרכז הוא עדשת זכוכית עבה עם הילה שנושמת מאחוריה - הדילמה היא מקור האור,
+ * והקרניים יוצאות ממנה. קרן שההשראה שלה נבחרה **נדלקת** (מתעבה ומקבלת
+ * זוהר טורקיז), כך שהקשר בין הבחירה לשמש נראה ולא רק נרמז.
+ *
+ * הרדיוס והזוויות נשארו בדיוק כפי שחולצו מהמצגת. כדי שזה לא יישבר על מסך
+ * צר, השמש כולה מוקטנת פרופורציונלית (`scale`) במקום לשנות את הגאומטריה -
+ * כך המיקום היחסי של כל קרן נשמר מדויק בכל רוחב מסך.
+ */
 function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) {
   const { items, loading: loadingText, mutate: mutateText } = useInspirations(workshopId);
   const { selected, loading: loadingSelection, mutate } = useInspirationSelection(workshopId, myGroup.id);
@@ -121,132 +144,193 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-xl">טוענת...</p>
-      </main>
+      <StageShell stage={3} kicker="שמש אסוציאציות" icon="sun" title="טוענת את ההשראות">
+        <Spinner size={56} />
+      </StageShell>
     );
   }
 
+  const remaining = MAX_SELECTED - selectedCount;
+
   return (
-    <main className="flex min-h-screen flex-col items-center gap-4 p-8">
-      <h1 className="text-2xl font-bold">שמש אסוציאציות</h1>
-      <p className="text-sm text-white/60">
-        השלימו את ההשראות מסביב. לחצו על השראה טובה כדי להעתיק אותה ל"סטריפ" למטה!
-      </p>
+    <StageShell
+      stage={3}
+      kicker="שמש אסוציאציות"
+      icon="sun"
+      title="מה עולה לכן מהדילמה?"
+      subtitle="השלימו את ההשראות סביב השמש, ובחרו את הארבע החזקות ביותר."
+      width="full"
+      className="!pb-56"
+      overlay={
+        <>
+          {flyingChips.map((chip) => (
+            <FlyingChipEl key={chip.key} chip={chip} />
+          ))}
 
-      <div className="relative my-6" style={{ width: RADIUS * 2 + 160, height: RADIUS * 2 + 60 }}>
-        {/* השמש - עיגול מרכזי */}
-        {/* מרכז השמש - הדילמה עצמה, נקראת מהמסד ולא כתובה בקוד (כלל הברזל
-            בסעיף 4 ב-CLAUDE.md). העיגול גדל כדי שהטקסט המלא ייכנס. */}
-        <div
-          className="absolute flex h-56 w-56 items-center justify-center rounded-full bg-wood/60 p-5 text-center leading-snug font-bold"
-          style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
-        >
-          <span className={content.dilemma_text ? "text-sm" : "text-lg"}>
-            {content.dilemma_text || "הדילמה שלנו"}
-          </span>
-        </div>
-
-        {/* קווי הקרניים (מהעיגול החוצה) */}
-        {RAY_ANGLES.map((deg, i) => {
-          const rad = (deg * Math.PI) / 180;
-          const x1 = 80 * Math.cos(rad);
-          const y1 = -80 * Math.sin(rad);
-          const x2 = (RADIUS - 40) * Math.cos(rad);
-          const y2 = -(RADIUS - 40) * Math.sin(rad);
-          const length = Math.hypot(x2 - x1, y2 - y1);
-          const lineAngle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
-          return (
+          <GlassModal
+            open={showPopup}
+            title={content.transition_text ?? "בחרתן את ההשראות שלכן"}
+            icon="sparkles"
+            tone="ok"
+            confirmLabel="לשלב הבא"
+            onConfirm={onAdvance}
+            dismissable={false}
+          />
+        </>
+      }
+    >
+      {/* --- השמש --- */}
+      <div className="flex w-full justify-center">
+        <div className="origin-center scale-[0.52] sm:scale-[0.72] lg:scale-90 xl:scale-100">
+          <div
+            className="relative"
+            style={{ width: RADIUS * 2 + 200, height: RADIUS * 2 + 120 }}
+          >
+            {/* הילת השמש - נושמת מאחורי המרכז */}
             <div
-              key={`line-${i}`}
-              className="absolute bg-white/20"
+              aria-hidden="true"
+              className="bg-glow-soft absolute top-1/2 left-1/2 h-[26rem] w-[26rem] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[90px]"
+              style={{ animation: "soft-pulse 6s ease-in-out infinite" }}
+            />
+
+            {/* קווי הקרניים - נדלקות כשההשראה שעליהן נבחרה */}
+            {RAY_ANGLES.map((deg, i) => {
+              const rad = (deg * Math.PI) / 180;
+              const x1 = 92 * Math.cos(rad);
+              const y1 = -92 * Math.sin(rad);
+              const x2 = (RADIUS - 44) * Math.cos(rad);
+              const y2 = -(RADIUS - 44) * Math.sin(rad);
+              const length = Math.hypot(x2 - x1, y2 - y1);
+              const lineAngle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+              const lit = selected.includes(i);
+
+              return (
+                <div
+                  key={`line-${i}`}
+                  aria-hidden="true"
+                  className="absolute rounded-full transition-all duration-500"
+                  style={{
+                    left: "50%",
+                    top: "50%",
+                    width: length,
+                    height: lit ? 5 : 2,
+                    background: lit
+                      ? "linear-gradient(90deg, var(--ds-accent), var(--ds-accent-soft))"
+                      : "var(--ds-edge)",
+                    boxShadow: lit ? "0 0 16px 1px var(--ds-glow)" : "none",
+                    opacity: lit ? 1 : 0.5,
+                    transform: `translate(${x1}px, ${y1}px) rotate(${lineAngle}deg) translateY(${lit ? -2.5 : -1}px)`,
+                    transformOrigin: "0 0",
+                  }}
+                />
+              );
+            })}
+
+            {/* מרכז השמש - הדילמה עצמה, נקראת מהמסד ולא כתובה בקוד
+                (כלל הברזל בסעיף 4 ב-CLAUDE.md). */}
+            <div
+              className="glass glass-brick absolute flex h-60 w-60 items-center justify-center rounded-full p-7 text-center"
               style={{
                 left: "50%",
                 top: "50%",
-                width: length,
-                height: 2,
-                transform: `translate(${x1}px, ${y1}px) rotate(${lineAngle}deg)`,
-                transformOrigin: "0 0",
+                transform: "translate(-50%, -50%)",
+                boxShadow:
+                  "var(--ds-shadow-lg), 0 0 60px -6px var(--ds-glow), var(--ds-inset-top)",
               }}
-            />
-          );
-        })}
-
-        {/* 7 משבצות ההשראה - ריקה: שדה הקלדה. מלאה: כפתור שלוחצים עליו כדי לבחור (רק בחירה של הקבוצה שלנו). */}
-        {RAY_ANGLES.map((deg, i) => {
-          const rad = (deg * Math.PI) / 180;
-          const x = RADIUS * Math.cos(rad);
-          const y = -RADIUS * Math.sin(rad);
-          const item = slots[i];
-          const style = { left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` };
-          const isSelected = selected.includes(i);
-
-          if (!item.text.trim()) {
-            return (
-              <input
-                key={i}
-                className="absolute w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/10 px-3 py-2 text-center text-sm outline-none"
-                style={style}
-                placeholder="_____________"
-                onBlur={(e) => updateSlotText(i, e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                }}
-              />
-            );
-          }
-
-          return (
-            <button
-              key={i}
-              className={`absolute w-32 -translate-x-1/2 -translate-y-1/2 rounded-full px-3 py-2 text-center text-sm transition-transform active:scale-90 ${
-                isSelected ? "bg-accent-red font-bold" : "bg-white/10"
-              }`}
-              style={style}
-              onClick={(e) => toggleSelected(i, e)}
             >
-              {item.text}
-            </button>
-          );
-        })}
-      </div>
+              <span
+                className={cx(
+                  "font-extrabold leading-snug",
+                  content.dilemma_text ? "text-base" : "text-xl",
+                )}
+              >
+                {content.dilemma_text || "הדילמה שלנו"}
+              </span>
+            </div>
 
-      <p className="text-sm text-white/60">
-        נבחרו {selectedCount}/{MAX_SELECTED}
-        {selectedCount === MAX_SELECTED - 1 && " (עוד אחת ועוברים הלאה!)"}
-      </p>
+            {/* 7 משבצות ההשראה */}
+            {RAY_ANGLES.map((deg, i) => {
+              const rad = (deg * Math.PI) / 180;
+              const x = RADIUS * Math.cos(rad);
+              const y = -RADIUS * Math.sin(rad);
+              const item = slots[i];
+              const style = { left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` };
+              const isSelected = selected.includes(i);
 
-      {/* תיבת ההשראות שנבחרו על ידינו - תלווה גם שלבים הבאים (למשל שלב 4). */}
-      <div
-        ref={stripRef}
-        className="fixed bottom-6 left-1/2 flex min-h-10 min-w-48 -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/15 bg-black/30 px-4 py-2"
-      >
-        {selected.length === 0 && <span className="text-xs text-white/40">ההשראות שתבחרו יופיעו כאן</span>}
-        {selected.map((index) => (
-          <span key={index} className="rounded-full bg-accent-red px-3 py-1 text-xs font-bold">
-            {slots[index].text}
-          </span>
-        ))}
-      </div>
+              if (!item.text.trim()) {
+                return (
+                  <input
+                    key={i}
+                    className="glass-input absolute w-40 -translate-x-1/2 -translate-y-1/2 !min-h-[3.25rem] !px-3 text-center !text-base"
+                    style={style}
+                    placeholder="כתבו כאן"
+                    aria-label={`השראה ${i + 1}`}
+                    onBlur={(e) => updateSlotText(i, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    }}
+                  />
+                );
+              }
 
-      {flyingChips.map((chip) => (
-        <FlyingChipEl key={chip.key} chip={chip} />
-      ))}
-
-      {showPopup && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-8">
-          <div className="flex max-w-lg flex-col items-center gap-6 rounded-3xl bg-smoke-blue-dark p-10 text-center shadow-2xl">
-            <p className="text-3xl font-bold">{content.transition_text}</p>
-            <button
-              className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-10 py-5 text-xl font-bold active:scale-90"
-              onClick={onAdvance}
-            >
-              לשלב הבא
-            </button>
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  aria-pressed={isSelected}
+                  className={cx(
+                    "glass glass-interactive absolute w-40 -translate-x-1/2 -translate-y-1/2 rounded-full px-3 py-3.5 text-center text-base font-bold",
+                    isSelected && "glass-active",
+                  )}
+                  style={style}
+                  onClick={(e) => toggleSelected(i, e)}
+                >
+                  {item.text}
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
-    </main>
+      </div>
+
+      {/* --- תיבת ההשראות שנבחרו --- */}
+      <div
+        ref={stripRef}
+        className="glass glass-brick fixed bottom-24 left-1/2 z-30 flex min-h-[4.25rem] w-[min(92vw,44rem)] -translate-x-1/2 items-center gap-3 rounded-xl px-5 py-3"
+      >
+        <span className="text-ink-3 flex flex-none items-center gap-1.5 text-[11px] font-bold">
+          <Icon name="star" size={14} className="text-accent-soft" />
+          נבחרו
+          <span className="text-accent text-sm tabular-nums">
+            {selectedCount}/{MAX_SELECTED}
+          </span>
+        </span>
+
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          {selected.length === 0 ? (
+            <span className="text-ink-3 text-xs">
+              לחצו על השראה בשמש כדי לבחור אותה
+            </span>
+          ) : (
+            selected.map((index) => (
+              <span
+                key={index}
+                className="glass glass-active glass-chip !text-[13px]"
+                style={{ animation: "pop-in var(--ds-dur) var(--ds-ease-spring) both" }}
+              >
+                {slots[index].text}
+              </span>
+            ))
+          )}
+        </div>
+
+        {remaining > 0 && remaining <= 2 && (
+          <span className="text-accent-soft flex-none text-xs font-bold">
+            {remaining === 1 ? "עוד אחת ועוברים!" : `עוד ${remaining}`}
+          </span>
+        )}
+      </div>
+    </StageShell>
   );
 }
 
