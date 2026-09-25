@@ -135,7 +135,7 @@ function GlassModal({
         aria-hidden="true"
         onClick={requestClose}
         className={cx(
-          "absolute inset-0 bg-[rgba(4,20,21,0.62)] backdrop-blur-[6px]",
+          "absolute inset-0 bg-[var(--ds-scrim)] backdrop-blur-[6px]",
           !dismissable && "cursor-default",
         )}
       />

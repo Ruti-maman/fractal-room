@@ -231,8 +231,18 @@ function StageRouter({
     <>
       {stageContent}
       {showInspirationsLadder && <InspirationsLadder workshopId={workshopId} />}
-      {showPracticalConclusion && (
-        <PracticalConclusionBanner workshopId={workshopId} groupId={myGroup.id} />
+      {/* הסרגל העליון מושהה במסך הפתיחה (שלב 1) יחד עם המד והטיימר: לפני
+          ההזדהות לקבוצה עוד אין שם להציג, ואין לאן לחזור. */}
+      {isOpeningScreen ? null : (
+        <TopBar
+          myGroup={myGroup}
+          screenNumber={screenNumber}
+          center={
+            showPracticalConclusion ? (
+              <PracticalConclusionBanner workshopId={workshopId} groupId={myGroup.id} />
+            ) : null
+          }
+        />
       )}
       {isOpeningScreen ? null : progressBar}
       {waitingTimer}

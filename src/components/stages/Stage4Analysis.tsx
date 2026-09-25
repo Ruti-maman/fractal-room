@@ -34,7 +34,7 @@ const STROKE_ALPHA = 1;
 // שהוא מאבד את הצורה שתפורה לאות. אם הדפדפן לא תומך ב-ctx.filter (מסך ישן)
 // הוא פשוט מתעלם ממנו ומצייר בלי טשטוש - לא נשבר, רק פחות רך.
 const STROKE_BLUR_PX = 1.5;
-const ERASER_CURSOR_COLOR = "#f6b8c4";
+const ERASER_CURSOR_COLOR = "#d5e8e4";
 
 /**
  * הופכת את סמן העכבר עצמו למרקר קטן בצבע הכלי הפעיל, מוטה באלכסון (כמו

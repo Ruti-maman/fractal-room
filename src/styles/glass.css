@@ -509,9 +509,9 @@
   .glass-title {
     background-image: linear-gradient(
       160deg,
-      var(--ds-text) 0%,
-      var(--ds-accent-pale) 65%,
-      var(--ds-accent-soft) 100%
+      var(--ds-title-from) 0%,
+      var(--ds-title-via) 65%,
+      var(--ds-title-to) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;

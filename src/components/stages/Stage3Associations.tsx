@@ -163,6 +163,55 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
       className="!pb-56"
       overlay={
         <>
+          {/*
+            תיבת ההשראות שנבחרו.
+
+            היא יושבת כאן, ב-overlay, ולא בתוך גוף השלב - וזה הכרחי ולא
+            עניין של סדר: גוף השלב מונפש ב-transform (fade-up), ואלמנט
+            עם transform הופך לנקודת הייחוס של position:fixed במקום
+            החלון. כשהרצועה הייתה שם, ה-bottom שלה נמדד מתחתית התוכן
+            המונפש והיא ריחפה באמצע השמש במקום להיצמד לתחתית המסך.
+          */}
+          <div
+            ref={stripRef}
+            // bottom משתנה לפי רוחב: על מסך רחב הרצועה יושבת נמוך, בין מד
+            // ההתקדמות לטיימר שנמצאים בקצוות. על מסך צר אין ביניהם מקום,
+            // ולכן היא עולה מעליהם במקום להתנגש בהם.
+            className="glass glass-brick fixed bottom-[12rem] left-1/2 z-30 flex min-h-[4.25rem] w-[min(92vw,44rem)] -translate-x-1/2 items-center gap-3 rounded-xl px-5 py-3 lg:bottom-24"
+          >
+            <span className="text-ink-3 flex flex-none items-center gap-1.5 text-[11px] font-bold">
+              <Icon name="star" size={14} className="text-accent-soft" />
+              נבחרו
+              <span className="text-accent text-sm tabular-nums">
+                {selectedCount}/{MAX_SELECTED}
+              </span>
+            </span>
+
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              {selected.length === 0 ? (
+                <span className="text-ink-3 text-xs">
+                  לחצו על השראה בשמש כדי לבחור אותה
+                </span>
+              ) : (
+                selected.map((index) => (
+                  <span
+                    key={index}
+                    className="glass glass-active glass-chip !text-[13px]"
+                    style={{ animation: "pop-in var(--ds-dur) var(--ds-ease-spring) both" }}
+                  >
+                    {slots[index].text}
+                  </span>
+                ))
+              )}
+            </div>
+
+            {remaining > 0 && remaining <= 2 && (
+              <span className="text-accent-soft flex-none text-xs font-bold">
+                {remaining === 1 ? "עוד אחת ועוברים!" : `עוד ${remaining}`}
+              </span>
+            )}
+          </div>
+
           {flyingChips.map((chip) => (
             <FlyingChipEl key={chip.key} chip={chip} />
           ))}
@@ -293,43 +342,6 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
         </div>
       </div>
 
-      {/* --- תיבת ההשראות שנבחרו --- */}
-      <div
-        ref={stripRef}
-        className="glass glass-brick fixed bottom-24 left-1/2 z-30 flex min-h-[4.25rem] w-[min(92vw,44rem)] -translate-x-1/2 items-center gap-3 rounded-xl px-5 py-3"
-      >
-        <span className="text-ink-3 flex flex-none items-center gap-1.5 text-[11px] font-bold">
-          <Icon name="star" size={14} className="text-accent-soft" />
-          נבחרו
-          <span className="text-accent text-sm tabular-nums">
-            {selectedCount}/{MAX_SELECTED}
-          </span>
-        </span>
-
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          {selected.length === 0 ? (
-            <span className="text-ink-3 text-xs">
-              לחצו על השראה בשמש כדי לבחור אותה
-            </span>
-          ) : (
-            selected.map((index) => (
-              <span
-                key={index}
-                className="glass glass-active glass-chip !text-[13px]"
-                style={{ animation: "pop-in var(--ds-dur) var(--ds-ease-spring) both" }}
-              >
-                {slots[index].text}
-              </span>
-            ))
-          )}
-        </div>
-
-        {remaining > 0 && remaining <= 2 && (
-          <span className="text-accent-soft flex-none text-xs font-bold">
-            {remaining === 1 ? "עוד אחת ועוברים!" : `עוד ${remaining}`}
-          </span>
-        )}
-      </div>
     </StageShell>
   );
 }

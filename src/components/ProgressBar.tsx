@@ -28,9 +28,11 @@ function ProgressBar({ allGroups, myScreenNumber, totalStages }: Props) {
   return (
     <aside
       aria-label="התקדמות הקבוצות"
-      className="glass glass-brick fixed bottom-4 left-4 z-30 flex w-[15rem] flex-col gap-2.5 rounded-xl p-4 sm:bottom-6 sm:left-6 sm:w-[17rem]"
+      // על מסך צר המד מתכווץ לגרסה מינימלית (מספר מסך + פס בלבד): בפריסה
+      // המלאה הוא תפס כרבע ממסך טלפון וכיסה את התוכן שמתחתיו.
+      className="glass glass-brick fixed bottom-4 left-4 z-30 flex w-[9.5rem] flex-col gap-2.5 rounded-xl p-3 sm:bottom-6 sm:left-6 sm:w-[17rem] sm:p-4"
     >
-      <div className="text-ink-3 flex items-center gap-2 text-[11px] font-bold tracking-wide">
+      <div className="text-ink-3 hidden items-center gap-2 text-[11px] font-bold tracking-wide sm:flex">
         <Icon name="users" size={14} />
         התקדמות בחדר
       </div>
@@ -56,8 +58,13 @@ function ProgressBar({ allGroups, myScreenNumber, totalStages }: Props) {
                     style={{ boxShadow: "0 0 8px 1px var(--ds-glow)" }}
                   />
                 )}
-                <span className="truncate">{g.name ?? `מסך ${g.screen_number}`}</span>
-                {isMine && <span className="text-ink-3 flex-none text-[10px]">(אתן)</span>}
+                <span className="hidden truncate sm:inline">
+                  {g.name ?? `מסך ${g.screen_number}`}
+                </span>
+                <span className="sm:hidden">{g.screen_number}</span>
+                {isMine && (
+                  <span className="text-ink-3 hidden flex-none text-[10px] sm:inline">(אתן)</span>
+                )}
               </span>
               <span className="text-ink-3 flex-none text-[11px] font-bold tabular-nums">
                 {g.current_stage}/{totalStages}
