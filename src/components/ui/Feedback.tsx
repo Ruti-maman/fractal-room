@@ -209,14 +209,16 @@ export function InlineNotice({
   children?: ReactNode;
   className?: string;
 }) {
+  // הרקע נצבע בגוון הסטטוס ולא נשאר זכוכית ניטרלית: הודעת אזהרה שנראית
+  // בדיוק כמו כל כרטיס אחר על המסך פשוט לא נקראת כאזהרה.
   const toneClass =
     tone === "ok"
-      ? "text-ok"
+      ? "text-ok !bg-ok-fill"
       : tone === "danger"
-        ? "text-danger"
+        ? "text-danger !bg-danger-fill"
         : tone === "info"
           ? "text-accent-soft"
-          : "text-warn";
+          : "text-warn !bg-warn-fill";
 
   const toneIcon: IconName =
     icon ?? (tone === "ok" ? "check" : tone === "info" ? "info" : "alert");

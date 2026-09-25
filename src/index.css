@@ -70,35 +70,49 @@ textarea,
 /*
  * ברירת מחדל לטבעת המיקוד בכל רכיב אינטראקטיבי. `:focus-visible` בלבד:
  * על מסך מגע אצבע לא מדליקה טבעת, אבל ניווט מקלדת כן - וזו דרישת נגישות.
+ *
+ * בתוך `@layer base` כדי שרכיב זכוכית יוכל להחליף את הטבעת בהילה משלו
+ * (`.glass-interactive:focus-visible`) במקום לקבל את שתיהן זו על גבי זו.
  */
-:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 2px solid var(--ds-accent);
-  outline-offset: 3px;
-  border-radius: var(--ds-r-xs);
+@layer base {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--ds-accent);
+    outline-offset: 3px;
+    border-radius: var(--ds-r-xs);
+  }
 }
 
-button {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
+/*
+ * איפוסי אלמנטים יושבים ב-`@layer base` בכוונה.
+ *
+ * כלל שנכתב **מחוץ** לשכבה גובר בקסקייד על כל כלל בתוך שכבה, גם אם הוא
+ * פחות ספציפי. `button { background: none }` לא-משוכב הוא בדיוק מה שמחק
+ * כאן את המילוי של כל כפתורי הזכוכית - `.glass` ו-`.glass-btn-primary`
+ * יושבים ב-`@layer components`, ולכן הפסידו לאיפוס התמים הזה.
+ *
+ * את איפוס הרקע/מסגרת של כפתורים ושדות ממילא עושה ה-preflight של
+ * Tailwind, שנמצא בשכבה ולכן מתנהג נכון.
+ */
+@layer base {
+  button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
 
-input,
-textarea {
-  font: inherit;
-  color: inherit;
-  border: none;
-  background: none;
-}
+  input,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
 
-img,
-video,
-canvas,
-svg {
-  max-width: 100%;
-  display: block;
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+    display: block;
+  }
 }
 
 /* דילוג לתוכן - למקלדת בלבד, לא נראה עד שממקדים אליו */

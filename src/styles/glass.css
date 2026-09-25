@@ -36,7 +36,14 @@
     color: var(--ds-text);
   }
 
-  /* הברק הספקולרי - כתם אור מעוגל בקצה העליון */
+  /*
+   * הברק הספקולרי - כתם אור מעוגל בקצה העליון.
+   *
+   * חשוב: הכתם נעצר גבוה (`45%` גובה, נעלם עד 55%) ולא מכסה את המשטח.
+   * גרסה קודמת פרסה אותו על כל הגובה, והתוצאה הייתה שהוא הלבין לגמרי את
+   * המילוי שמתחתיו - הכפתור הראשי הטורקיז יצא לבן. הברק הוא השתקפות על
+   * הקצה, לא שכבת הלבנה.
+   */
   .glass::before {
     content: "";
     position: absolute;
@@ -45,12 +52,12 @@
     border-radius: inherit;
     pointer-events: none;
     background: radial-gradient(
-      130% 72% at 50% -22%,
+      115% 45% at 50% -18%,
       var(--ds-specular) 0%,
-      var(--ds-specular-soft) 34%,
-      transparent 62%
+      var(--ds-specular-soft) 30%,
+      transparent 56%
     );
-    opacity: 0.55;
+    opacity: 0.6;
     transition: opacity var(--ds-dur) var(--ds-ease);
   }
 
@@ -216,8 +223,14 @@
       inset 0 10px 26px -14px rgba(242, 255, 252, 0.7);
   }
 
+  /* על מילוי צבעוני הברק חייב להיות מרוסן - אחרת הוא מלבין את הטורקיז
+     שהוא אמור להבריק עליו. */
   .glass-active::before {
-    opacity: 0.85;
+    opacity: 0.5;
+  }
+
+  .glass-btn-primary::before {
+    opacity: 0.45;
   }
 
   @media (hover: hover) {
@@ -406,12 +419,12 @@
     background-image:
       linear-gradient(
         90deg,
-        rgba(255, 255, 255, 0.2) 0%,
-        rgba(199, 245, 244, 0.09) 1.4%,
-        transparent 4.5%,
-        transparent 95.5%,
-        rgba(199, 245, 244, 0.09) 98.6%,
-        rgba(255, 255, 255, 0.2) 100%
+        rgba(255, 255, 255, 0.28) 0%,
+        rgba(199, 245, 244, 0.13) 1.6%,
+        transparent 5%,
+        transparent 95%,
+        rgba(199, 245, 244, 0.13) 98.4%,
+        rgba(255, 255, 255, 0.28) 100%
       ),
       linear-gradient(
         180deg,
