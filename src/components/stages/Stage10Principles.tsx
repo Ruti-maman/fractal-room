@@ -1,6 +1,5 @@
-import { useState } from "react";
 import type { Group } from "../../types/group";
-import { usePrinciples } from "../../hooks/usePrinciples";
+import { useClosingPrinciple } from "../../hooks/useClosingPrinciple";
 
 interface Props {
   workshopId: string;
@@ -8,72 +7,68 @@ interface Props {
 }
 
 /**
- * שלב 10 - ניסוח 3 עקרונות מנחים, משותף לכל הקבוצות (שקף 15 במצגת).
- * זה השלב האחרון - אין "הבא" בסוף, רק מסך סיום. הניסוח בעזרת AI מתוכנן
- * להמשך (דרך Supabase Edge Function, ראו סעיף 2 ב-CLAUDE.md) - כרגע הקלדה ישירה.
+ * שלב 10 - משפט הסיום של הסדנה (שקף 15 במצגת: "מתוך כל הידע שנצבר ע"י AI
+ * בסדנא"). ה-AI מנסח **משפט אחד** מתוך כל מה שהקבוצות יצרו לאורך הסדנה,
+ * והוא מוצג זהה בשלושת המסכים - זה הרגע האחרון של האירוע.
+ *
+ * הניסוח עצמו נעשה ב-Edge Function (supabase/functions/generate-closing-principle)
+ * ונשמר במסד, ולכן הוא נוצר פעם אחת ולא משתנה בין המסכים או ברענון.
  */
 function Stage10Principles({ workshopId, myGroup }: Props) {
-  const { principles, loading, updatePrinciple } = usePrinciples(workshopId, myGroup.id);
-  const [drafts, setDrafts] = useState<string[]>(["", "", ""]);
-
-  const allFilled = principles.every((p) => p.trim().length > 0);
-
-  if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-xl">טוענת...</p>
-      </main>
-    );
-  }
-
-  if (allFilled) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
-        <div className="text-7xl">🎉</div>
-        <h1 className="text-3xl font-bold">הסדנה הסתיימה!</h1>
-        <p className="max-w-lg text-white/70">כל הנתונים נשמרו במערכת.</p>
-        <div className="flex flex-col gap-3">
-          {principles.map((p, i) => (
-            <div key={i} className="rounded-xl bg-white/10 px-6 py-3">
-              {i + 1}. {p}
-            </div>
-          ))}
-        </div>
-      </main>
-    );
-  }
+  const { sentence, loading, error } = useClosingPrinciple(workshopId, myGroup.id);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
-      <h1 className="text-2xl font-bold">ניסוח עקרונות מנחים</h1>
-      <p className="max-w-lg text-center text-white/70">
-        מתוך כל הידע שנצבר בסדנה, נסחו יחד 3 עקרונות חדשניים מנחים.
-      </p>
+    <main
+      className="relative flex min-h-screen flex-col items-center justify-center gap-10 overflow-hidden px-10 py-12 text-center"
+      style={{
+        background:
+          "radial-gradient(circle at 50% 10%, var(--color-smoke-blue) 0%, var(--color-smoke-blue-dark) 58%, var(--color-smoke-blue-darker) 100%)",
+      }}
+    >
+      {/* כתמי אור רכים - אותו קו עיצוב, אבל שקט יותר: זה רגע של סיכום ולא חגיגה */}
+      <div className="pointer-events-none absolute top-[-14%] left-[-8%] h-[32rem] w-[32rem] rounded-full bg-[#5bc0eb]/10 blur-[140px]" />
+      <div className="pointer-events-none absolute right-[-10%] bottom-[-16%] h-[34rem] w-[34rem] rounded-full bg-[#f5a25d]/8 blur-[150px]" />
 
-      <div className="flex flex-col gap-4">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="flex items-center gap-3">
-            <span className="w-6 text-xl font-bold">{i + 1}.</span>
-            <input
-              className="w-96 rounded-xl bg-white/10 px-4 py-3 outline-none"
-              placeholder={`עיקרון מנחה ${i + 1}`}
-              value={principles[i] || drafts[i]}
-              disabled={!!principles[i]}
-              onChange={(e) => {
-                const next = drafts.slice();
-                next[i] = e.target.value;
-                setDrafts(next);
-              }}
-              onBlur={(e) => {
-                if (e.target.value.trim()) updatePrinciple(i, e.target.value.trim());
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-              }}
-            />
-          </div>
-        ))}
+      <div className="relative flex flex-col items-center gap-3" style={{ animation: "fade-up 0.8s ease-out both" }}>
+        <span className="rounded-full border border-[#5bc0eb]/40 px-5 py-1.5 text-xs font-bold tracking-widest text-[#5bc0eb] uppercase">
+          שלב 10 · סיום התהליך
+        </span>
+        <h1 className="text-3xl font-bold text-white/85">העיקרון שעולה מהסדנה שלכן</h1>
       </div>
+
+      {loading && (
+        <div className="relative flex flex-col items-center gap-4">
+          <div className="border-t-[#5bc0eb] h-12 w-12 animate-spin rounded-full border-4 border-white/15" />
+          <p className="text-lg text-white/50">מנסחת את משפט הסיום מתוך כל מה שיצרתן...</p>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="relative flex max-w-xl flex-col items-center gap-2 rounded-2xl border border-[#f5a25d]/40 bg-[#f5a25d]/10 px-8 py-5">
+          <p className="font-bold text-[#f5a25d]">לא הצלחנו לנסח את משפט הסיום</p>
+          <p className="text-sm text-white/60">{error}</p>
+        </div>
+      )}
+
+      {!loading && sentence && (
+        <div
+          className="relative flex max-w-5xl flex-col items-center gap-8"
+          style={{ animation: "fade-up 1.4s 0.2s ease-out both" }}
+        >
+          <p className="text-4xl leading-[1.6] font-bold text-white">{sentence}</p>
+
+          <span className="h-px w-40 bg-gradient-to-l from-transparent via-white/30 to-transparent" />
+        </div>
+      )}
+
+      {!loading && (
+        <p
+          className="relative text-base font-bold text-white/40"
+          style={{ animation: "fade-up 1s 1.2s ease-out both" }}
+        >
+          סיום התהליך · כלל הנתונים נשמרים במערכת
+        </p>
+      )}
     </main>
   );
 }
