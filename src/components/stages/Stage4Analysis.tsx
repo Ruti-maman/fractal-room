@@ -67,7 +67,203 @@ const CHAR_FILL_PADDING_PX = 3;
 // כדי שכל אות שהאצבע "עברה מעליה" בדרך תיצבע בפועל, לא רק נקודת הקצה.
 const DRAG_SAMPLE_STEP_PX = 6;
 
-/** כפתור בצורת מרקר אמיתי - פקק, גוף עם השם כתוב עליו לאורך, וחוד, עם צל רך שנותן תחושת עומק. */
+/*
+ * ============================================================================
+ *  ארגז הכלים: מרקרים ומחק
+ * ============================================================================
+ *
+ *  הכלים מצוירים ב-SVG ולא מורכבים מערימת divים. הגרסה הקודמת הייתה
+ *  מלבן-מלבן-משולש, וזה נקרא כמו סכמה של טוש ולא כמו טוש: אין כתף, אין
+ *  ברק על הפלסטיק, והחוד היה משולש חד במקום **חוד אלכסוני (chisel)** -
+ *  שזו בדיוק הצורה שמזהים כ"מרקר".
+ *
+ *  ----------------------------------------------------------------------
+ *  מה מרכיב מרקר אחד
+ *  ----------------------------------------------------------------------
+ *  פקק עם קליפס · טבעת צווארון · גוף עם הצרה קלה כלפי מטה · חלונית דיו
+ *  שמראה את הצבע · ברק אנכי לאורך הפלסטיק · שרוול מתכת · חוד אלכסוני.
+ *  השם כתוב על הגוף לאורך, כמו על טוש אמיתי.
+ *
+ *  ----------------------------------------------------------------------
+ *  המיקרו-אינטראקציה
+ *  ----------------------------------------------------------------------
+ *  כלי פעיל **מורם ומוטה קלות**, כאילו נשלף מהמגש והוחזק ביד, והדיו שלו
+ *  זוהר מאחוריו. כלי כבוי שוכב ישר ועמום. זה מה שהופך את הבחירה למוחשית
+ *  במקום להיות עוד כפתור שמשנה גוון.
+ *
+ *  הצבע תמיד נגזר מ-STROKE_COLOR - אותו קבוע שצובע בפועל על הדף - כדי
+ *  שהכלי ביד "מבטיח" את התוצאה ולא יוכל להיפרד ממנה בטעות.
+ */
+
+/** מרקר מצויר. `ink` הוא הצבע שייצבע בפועל על הדף. */
+function MarkerBody({ ink }: { ink: string }) {
+  const dark = `color-mix(in srgb, ${ink} 55%, #06201f)`;
+  const darker = `color-mix(in srgb, ${ink} 32%, #06201f)`;
+  // מזהה ייחודי לגרדיאנטים, נגזר מהצבע - בלעדיו שני המרקרים בדף חולקים
+  // אותו id, ואחד מהם מקבל את הצבע של השני.
+  const id = ink.replace(/[^a-z0-9]/gi, "");
+
+  return (
+    <svg viewBox="0 0 64 190" className="h-[8.5rem] w-auto sm:h-40" aria-hidden="true">
+      <defs>
+        {/* גוף הפלסטיק - כהה בקצוות ובהיר במרכז, כדי שייקרא כגליל ולא כמלבן */}
+        <linearGradient id={`barrel-${id}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={darker} />
+          <stop offset="28%" stopColor={ink} />
+          <stop offset="58%" stopColor={ink} />
+          <stop offset="100%" stopColor={dark} />
+        </linearGradient>
+        <linearGradient id={`cap-${id}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={dark} />
+          <stop offset="35%" stopColor={ink} />
+          <stop offset="100%" stopColor={darker} />
+        </linearGradient>
+        {/* הברק על הפלסטיק - חזק למעלה ונמוג כלפי מטה */}
+        <linearGradient id={`gloss-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity={0.78} />
+          <stop offset="55%" stopColor="#ffffff" stopOpacity={0.26} />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
+        </linearGradient>
+      </defs>
+
+      {/* --- פקק --- */}
+      <rect x="9" y="4" width="46" height="44" rx="10" fill={`url(#cap-${id})`} />
+      <rect x="45" y="11" width="7" height="25" rx="3.5" fill={darker} />
+      <rect x="7" y="46" width="50" height="9" rx="4" fill={darker} />
+
+      {/* --- גוף --- */}
+      <path d="M11 55h42l-3 82a6 6 0 0 1-6 5.4H20a6 6 0 0 1-6-5.4z" fill={`url(#barrel-${id})`} />
+
+      {/* חלונית הדיו - "חלון" בגוף שמראה את הצבע האמיתי */}
+      <rect x="20" y="64" width="24" height="13" rx="4" fill={ink} />
+      <rect
+        x="20"
+        y="64"
+        width="24"
+        height="13"
+        rx="4"
+        fill="none"
+        stroke="#ffffff"
+        strokeOpacity={0.4}
+      />
+
+      {/* ברק אנכי לאורך הפלסטיק */}
+      <path d="M18 58h7l-2.4 78h-6.2z" fill={`url(#gloss-${id})`} />
+
+      {/* פסי אחיזה על הגוף - במקום הכיתוב, שירד מכאן (ראו ToolButton) */}
+      {[96, 106, 116].map((y) => (
+        <rect key={y} x="17" y={y} width="30" height="3" rx="1.5" fill="#06201f" opacity={0.14} />
+      ))}
+
+      {/* --- שרוול מתכת --- */}
+      <rect x="17" y="142" width="30" height="8" rx="3" fill="#cfe6e3" />
+      <rect x="17" y="142" width="30" height="3.5" rx="1.75" fill="#ffffff" opacity={0.7} />
+
+      {/* --- חוד אלכסוני (chisel) - הצורה שמזהים כמרקר --- */}
+      <path d="M20 150h24l4 22-6 10H23l-7-10z" fill={ink} />
+      <path d="M20 150h24l4 22-32 0z" fill="#ffffff" opacity={0.18} />
+    </svg>
+  );
+}
+
+/** מחק - גוש עם פאה עליונה מוארת, שרוול נייר, וקצה תחתון שחוק. */
+function EraserBody() {
+  const c = ERASER_CURSOR_COLOR;
+  return (
+    <svg viewBox="0 0 64 190" className="h-[8.5rem] w-auto sm:h-40" aria-hidden="true">
+      <defs>
+        <linearGradient id="eraser-body" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={`color-mix(in srgb, ${c} 60%, #06201f)`} />
+          <stop offset="32%" stopColor={c} />
+          <stop offset="100%" stopColor={`color-mix(in srgb, ${c} 72%, #06201f)`} />
+        </linearGradient>
+      </defs>
+
+      {/* הגוש מתחיל נמוך מהמרקרים, כך שכל שלושת הכלים יושבים על אותו בסיס */}
+      <rect x="9" y="42" width="46" height="114" rx="10" fill="url(#eraser-body)" />
+      {/* פאה עליונה מוארת - זה מה שנותן לגוש נפח */}
+      <path d="M9 52a10 10 0 0 1 10-10h26a10 10 0 0 1 10 10z" fill="#ffffff" opacity={0.42} />
+      {/* שרוול הנייר */}
+      <rect x="9" y="86" width="46" height="26" fill="#e8f5f2" opacity={0.92} />
+      <rect x="9" y="86" width="46" height="5" fill="#ffffff" opacity={0.65} />
+      <rect x="9" y="107" width="46" height="5" fill="#06201f" opacity={0.1} />
+      {/* הקצה השחוק */}
+      <path d="M9 156v-5l10-3 9 3 9-3 10 3v5z" fill="#06201f" opacity={0.16} />
+    </svg>
+  );
+}
+
+/** המעטפת המשותפת לשלושת הכלים - ההרמה, ההטיה והזוהר של המצב הפעיל. */
+function ToolButton({
+  active,
+  onClick,
+  glow,
+  label,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  /** צבע הזוהר במצב פעיל - צבע הדיו של הכלי. */
+  glow: string;
+  /** שם הכלי. מוצג כשלט אופקי מתחתיו, לא כתוב על הגוף. */
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      // padding מסביב לצורה - מגדיל את שטח הנגיעה בלי לנפח חזותית את הציור
+      className="group relative flex flex-col items-center rounded-xl px-2 pt-2 pb-3 transition-transform duration-300 hover:-translate-y-1.5"
+      style={{
+        // הטיה קלה כשהכלי "נשלף" - זה מה שהופך אותו לחפץ שהורם ביד
+        transform: active ? "translateY(-1rem) rotate(-6deg)" : undefined,
+        transitionTimingFunction: "var(--ds-ease-spring)",
+      }}
+      onClick={onClick}
+    >
+      {/* הילת הדיו מאחורי הכלי הפעיל */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-1 top-8 bottom-6 rounded-full blur-2xl transition-opacity duration-300"
+        style={{ background: glow, opacity: active ? 0.5 : 0 }}
+      />
+
+      <span
+        className="relative block transition-[filter] duration-300"
+        style={{
+          filter: active
+            ? `drop-shadow(0 14px 18px rgba(4,20,21,0.55)) drop-shadow(0 0 14px ${glow})`
+            : "drop-shadow(0 8px 10px rgba(4,20,21,0.45))",
+        }}
+      >
+        {children}
+      </span>
+
+      {/*
+        השלט.
+
+        השם היה כתוב על גוף הטוש עצמו, מסובב ב-90 מעלות - וזה אולי נאמן
+        לטוש אמיתי, אבל בעברית זה יצא כיתוב שצריך להטות אליו את הראש.
+        על מסך מגע של 65" קוראים את הכלים במבט חטוף, ולכן השם ירד מהגוף
+        (ובמקומו פסי אחיזה) ועלה לכאן, אופקי וקריא.
+      */}
+      <span
+        className={cx(
+          "mt-1 rounded-full px-3 py-1 text-sm font-extrabold transition-all duration-300",
+          active ? "text-ink" : "text-ink-3",
+        )}
+        style={{
+          background: active ? `color-mix(in srgb, ${glow} 26%, transparent)` : "transparent",
+          boxShadow: active ? `0 0 18px -4px ${glow}` : "none",
+        }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
 function MarkerTool({
   tool,
   label,
@@ -79,84 +275,19 @@ function MarkerTool({
   active: boolean;
   onClick: () => void;
 }) {
-  // צבע המרקר הוא בדיוק הצבע שייצבע על הדף - כך הכלי ביד "מבטיח" את
-  // התוצאה, וזו הסיבה שהוא נלקח מאותו קבוע (STROKE_COLOR) ולא מוגדר פעמיים.
   const ink = STROKE_COLOR[tool];
-
   return (
-    <button
-      type="button"
-      aria-pressed={active}
-      // padding מסביב לצורה עצמה - מגדיל את שטח הנגיעה בפועל בלי לנפח חזותית את הציור.
-      className={cx(
-        "glass glass-interactive group flex flex-col items-center rounded-xl p-3",
-        active ? "glass-active -translate-y-3" : "hover:-translate-y-1",
-      )}
-      onClick={onClick}
-    >
-      {/* הפקק */}
-      <div
-        className="h-6 w-12 rounded-t-md"
-        style={{
-          background: `linear-gradient(180deg, ${ink}, color-mix(in srgb, ${ink} 55%, #061f1e))`,
-          boxShadow: active ? `0 0 18px ${ink}` : "none",
-        }}
-      />
-      {/* גוף המרקר, עם השם כתוב עליו לאורך */}
-      <div
-        className="flex h-24 w-12 items-center justify-center text-sm font-extrabold"
-        style={{
-          writingMode: "vertical-rl",
-          background: `linear-gradient(90deg, color-mix(in srgb, ${ink} 70%, #061f1e), ${ink})`,
-          color: "#08201f",
-        }}
-      >
-        {label}
-      </div>
-      {/* החוד */}
-      <div
-        className="h-5 w-9"
-        style={{ background: ink, clipPath: "polygon(50% 100%, 15% 0, 85% 0)" }}
-      />
-      <div
-        className="mt-3 h-1.5 w-12 rounded-full transition-all duration-200"
-        style={{
-          background: active ? ink : "transparent",
-          boxShadow: active ? `0 0 10px ${ink}` : "none",
-        }}
-      />
-    </button>
+    <ToolButton active={active} onClick={onClick} glow={ink} label={label}>
+      <MarkerBody ink={ink} />
+    </ToolButton>
   );
 }
 
-/** כפתור מחק בצורת מחק עיפרון קלאסי. */
 function EraserTool({ active, onClick }: { active: boolean; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      aria-pressed={active}
-      className={cx(
-        "glass glass-interactive group flex flex-col items-center rounded-xl p-3",
-        active ? "glass-active -translate-y-3" : "hover:-translate-y-1",
-      )}
-      onClick={onClick}
-    >
-      <div
-        className="h-16 w-20 rounded-md"
-        style={{
-          background: `linear-gradient(180deg, ${ERASER_CURSOR_COLOR}, color-mix(in srgb, ${ERASER_CURSOR_COLOR} 60%, #061f1e))`,
-          boxShadow: active ? `0 0 18px ${ERASER_CURSOR_COLOR}` : "none",
-        }}
-      />
-      <span className="mt-2 text-sm font-extrabold">מחק</span>
-      <div
-        className="mt-2 h-1.5 w-12 rounded-full transition-all duration-200"
-        style={{
-          background: active ? ERASER_CURSOR_COLOR : "transparent",
-          boxShadow: active ? `0 0 10px ${ERASER_CURSOR_COLOR}` : "none",
-        }}
-      />
-    </button>
+    <ToolButton active={active} onClick={onClick} glow={ERASER_CURSOR_COLOR} label="מחק">
+      <EraserBody />
+    </ToolButton>
   );
 }
 
@@ -1071,7 +1202,9 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     >
       {/* קופסת הכלים - שלושת המרקרים יושבים בתוך לבנה אחת, כמו מודול
           הכפתורים בלוח הבקרה, ולא מרחפים בנפרד על הדף. */}
-      <div className="glass glass-brick mb-7 flex items-end gap-6 rounded-2xl px-8 py-5 sm:gap-10">
+      {/* המגש. שטוח ונמוך בכוונה (glass-dim) - הכלים הם הגיבורים כאן,
+          והמגש רק מחזיק אותם; לבנה עבה מסביבם הייתה מתחרה בהם. */}
+      <div className="glass glass-dim mb-8 flex items-end gap-3 rounded-2xl px-5 pt-3 pb-2 sm:gap-8 sm:px-9">
         <MarkerTool
           tool="green"
           label="חוזקות"

@@ -23,21 +23,11 @@ import Icon from "../ui/Icon";
  *    2. **התנועה** - שלוש שכבות שמסתובבות כל הזמן מסביב לאובייקט מרכזי
  *       הן בדיוק מה שלא רוצים מאחורי קבוצה שאמורה לדבר זו עם זו.
  *
- *  במקומן: טבעות זכוכית דקות וסטטיות סביב השעון, שנותנות את אותה תחושת
- *  עומק בלי תנועה, והתנועה היחידה על המסך היא החול שיורד - שזה בדיוק
- *  המידע שהשלב הזה צריך להעביר.
+ *  במקומן: שום דבר. הרקע המשותף של הסדנה (אדוות האור, ראו
+ *  styles/background.css) כבר נותן את העומק סביב השעון, ובלי להתחרות בו.
+ *  התנועה היחידה על המסך היא החול שיורד - וזה בדיוק המידע שהשלב הזה
+ *  צריך להעביר.
  */
-
-/**
- * טבעות הזכוכית סביב השעון. רדיוס באחוזים מגודל השכבה, ועובי שיורד
- * כלפי חוץ - כך הן נקראות כהד מתרחב של השעון ולא כמעגלים אקראיים.
- */
-const RINGS = [
-  { size: 30, opacity: 0.3, width: 1.5 },
-  { size: 42, opacity: 0.22, width: 1.25 },
-  { size: 56, opacity: 0.15, width: 1 },
-  { size: 72, opacity: 0.09, width: 1 },
-];
 
 interface Props {
   content: Stage6Content;
@@ -48,22 +38,6 @@ function Stage6Discussion({ content }: Props) {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-between overflow-hidden px-4 pt-24 pb-44 text-center sm:px-8">
       <BackgroundLayers />
-
-      {/* טבעות הד סביב מרכז הדף - סטטיות בכוונה, ראו ההסבר למעלה */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        {RINGS.map((ring) => (
-          <div
-            key={ring.size}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{
-              width: `${ring.size}vmin`,
-              height: `${ring.size}vmin`,
-              border: `${ring.width}px solid var(--ds-accent)`,
-              opacity: ring.opacity,
-            }}
-          />
-        ))}
-      </div>
 
       {/* המשפט למעלה - הוא מה שהקבוצה אמורה לדבר עליו */}
       <div

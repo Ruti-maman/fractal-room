@@ -1,0 +1,195 @@
+/*
+ * ============================================================================
+ *  חדר פרקטל - שכבות הרקע
+ * ============================================================================
+ *
+ *  לזכוכית אין משמעות בלי משהו מאחוריה. רקע אחיד הופך כל לבנה למלבן אפור,
+ *  ולכן הרקע כאן הוא לא "צבע" אלא **מה שהזכוכית שוברת**.
+ *
+ *  חמש שכבות, מהרחוקה לקרובה:
+ *    1. גרדיאנט הבסיס  - יושב על ה-body (index.css), כדי שגם הפריים הראשון
+ *                        לפני ש-React עולה יהיה בצבע הנכון.
+ *    2. אורורה         - שלושה כתמי אור גדולים שנעים לאט מאוד.
+ *    3. אדוות (caustics) - טבעות האור שנוצרות כשאור עובר דרך מים. זה מה
+ *                        שנותן לרקע את התחושה הימית במקום עוד גרדיאנט.
+ *    4. קרני אור       - שני אלכסונים רכים מלמעלה, כמו אור שנכנס מחלון.
+ *    5. רשת + ויניה    - מרקם עדין לשבירה, והכהיה בקצוות שממקדת פנימה.
+ *
+ *  ----------------------------------------------------------------------
+ *  ביצועים - זה לא נושא תיאורטי כאן
+ *  ----------------------------------------------------------------------
+ *  הפלזמה בחדר עלולה להריץ WebView ישן (סעיף 2 ב-CLAUDE.md), ולכן:
+ *
+ *  - **אין `filter: blur()` על שטח גדול.** הרכות מגיעה מהגרדיאנטים עצמם.
+ *    blur על משטח במסך מלא הוא הדבר היקר ביותר שאפשר לבקש מ-GPU חלש, וכל
+ *    התקציב הזה שמור ל-backdrop-filter של הזכוכית - שם הוא באמת נדרש.
+ *  - **אין `feTurbulence`/SVG filters.** אדוות אמיתיות היו יפות יותר,
+ *    אבל הן מחושבות מחדש בכל פריים. כאן הן `repeating-radial-gradient`,
+ *    שנצרב פעם אחת.
+ *  - **מונפש רק `transform` ו-`opacity`.** שניהם רצים על ה-compositor
+ *    ולא מחייבים ציור מחדש.
+ *  - מחזורי האנימציה ארוכים מאוד (40-90 שניות). זו תנועה שמרגישים ולא
+ *    רואים, וזה גם מה שמונע ממנה להסיח קבוצה שאמורה לעבוד.
+ *
+ *  במצב `data-effects="lite"` כל השכבות היקרות נכבות לגמרי (ראו בסוף).
+ */
+
+/* ==========================================================================
+   אורורה - כתמי האור הגדולים
+   ========================================================================== */
+
+.bg-aurora {
+  position: absolute;
+  inset: -10%;
+  background-image:
+    radial-gradient(42rem 34rem at 12% 8%, var(--ds-blob-a), transparent 70%),
+    radial-gradient(38rem 30rem at 88% 82%, var(--ds-blob-b), transparent 72%),
+    radial-gradient(30rem 26rem at 70% 12%, var(--ds-blob-c), transparent 74%);
+  animation: aurora-drift 38s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   אדוות - טבעות האור של אור שעובר במים
+   --------------------------------------------------------------------------
+   שלוש מערכות טבעות קונצנטריות ממרכזים שונים. החפיפה ביניהן היא מה
+   שיוצר את הדוגמה הלא-סדירה שנקראת כמו קרקעית בריכה, ולא כמו מטרה.
+   ה-mask מרכך אותן לקצוות כדי שלא ייחתכו בגבול המסך.
+   ========================================================================== */
+
+.bg-caustics {
+  position: absolute;
+  inset: -25%;
+  opacity: 0.5;
+  background-image:
+    repeating-radial-gradient(
+      circle at 22% 28%,
+      transparent 0 34px,
+      var(--ds-glow-soft) 34px 36px,
+      transparent 36px 78px
+    ),
+    repeating-radial-gradient(
+      circle at 76% 64%,
+      transparent 0 46px,
+      var(--ds-glow-soft) 46px 48px,
+      transparent 48px 104px
+    ),
+    repeating-radial-gradient(
+      circle at 48% 96%,
+      transparent 0 58px,
+      var(--ds-glow-soft) 58px 60px,
+      transparent 60px 132px
+    );
+  -webkit-mask-image: radial-gradient(ellipse at 50% 35%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse at 50% 35%, #000 0%, transparent 72%);
+  animation: caustic-drift 64s ease-in-out infinite;
+}
+
+@keyframes caustic-drift {
+  0%,
+  100% {
+    transform: scale(1) translate(0, 0);
+  }
+  33% {
+    transform: scale(1.08) translate(1.5%, -1%);
+  }
+  66% {
+    transform: scale(1.04) translate(-1%, 1.5%);
+  }
+}
+
+/* ==========================================================================
+   קרני אור - אלכסונים רכים מלמעלה
+   ========================================================================== */
+
+.bg-shafts {
+  position: absolute;
+  inset: -20% -30%;
+  opacity: 0.55;
+  background-image:
+    linear-gradient(104deg, transparent 38%, var(--ds-glow-soft) 44%, transparent 50%),
+    linear-gradient(96deg, transparent 58%, var(--ds-glow-soft) 62%, transparent 67%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 65%);
+  mask-image: linear-gradient(180deg, #000 0%, transparent 65%);
+  animation: shaft-sway 52s ease-in-out infinite;
+}
+
+@keyframes shaft-sway {
+  0%,
+  100% {
+    transform: translateX(0) skewX(0deg);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateX(3%) skewX(-1.5deg);
+    opacity: 0.7;
+  }
+}
+
+/* ==========================================================================
+   רשת עדינה - מרקם שהזכוכית שוברת
+   ========================================================================== */
+
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+  background-image:
+    linear-gradient(var(--ds-edge-dim) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ds-edge-dim) 1px, transparent 1px);
+  background-size: 68px 68px;
+  -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 78%);
+  mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 78%);
+}
+
+/* ==========================================================================
+   ויניה - הכהיה בקצוות
+   --------------------------------------------------------------------------
+   מרכזת את העין פנימה, ובמסך 65" בחדר חשוך היא גם מונעת מהקצוות
+   "לבעור". במצב בהיר היא הופכת להבהרה עדינה במקום הכהיה.
+   ========================================================================== */
+
+.bg-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 85% 75% at 50% 42%,
+    transparent 40%,
+    var(--ds-vignette) 100%
+  );
+}
+
+/* ==========================================================================
+   גרגרים צפים - נקודות אור שעולות לאט
+   ========================================================================== */
+
+.bg-mote {
+  position: absolute;
+  border-radius: 9999px;
+  background: var(--ds-accent-soft);
+  box-shadow: 0 0 8px 1px var(--ds-glow-soft);
+  animation-name: float-mote;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* ==========================================================================
+   מצב אפקטים מופחתים
+   --------------------------------------------------------------------------
+   כשמכבים את הזכוכית בגלל ביצועים, אין שום היגיון להשאיר את השכבות
+   היקרות של הרקע דולקות. נשארים הגרדיאנט והוויניה בלבד - שניהם סטטיים.
+   ========================================================================== */
+
+:root[data-effects="lite"] .bg-caustics,
+:root[data-effects="lite"] .bg-shafts,
+:root[data-effects="lite"] .bg-mote {
+  display: none;
+}
+
+:root[data-effects="lite"] .bg-aurora {
+  animation: none;
+}
+
+/*
+ * כיבוד prefers-reduced-motion מגיע גלובלית מ-animations.css (שמקצר כל
+ * אנימציה), ולכן אין צורך לחזור עליו כאן - השכבות פשוט נעצרות במקומן.
+ */

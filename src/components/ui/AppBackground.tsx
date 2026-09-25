@@ -3,20 +3,10 @@
  *  רקע הדף
  * ============================================================================
  *
- *  לזכוכית אין משמעות בלי משהו מאחוריה. הרקע כאן הוא מה שה-backdrop-filter
- *  מטשטש, ובלעדיו כל הלבנים היו נראות כמו מלבנים אפורים.
- *
- *  שלוש שכבות:
- *    1. גרדיאנט הבסיס - יושב על ה-body (ראו index.css), כדי שאפילו הפריים
- *       הראשון לפני ש-React עולה יהיה בצבע הנכון.
- *    2. כתמי אור (blobs) - שלושה כתמים מטושטשים שנעים לאט מאוד.
- *    3. רשת עדינה - קווים כמעט בלתי נראים שנותנים לזכוכית מרקם לשבור.
- *
- *  **ביצועים:** הכתמים מצוירים כ-radial-gradient על אלמנט אחד ולא כשלושה
- *  אלמנטים עם blur(120px). blur על שטח גדול הוא הדבר היקר ביותר שאפשר
- *  לבקש מ-WebView של אנדרואיד, וכאן הוא נחסך לגמרי - הרכות מגיעה מעצם
- *  הגרדיאנט. זה משאיר את תקציב ה-GPU לטשטוש של הזכוכית עצמה, ששם הוא
- *  באמת נדרש.
+ *  לזכוכית אין משמעות בלי משהו מאחוריה - בלי הרקע הזה כל לבנה נראית כמו
+ *  מלבן אפור. הרכיב מרכיב את השכבות; הן עצמן מוגדרות ב-styles/background.css,
+ *  שם גם מתועד למה כל אחת בנויה כמו שהיא ומה נעשה בשביל הביצועים על
+ *  הפלזמה.
  */
 
 import type { ReactNode } from "react";
@@ -31,41 +21,63 @@ interface Props {
   className?: string;
 }
 
+/**
+ * גרגרי האור הצפים. המיקום, הגודל והקצב קבועים ולא אקראיים בזמן ריצה,
+ * אחרת הם "קופצים" למקום חדש בכל רינדור מחדש של הדף.
+ *
+ * תשעה בלבד: זה מספיק כדי שהחלל ירגיש חי, ומעט מספיק כדי שאף אחת
+ * מהמשתתפות לא תתחיל לעקוב אחריהם במקום להקשיב לדיון.
+ */
+const MOTES = Array.from({ length: 9 }, (_, i) => {
+  const rand = (seed: number) => (Math.sin((i + 1) * seed) + 1) / 2;
+  return {
+    left: Math.round(rand(12.9898) * 96) + 2,
+    top: Math.round(rand(41.77) * 70) + 20,
+    size: 2 + Math.round(rand(78.233) * 3),
+    duration: 16 + Math.round(rand(93.1) * 16),
+    delay: Math.round(rand(27.3) * 14),
+  };
+});
+
 export function BackgroundLayers({ botanical = false }: Pick<Props, "botanical">) {
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      {/* כתמי האור - שלושה גרדיאנטים רדיאליים על משטח אחד */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: `
-            radial-gradient(42rem 34rem at 12% 8%, var(--ds-blob-a), transparent 70%),
-            radial-gradient(38rem 30rem at 88% 82%, var(--ds-blob-b), transparent 72%),
-            radial-gradient(30rem 26rem at 70% 12%, var(--ds-blob-c), transparent 74%)
-          `,
-          animation: "aurora-drift 34s ease-in-out infinite",
-        }}
-      />
+      {/* 1. כתמי אור גדולים שנעים לאט */}
+      <div className="bg-aurora" />
 
-      {/* רשת עדינה - נותנת לזכוכית מרקם לשבור במקום שטח אחיד */}
-      <div
-        className="absolute inset-0 opacity-[0.55]"
-        style={{
-          backgroundImage: `
-            linear-gradient(var(--ds-edge-dim) 1px, transparent 1px),
-            linear-gradient(90deg, var(--ds-edge-dim) 1px, transparent 1px)
-          `,
-          backgroundSize: "68px 68px",
-          maskImage: "radial-gradient(circle at 50% 40%, #000 0%, transparent 78%)",
-          WebkitMaskImage: "radial-gradient(circle at 50% 40%, #000 0%, transparent 78%)",
-        }}
-      />
+      {/* 2. אדוות - טבעות האור של אור שעובר במים */}
+      <div className="bg-caustics" />
+
+      {/* 3. קרני אור מלמעלה, כמו אור שנכנס מחלון */}
+      <div className="bg-shafts" />
+
+      {/* 4. רשת עדינה - מרקם שהזכוכית שוברת */}
+      <div className="bg-grid" />
+
+      {/* 5. גרגרי אור צפים */}
+      {MOTES.map((mote, i) => (
+        <span
+          key={i}
+          className="bg-mote"
+          style={{
+            insetInlineStart: `${mote.left}%`,
+            top: `${mote.top}%`,
+            width: mote.size,
+            height: mote.size,
+            animationDuration: `${mote.duration}s`,
+            animationDelay: `${mote.delay}s`,
+          }}
+        />
+      ))}
+
+      {/* 6. הכהיית קצוות - ממקדת את העין פנימה */}
+      <div className="bg-vignette" />
 
       {botanical && (
         <Botanical
           variant={botanical}
           size={360}
-          className="text-accent absolute bottom-[-4rem] left-[-3rem] opacity-[0.12] rotate-[8deg]"
+          className="text-accent absolute -bottom-16 -left-12 rotate-[8deg] opacity-[0.12]"
         />
       )}
     </div>

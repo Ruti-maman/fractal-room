@@ -42,6 +42,11 @@ interface Props {
   tone?: Tone;
   /** מוסתר כשלא צריך אייקון בכלל (למשל מודאל תוכן ולא הודעה). */
   icon?: IconName | false;
+  /**
+   * ויזואל מותאם במקום עיגול האייקון הסטטי - למסך שרוצה רגע מונפש משלו
+   * (ראו SuccessMark בשלב 5). גובר על `icon`.
+   */
+  visual?: ReactNode;
   /** כפתור הפעולה הראשי. בלעדיו מוצג רק כפתור סגירה. */
   confirmLabel?: string;
   onConfirm?: () => void;
@@ -63,6 +68,7 @@ function GlassModal({
   children,
   tone = "neutral",
   icon,
+  visual,
   confirmLabel,
   onConfirm,
   confirmLoading = false,
@@ -163,7 +169,9 @@ function GlassModal({
           />
         )}
 
-        {iconName && (
+        {visual}
+
+        {!visual && iconName && (
           <div
             className={cx(
               "glass glass-icon-btn glass-icon-btn-lg mx-auto mb-6",
