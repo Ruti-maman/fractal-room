@@ -1,5 +1,6 @@
 import type { Stage1Content } from "../../types/stage1Content";
 import { requestKioskPermissions } from "../../hooks/useKioskMode";
+import { useState } from "react";
 import { primeAudio } from "../../lib/audioUnlock";
 import AutoPlayVideo from "../AutoPlayVideo";
 
@@ -58,27 +59,33 @@ function ScreenContent({ screen }: { screen: Stage1Content["screens"][string] | 
   );
 }
 
-function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
+function Stage1Opening({ screenNumber, content }: Props) {
+  const [started, setStarted] = useState(false);
   const screen = content.screens[String(screenNumber)];
 
   function handleStart() {
     primeAudio();
     requestKioskPermissions();
     playTransitionSound();
-    // מסך משפט המעבר הוסר לפי בקשת הלקוחה - עוברים ישר לשלב הבא.
-    // צליל המעבר נשאר, כי הוא גם מה שפותח את הרשאת הקול לכל הסדנה.
-    onAdvance();
+    // הכפתור **לא** מעביר שלב: לפי תשובת הלקוחה הטיימר הוא זה שמעביר.
+    // תפקידו היחיד הוא לפתוח את הרשאת הקול ואת מצב הקיוסק בנגיעה אמיתית.
+    setStarted(true);
   }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
       <ScreenContent screen={screen} />
-      <button
-        className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-10 py-5 text-2xl font-bold transition-transform duration-100 active:scale-90"
-        onClick={handleStart}
-      >
-        התחילו
-      </button>
+
+      {started ? (
+        <p className="text-lg font-bold text-white/50">הסדנה מתחילה...</p>
+      ) : (
+        <button
+          className="bg-smoke-blue active:bg-smoke-blue-dark rounded-xl px-10 py-5 text-2xl font-bold transition-transform duration-100 active:scale-90"
+          onClick={handleStart}
+        >
+          התחילו
+        </button>
+      )}
     </main>
   );
 }

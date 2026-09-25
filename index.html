@@ -1,10 +1,37 @@
 <!doctype html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="color-scheme" content="dark light" />
+    <!-- צבע סרגל הדפדפן באנדרואיד, כדי שלא יבצבץ פס לבן מעל מסך הסדנה -->
+    <meta name="theme-color" content="#081b1c" />
     <title>חדר פרקטל</title>
+    <script>
+      /*
+       * נפתר לפני הציור הראשון, בכוונה: אם המצב הכהה/בהיר היה נקבע רק
+       * אחרי שה-React עולה, היה הבזק של המצב הלא נכון על מסך 65" בחדר.
+       * `dark` הוא ברירת המחדל שכבר כתובה על <html>, וכאן רק מתקנים אותה
+       * לפי מה שנשמר או לפי העדפת המערכת.
+       */
+      (function () {
+        try {
+          var saved = localStorage.getItem("fractal-theme");
+          var theme =
+            saved === "light" || saved === "dark"
+              ? saved
+              : window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark";
+          document.documentElement.setAttribute("data-theme", theme);
+          var effects = localStorage.getItem("fractal-effects");
+          if (effects === "lite") document.documentElement.setAttribute("data-effects", "lite");
+        } catch (e) {
+          /* localStorage חסום (מצב פרטי/קיוסק נעול) - נשארים על המצב הכהה */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,0 +1,294 @@
+/*
+ * ============================================================================
+ *  חדר פרקטל - Design Tokens
+ * ============================================================================
+ *
+ *  זהו **המקום היחיד** שבו מוגדרים צבעים, רדיוסים, צללים, טשטוש ותזמונים.
+ *  אסור שיישאר ערך צבע/רדיוס/צל קשיח בקוד הרכיבים - אם צריך ערך חדש,
+ *  מוסיפים אותו כאן ומשתמשים בו דרך הטוקן.
+ *
+ *  שפת העיצוב: "זכוכית ים" - לוח בקרה עשוי לבני זכוכית טורקיז עבות,
+ *  מונחות על רקע כהה ומטושטש. הגוון נלקח מלבנת הזכוכית שהלקוחה שלחה
+ *  (טורקיז חלבי, לא נאון), והצורות מלוח הבקרה בסגנון iOS.
+ *
+ *  ----------------------------------------------------------------------
+ *  איך עובד ה-theming כאן
+ *  ----------------------------------------------------------------------
+ *  Tailwind v4 מייצר utilities מתוך `@theme`, אבל ערכים ב-`@theme` רגיל הם
+ *  סטטיים ולא מתחלפים לפי מצב כהה/בהיר. לכן:
+ *    1. `@theme inline` ממפה כל טוקן של Tailwind אל משתנה `--ds-*`.
+ *    2. משתני ה-`--ds-*` עצמם מוגדרים ב-`:root` (כהה) ונדרסים ב-`[data-theme]`.
+ *  התוצאה: גם `bg-glass` של Tailwind וגם `var(--ds-glass)` ב-CSS ידני
+ *  מתחלפים יחד, בלי לשכפל הגדרות.
+ */
+
+/* ==========================================================================
+   1. מצב כהה - ברירת המחדל (זהו המצב שרץ על הפלזמות בחדר)
+   ========================================================================== */
+:root {
+  color-scheme: dark;
+
+  /*
+   * --- רקע הדף ---
+   * הגוונים כאן ולאורך כל הקובץ **נדגמו ישירות מלבנת הזכוכית** שהלקוחה
+   * שלחה (ראו טבלת הדגימה בתחתית הקובץ), ולא נבחרו בעין. זו הסיבה
+   * שהטורקיז כאן רך וקריר ולא "נאון דיגיטלי".
+   */
+  --ds-bg-from: #081b1c;
+  --ds-bg-via: #0d2728;
+  --ds-bg-to: #123234;
+  --ds-bg-solid: #081b1c;
+
+  /* כתמי האור המטושטשים מאחורי הזכוכית - בלעדיהם אין לזכוכית מה לשבור */
+  --ds-blob-a: rgba(132, 199, 193, 0.26);
+  --ds-blob-b: rgba(167, 233, 229, 0.15);
+  --ds-blob-c: rgba(199, 245, 244, 0.1);
+
+  /* --- משטחי הזכוכית --- */
+  /* שלוש רמות עומק: tile (עמום) < surface (רגיל) < raised (בולט/מודאל) */
+  --ds-glass: rgba(167, 233, 229, 0.09);
+  --ds-glass-strong: rgba(167, 233, 229, 0.15);
+  --ds-glass-raised: rgba(167, 233, 229, 0.21);
+  /* מה שממלא את המשטח כשאין תמיכה ב-backdrop-filter (ראו glass.css) */
+  --ds-glass-opaque: #17393a;
+  --ds-glass-opaque-strong: #1d474a;
+  --ds-glass-opaque-raised: #245458;
+
+  /* --- שוליים: זהו "עובי הזכוכית". בהיר למעלה, נעלם למטה --- */
+  --ds-edge: rgba(205, 246, 245, 0.3);
+  --ds-edge-bright: rgba(255, 255, 255, 0.68);
+  --ds-edge-dim: rgba(8, 27, 28, 0.48);
+
+  /* --- ברק ספקולרי (השתקפות מקור האור בקצה העליון) --- */
+  --ds-specular: rgba(255, 255, 255, 0.52);
+  --ds-specular-soft: rgba(205, 246, 245, 0.2);
+
+  /*
+   * --- טורקיז ---
+   * הסולם הוא בדיוק המעבר שנמדד בלבנה, מהפנים המואר שלה ועד לקצה
+   * הכהה שבו הזכוכית עבה: #C7F5F4 -> #A7E9E5 -> #84C7C1 -> #4E8F8B -> #316768
+   */
+  --ds-accent: #84c7c1;
+  --ds-accent-soft: #a7e9e5;
+  --ds-accent-pale: #c7f5f4;
+  --ds-accent-deep: #4e8f8b;
+  --ds-accent-deeper: #316768;
+  --ds-accent-ink: #062422; /* טקסט/אייקון כהה על מילוי טורקיז בהיר */
+  --ds-glow: rgba(167, 233, 229, 0.5);
+  --ds-glow-soft: rgba(167, 233, 229, 0.2);
+
+  /* --- טקסט --- */
+  --ds-text: #f0fdfb;
+  --ds-text-2: rgba(240, 253, 251, 0.68);
+  --ds-text-3: rgba(240, 253, 251, 0.45);
+  --ds-text-on-accent: #f4feff;
+
+  /* --- סטטוס: רך וזכוכיתי, לא רווי, כדי לא לשבור את ההרמוניה --- */
+  --ds-ok: #63d6a8;
+  --ds-ok-fill: rgba(99, 214, 168, 0.16);
+  --ds-warn: #e8c37a;
+  --ds-warn-fill: rgba(232, 195, 122, 0.16);
+  --ds-danger: #e8908c;
+  --ds-danger-fill: rgba(232, 144, 140, 0.16);
+
+  /* --- צללים --- */
+  --ds-shadow-sm: 0 4px 14px -6px rgba(3, 18, 18, 0.7);
+  --ds-shadow: 0 18px 40px -18px rgba(3, 18, 18, 0.85);
+  --ds-shadow-lg: 0 34px 80px -28px rgba(3, 18, 18, 0.92);
+  /* הצללים הפנימיים שיוצרים את עובי הזכוכית והקעירות */
+  --ds-inset-top: inset 0 1px 0 0 rgba(242, 255, 252, 0.35);
+  --ds-inset-bottom: inset 0 -1px 0 0 rgba(11, 31, 31, 0.5);
+  --ds-inset-deep: inset 0 2px 14px -6px rgba(242, 255, 252, 0.3);
+
+  /* --- הילת מיקוד (מקלדת) --- */
+  --ds-focus-ring: 0 0 0 3px rgba(11, 31, 31, 0.85), 0 0 0 6px var(--ds-accent),
+    0 0 26px 2px var(--ds-glow-soft);
+}
+
+/* ==========================================================================
+   2. מצב בהיר - זכוכית טורקיז על מנטה-לבן
+   ========================================================================== */
+/*
+ * המצב הבהיר נבחר **תמיד** דרך `data-theme="light"` על <html>, גם כשהמקור
+ * הוא העדפת המערכת. הסיבה: העדפת המערכת נפתרת ב-JS (ראו useTheme +
+ * הסקריפט הקטן ב-index.html שרץ לפני הציור הראשון), ולא בעוד עותק של
+ * הפלטה בתוך @media. עותק כזה היה חייב להישאר מסונכרן ידנית עם הבלוק
+ * הזה - בדיוק סוג הכפילות שה-design system אמור למנוע.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --ds-bg-from: #f6fefd;
+  --ds-bg-via: #e6f7f5;
+  --ds-bg-to: #d3efec;
+  --ds-bg-solid: #eefaf8;
+
+  --ds-blob-a: rgba(132, 199, 193, 0.4);
+  --ds-blob-b: rgba(78, 143, 139, 0.16);
+  --ds-blob-c: rgba(167, 233, 229, 0.38);
+
+  /* במצב בהיר הזכוכית היא לבן-מנטה חלבי, לא טורקיז שקוף */
+  --ds-glass: rgba(255, 255, 255, 0.52);
+  --ds-glass-strong: rgba(255, 255, 255, 0.68);
+  --ds-glass-raised: rgba(255, 255, 255, 0.84);
+  --ds-glass-opaque: #e9f7f5;
+  --ds-glass-opaque-strong: #f1fbfa;
+  --ds-glass-opaque-raised: #f9feff;
+
+  --ds-edge: rgba(255, 255, 255, 0.92);
+  --ds-edge-bright: #ffffff;
+  --ds-edge-dim: rgba(49, 103, 104, 0.24);
+
+  --ds-specular: rgba(255, 255, 255, 0.96);
+  --ds-specular-soft: rgba(255, 255, 255, 0.58);
+
+  /* אותו סולם, הפוך: במצב בהיר הצבע הפעיל חייב להיות הקצה **הכהה** של
+     הזכוכית, אחרת אין לו על מה לבלוט מול רקע מנטה-לבן. */
+  --ds-accent: #31706c;
+  --ds-accent-soft: #4e8f8b;
+  --ds-accent-pale: #84c7c1;
+  --ds-accent-deep: #2a6360;
+  --ds-accent-deeper: #174947;
+  --ds-accent-ink: #042220;
+  --ds-glow: rgba(78, 143, 139, 0.32);
+  --ds-glow-soft: rgba(132, 199, 193, 0.3);
+
+  --ds-text: #062e2c;
+  --ds-text-2: rgba(6, 46, 44, 0.72);
+  --ds-text-3: rgba(6, 46, 44, 0.5);
+  --ds-text-on-accent: #ffffff;
+
+  --ds-ok: #15705a;
+  --ds-ok-fill: rgba(21, 112, 90, 0.12);
+  --ds-warn: #8a6310;
+  --ds-warn-fill: rgba(138, 99, 16, 0.12);
+  --ds-danger: #9c3a37;
+  --ds-danger-fill: rgba(156, 58, 55, 0.1);
+
+  --ds-shadow-sm: 0 4px 14px -6px rgba(12, 62, 60, 0.22);
+  --ds-shadow: 0 18px 40px -18px rgba(12, 62, 60, 0.3);
+  --ds-shadow-lg: 0 34px 80px -28px rgba(12, 62, 60, 0.35);
+  --ds-inset-top: inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+  --ds-inset-bottom: inset 0 -1px 0 0 rgba(49, 103, 104, 0.18);
+  --ds-inset-deep: inset 0 2px 14px -6px rgba(255, 255, 255, 0.9);
+
+  --ds-focus-ring: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 0 0 6px var(--ds-accent),
+    0 0 26px 2px var(--ds-glow-soft);
+}
+
+/* ==========================================================================
+   3. טוקנים שלא תלויים במצב כהה/בהיר
+   ========================================================================== */
+:root {
+  /* --- טשטוש הזכוכית ---
+     `--ds-blur` הוא **ברז הביטחון של הפרויקט**: backdrop-filter על WebView
+     ישן של אנדרואיד עלול להיות איטי מאוד במסך מלא 1080p (סעיף 2 ב-CLAUDE.md).
+     אם יתגלה גמגום על הפלזמה בחדר - מוסיפים data-effects="lite" ל-<html>
+     וכל הטשטוש בפרויקט נכבה בבת אחת, בלי לגעת בשורת קוד. */
+  --ds-blur: 24px;
+  --ds-blur-strong: 30px;
+  --ds-saturate: 165%;
+
+  /* --- רדיוסים --- */
+  --ds-r-xs: 10px;
+  --ds-r-sm: 14px;
+  --ds-r-md: 20px;
+  --ds-r-lg: 26px;
+  --ds-r-xl: 32px;
+  --ds-r-2xl: 38px;
+  --ds-r-full: 9999px;
+
+  /* --- תזמונים ועקומות --- */
+  --ds-dur-fast: 120ms;
+  --ds-dur: 220ms;
+  --ds-dur-slow: 420ms;
+  --ds-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ds-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* --- אזור מגע מינימלי (מסך מגע 65", סעיף 2 ב-CLAUDE.md) --- */
+  --ds-touch: 64px;
+  --ds-touch-sm: 48px;
+}
+
+/* מצב "אפקטים מופחתים" - כיבוי גלובלי של הטשטוש, עם משטחים אטומים יותר
+   כדי שהקריאות לא תיפגע כשאין blur שיפריד בין הטקסט לרקע. */
+:root[data-effects="lite"] {
+  --ds-blur: 0px;
+  --ds-blur-strong: 0px;
+  --ds-saturate: 100%;
+  --ds-glass: rgba(23, 57, 58, 0.88);
+  --ds-glass-strong: rgba(29, 71, 74, 0.92);
+  --ds-glass-raised: rgba(36, 84, 88, 0.96);
+}
+
+:root[data-theme="light"][data-effects="lite"] {
+  --ds-glass: rgba(255, 255, 255, 0.94);
+  --ds-glass-strong: rgba(255, 255, 255, 0.97);
+  --ds-glass-raised: #ffffff;
+}
+
+/* ==========================================================================
+   4. חיבור הטוקנים ל-Tailwind
+   --------------------------------------------------------------------------
+   `inline` הוא מה שמאפשר לערכים להתחלף עם המצב הכהה/בהיר: Tailwind מזריק
+   את ה-var() עצמו לתוך ה-utility במקום להעתיק את הערך.
+   ========================================================================== */
+@theme inline {
+  --color-bg-from: var(--ds-bg-from);
+  --color-bg-via: var(--ds-bg-via);
+  --color-bg-to: var(--ds-bg-to);
+  --color-bg-solid: var(--ds-bg-solid);
+
+  --color-glass: var(--ds-glass);
+  --color-glass-strong: var(--ds-glass-strong);
+  --color-glass-raised: var(--ds-glass-raised);
+
+  --color-edge: var(--ds-edge);
+  --color-edge-bright: var(--ds-edge-bright);
+  --color-edge-dim: var(--ds-edge-dim);
+
+  --color-accent: var(--ds-accent);
+  --color-accent-soft: var(--ds-accent-soft);
+  --color-accent-pale: var(--ds-accent-pale);
+  --color-accent-deep: var(--ds-accent-deep);
+  --color-accent-deeper: var(--ds-accent-deeper);
+  --color-accent-ink: var(--ds-accent-ink);
+  --color-glow: var(--ds-glow);
+  --color-glow-soft: var(--ds-glow-soft);
+
+  --color-ink: var(--ds-text);
+  --color-ink-2: var(--ds-text-2);
+  --color-ink-3: var(--ds-text-3);
+  --color-on-accent: var(--ds-text-on-accent);
+
+  --color-ok: var(--ds-ok);
+  --color-ok-fill: var(--ds-ok-fill);
+  --color-warn: var(--ds-warn);
+  --color-warn-fill: var(--ds-warn-fill);
+  --color-danger: var(--ds-danger);
+  --color-danger-fill: var(--ds-danger-fill);
+
+  --radius-xs: var(--ds-r-xs);
+  --radius-sm: var(--ds-r-sm);
+  --radius-md: var(--ds-r-md);
+  --radius-lg: var(--ds-r-lg);
+  --radius-xl: var(--ds-r-xl);
+  --radius-2xl: var(--ds-r-2xl);
+
+  --shadow-glass-sm: var(--ds-shadow-sm);
+  --shadow-glass: var(--ds-shadow);
+  --shadow-glass-lg: var(--ds-shadow-lg);
+
+  --ease-glass: var(--ds-ease);
+  --ease-spring: var(--ds-ease-spring);
+
+  /*
+   * טיפוגרפיה. אין כאן Google Fonts - הסינון בחדר עלול לחסום אותם
+   * (סעיף 2 ב-CLAUDE.md), ולכן כל פונט חייב להיארז מקומית.
+   * כשיגיע קובץ פונט עברי (Assistant / Rubik / Heebo וכו'): מוסיפים
+   * @font-face ב-fonts.css ומחליפים את השורה הבאה בלבד.
+   */
+  --font-sans: "Assistant", "Rubik", "Heebo", "Segoe UI", system-ui, -apple-system,
+    "Noto Sans Hebrew", Arial, sans-serif;
+  --font-display: var(--font-sans);
+}

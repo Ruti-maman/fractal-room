@@ -1,0 +1,368 @@
+/*
+ * ============================================================================
+ *  חדר פרקטל - ספריית אנימציות
+ * ============================================================================
+ *
+ *  כל ה-keyframes של הפרויקט במקום אחד, כדי ששלב חדש יוכל להשתמש באותה
+ *  שפת תנועה בלי לשכפל הגדרות. CSS טהור בלבד - אין ספריית אנימציה חיצונית
+ *  (אילוץ הסינון, סעיף 2 ב-CLAUDE.md).
+ *
+ *  עקרון: התנועה משרתת הבנה (מה הופיע, מה נבחר, מה נשמר) ולא מקשטת.
+ *  בסוף הקובץ יש כיבוד `prefers-reduced-motion` שמנטרל את הכל.
+ */
+
+/* ==========================================================================
+   כניסות ויציאות
+   ========================================================================== */
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.75) translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* כניסה רכה מלמטה - לשימוש עם animation-delay מדורג, כדי שהדף "יתרכב" בעדינות. */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* כניסה של לבנת זכוכית: נוחתת מלמעלה ומתמצקת מטשטוש לחדות. */
+@keyframes glass-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* הודעה צפה שנכנסת מלמעלה */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+  }
+}
+
+@keyframes shake-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-10px);
+  }
+  40% {
+    transform: translateX(9px);
+  }
+  60% {
+    transform: translateX(-6px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* ==========================================================================
+   זוהר ונשימה
+   ========================================================================== */
+
+/* זוהר הצלחה - טורקיז, כמו שאר השפה (היה ירוק בגרסה הקודמת). */
+@keyframes success-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--ds-glow-soft);
+  }
+  50% {
+    box-shadow: 0 0 44px 12px var(--ds-glow);
+  }
+}
+
+/* נשימה עדינה - לזוהר שמאחורי אלמנט מרכזי. */
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.08);
+  }
+}
+
+/* פעימת זוהר סביב רכיב פעיל - למשל כפתור הקלטה או שדה שממתין לקלט. */
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--ds-glow-soft);
+  }
+  50% {
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+
+/* נצנוץ שעובר על פני כפתור/כרטיס - "ברק" עדין. */
+@keyframes shine-sweep {
+  0% {
+    transform: translateX(-160%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(260%) skewX(-20deg);
+  }
+}
+
+/* גל אור שנע על פני שלד טעינה (skeleton). */
+@keyframes skeleton-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   רקע ואווירה
+   ========================================================================== */
+
+/* כתמי האור הגדולים ברקע - תנועה איטית מאוד שנותנת תחושת "חיים" בלי להסיח. */
+@keyframes aurora-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(6%, -5%) scale(1.15);
+  }
+}
+
+/* גרגרי אבק שמרחפים למעלה - קישוט אווירה. */
+@keyframes float-mote {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  15% {
+    opacity: 0.7;
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-160px) scale(1.1);
+  }
+}
+
+/* נצנוץ עדין של כוכבי הרקע - ריחוף קטן במקום, בלי לחצות את המסך. */
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: var(--star-min, 0.1);
+    transform: translateY(0) scale(0.92);
+  }
+  50% {
+    opacity: var(--star-max, 0.35);
+    transform: translateY(-8px) scale(1.08);
+  }
+}
+
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   שלב 7 - דירוג וסרט
+   ========================================================================== */
+
+/* כוכב שעף למעלה ונעלם בכל הצבעה (כמו התגובות בזום). */
+@keyframes star-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(-16px) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-140px) scale(0.95);
+  }
+}
+
+/* מונה שקופץ רגע כשהמספר משתנה. */
+@keyframes count-pop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.3);
+  }
+}
+
+/* גלגול רצועת הסרט - משותף למסך ההקלטה ולמסך הצפייה. */
+@keyframes film-roll-x {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ==========================================================================
+   שלב 8 - עמוד הניצחון
+   ========================================================================== */
+
+/* פתית קונפטי שנופל ומסתובב. הצבע, המהירות וההיסט מוגדרים לכל פתית בנפרד. */
+@keyframes confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -12vh, 0) rotate(0deg);
+  }
+  8% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.9;
+    transform: translate3d(var(--drift, 0px), 112vh, 0) rotate(var(--spin, 720deg));
+  }
+}
+
+/* הגביע מרחף מעט למעלה ולמטה, כמו שצף באוויר. */
+@keyframes trophy-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-14px) scale(1.02);
+  }
+}
+
+/* קרני אור שמסתובבות מאחורי הגביע. */
+@keyframes rays-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* נצנוץ של הניצוצות סביב הגביע. */
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* כניסה דרמטית של שם המנצחת. */
+@keyframes winner-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-6deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* עמודי הפודיום עולים מלמטה. */
+@keyframes podium-rise {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* ==========================================================================
+   כיבוד prefers-reduced-motion
+   --------------------------------------------------------------------------
+   משתמשת שביקשה פחות תנועה מקבלת את אותם מסכים בדיוק, רק בלי שהם זזים.
+   האנימציות לא מבוטלות אלא מקוצרות לרגע אחד - כך אלמנט שמופיע דרך
+   animation-fill-mode עדיין מגיע למצבו הסופי ולא נשאר שקוף.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

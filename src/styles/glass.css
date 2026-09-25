@@ -1,0 +1,550 @@
+/*
+ * ============================================================================
+ *  חדר פרקטל - Liquid Glass
+ * ============================================================================
+ *
+ *  מחלקות לשימוש חוזר שמרכיבות את שפת "לבנת הזכוכית". אף רכיב לא אמור
+ *  לכתוב bg/border/box-shadow של זכוכית בעצמו - הוא מרכיב מהמחלקות כאן.
+ *
+ *  ----------------------------------------------------------------------
+ *  ממה עשויה לבנת זכוכית אחת (4 שכבות, לפי הסדר)
+ *  ----------------------------------------------------------------------
+ *  1. הגוף       - מילוי טורקיז שקוף + backdrop-filter (מטשטש מה שמאחור).
+ *  2. ::before   - הברק הספקולרי: כתם אור רך בקצה העליון, כמו השתקפות.
+ *  3. ::after    - עובי הזכוכית: מסגרת בגרדיאנט, בוהקת למעלה וכהה למטה.
+ *  4. box-shadow - צל חיצוני רך מתחת + צללים פנימיים שיוצרים קעירות.
+ *
+ *  ----------------------------------------------------------------------
+ *  שתי רשתות ביטחון לדפדפן הלא-מוכר שעל הפלזמה (סעיף 2 ב-CLAUDE.md)
+ *  ----------------------------------------------------------------------
+ *  א. אין backdrop-filter  -> משטח אטום למחצה, כדי שהטקסט יישאר קריא.
+ *  ב. אין mask-composite   -> ה-::after לא מצויר בכלל (במקום להפוך לריבוע
+ *                             צבעוני שמכסה את התוכן), ונשאר border רגיל.
+ */
+
+@layer components {
+  /* ======================================================================
+     1. המשטח הבסיסי
+     ====================================================================== */
+
+  .glass {
+    position: relative;
+    isolation: isolate;
+    background-color: var(--ds-glass);
+    border-radius: var(--ds-r-lg);
+    box-shadow: var(--ds-shadow), var(--ds-inset-top), var(--ds-inset-bottom);
+    color: var(--ds-text);
+  }
+
+  /* הברק הספקולרי - כתם אור מעוגל בקצה העליון */
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      130% 72% at 50% -22%,
+      var(--ds-specular) 0%,
+      var(--ds-specular-soft) 34%,
+      transparent 62%
+    );
+    opacity: 0.55;
+    transition: opacity var(--ds-dur) var(--ds-ease);
+  }
+
+  /* עובי הזכוכית - מסגרת גרדיאנטית של 1px, בוהקת למעלה ונעלמת למטה */
+  .glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    padding: 1px;
+    background: linear-gradient(
+      160deg,
+      var(--ds-edge-bright) 0%,
+      var(--ds-edge) 26%,
+      transparent 52%,
+      var(--ds-edge-dim) 100%
+    );
+  }
+
+  /* דרגות עומק - כמה "עבה" הזכוכית ביחס לרקע */
+  .glass-dim {
+    background-color: color-mix(in srgb, var(--ds-glass) 60%, transparent);
+    box-shadow: var(--ds-shadow-sm), var(--ds-inset-top);
+  }
+
+  .glass-strong {
+    background-color: var(--ds-glass-strong);
+  }
+
+  .glass-raised {
+    background-color: var(--ds-glass-raised);
+    box-shadow: var(--ds-shadow-lg), var(--ds-inset-top), var(--ds-inset-bottom),
+      var(--ds-inset-deep);
+  }
+
+  /* ======================================================================
+     2. תמיכה ונפילה רכה
+     ====================================================================== */
+
+  /* הטשטוש עצמו מופעל רק כשהדפדפן תומך בו. `--ds-blur: 0px` (מצב
+     data-effects="lite") מבטל אותו בלי לבטל את המחלקה. */
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass {
+      -webkit-backdrop-filter: blur(var(--ds-blur)) saturate(var(--ds-saturate));
+      backdrop-filter: blur(var(--ds-blur)) saturate(var(--ds-saturate));
+    }
+
+    .glass-raised {
+      -webkit-backdrop-filter: blur(var(--ds-blur-strong)) saturate(var(--ds-saturate));
+      backdrop-filter: blur(var(--ds-blur-strong)) saturate(var(--ds-saturate));
+    }
+  }
+
+  /* בלי backdrop-filter אין מה שיפריד בין הטקסט לרקע, ולכן המשטח נהיה אטום. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass {
+      background-color: var(--ds-glass-opaque);
+    }
+    .glass-strong {
+      background-color: var(--ds-glass-opaque-strong);
+    }
+    .glass-raised {
+      background-color: var(--ds-glass-opaque-raised);
+    }
+  }
+
+  /* המסגרת הגרדיאנטית דורשת mask-composite. איפה שהוא נתמך - חותכים את
+     מרכז הגרדיאנט ונשארת רק מסגרת. איפה שלא - מוותרים על ה-::after
+     לגמרי ונופלים ל-border רגיל, כדי שלא יכסה את התוכן. */
+  @supports (mask-composite: exclude) or (-webkit-mask-composite: xor) {
+    .glass::after {
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      mask-composite: exclude;
+    }
+  }
+
+  @supports not ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
+    .glass::after {
+      display: none;
+    }
+    .glass {
+      border: 1px solid var(--ds-edge);
+    }
+  }
+
+  /* ======================================================================
+     3. אינטראקטיביות - hover / active / focus / disabled
+     ====================================================================== */
+
+  .glass-interactive {
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform var(--ds-dur-fast) var(--ds-ease),
+      box-shadow var(--ds-dur) var(--ds-ease),
+      background-color var(--ds-dur) var(--ds-ease);
+  }
+
+  /* ב-hover הברק והזוהר מתחזקים מעט */
+  @media (hover: hover) {
+    .glass-interactive:hover {
+      background-color: var(--ds-glass-strong);
+      box-shadow: var(--ds-shadow), var(--ds-inset-top), var(--ds-inset-bottom),
+        0 0 30px -6px var(--ds-glow-soft);
+    }
+    .glass-interactive:hover::before {
+      opacity: 0.8;
+    }
+  }
+
+  /* בלחיצה הזכוכית "נלחצת" פנימה: מתכווצת קצת והצל מתקצר */
+  .glass-interactive:active:not(:disabled) {
+    transform: scale(0.97);
+    box-shadow: var(--ds-shadow-sm), inset 0 2px 10px -2px rgba(3, 18, 18, 0.45),
+      var(--ds-inset-top);
+  }
+
+  .glass-interactive:disabled,
+  .glass-interactive[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.42;
+    transform: none;
+    box-shadow: var(--ds-shadow-sm);
+  }
+
+  /* טבעת מיקוד זוהרת - ניווט מקלדת. `:focus-visible` בלבד, כדי שלא תופיע
+     בכל נגיעה על מסך המגע בחדר. */
+  .glass-interactive:focus-visible,
+  .focus-glass:focus-visible {
+    outline: none;
+    box-shadow: var(--ds-focus-ring), var(--ds-shadow);
+  }
+
+  /* ======================================================================
+     4. מצב פעיל - זכוכית שמוארת מבפנים
+     ====================================================================== */
+
+  /*
+   * לכפתורי אייקון/מתגים: מילוי טורקיז זוהר עם אייקון בהיר, בדיוק כמו
+   * המתגים הפעילים ברפרנס. הגרדיאנט מבהיר למעלה ומכהה למטה - זה גם מה
+   * שנותן את הנפח וגם מה שמאפשר לאייקון הבהיר לעמוד ביחס ניגודיות תקין
+   * (3:1 לאלמנט גרפי) לאורך רובו.
+   */
+  .glass-active {
+    background-image: linear-gradient(
+      180deg,
+      var(--ds-accent) 0%,
+      var(--ds-accent-deep) 58%,
+      var(--ds-accent-deeper) 100%
+    );
+    color: var(--ds-text-on-accent);
+    box-shadow: var(--ds-shadow), 0 0 34px -4px var(--ds-glow),
+      inset 0 1px 0 0 rgba(242, 255, 252, 0.55), inset 0 -10px 22px -12px rgba(5, 40, 37, 0.8),
+      inset 0 10px 26px -14px rgba(242, 255, 252, 0.7);
+  }
+
+  .glass-active::before {
+    opacity: 0.85;
+  }
+
+  @media (hover: hover) {
+    .glass-interactive.glass-active:hover {
+      background-color: transparent;
+      box-shadow: var(--ds-shadow), 0 0 46px -2px var(--ds-glow),
+        inset 0 1px 0 0 rgba(242, 255, 252, 0.6);
+    }
+  }
+
+  /* ======================================================================
+     5. כפתורים
+     ====================================================================== */
+
+  .glass-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: var(--ds-touch);
+    padding-inline: 2rem;
+    border-radius: var(--ds-r-full);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .glass-btn-sm {
+    min-height: var(--ds-touch-sm);
+    padding-inline: 1.25rem;
+    font-size: 1rem;
+  }
+
+  .glass-btn-lg {
+    min-height: 5rem;
+    padding-inline: 3rem;
+    font-size: 1.6rem;
+  }
+
+  /*
+   * הכפתור הראשי: מילוי טורקיז עמוק. עמוק בכוונה ולא בהיר - טקסט לבן על
+   * טורקיז בהיר לא עומד ביחס ניגודיות AA, והזוהר מגיע מהצל החיצוני ולא
+   * מבהירות המילוי.
+   */
+  .glass-btn-primary {
+    background-color: transparent;
+    background-image: linear-gradient(
+      180deg,
+      var(--ds-accent-deep) 0%,
+      var(--ds-accent-deeper) 100%
+    );
+    color: var(--ds-text-on-accent);
+    box-shadow: var(--ds-shadow), 0 0 32px -8px var(--ds-glow),
+      inset 0 1px 0 0 rgba(242, 255, 252, 0.45), var(--ds-inset-bottom);
+  }
+
+  @media (hover: hover) {
+    .glass-btn-primary:hover {
+      background-color: transparent;
+      box-shadow: var(--ds-shadow-lg), 0 0 44px -6px var(--ds-glow),
+        inset 0 1px 0 0 rgba(242, 255, 252, 0.55);
+    }
+  }
+
+  /* כפתור אייקון עגול - זה ה"כפתור העגול" של לוח הבקרה ברפרנס */
+  .glass-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--ds-touch);
+    height: var(--ds-touch);
+    border-radius: var(--ds-r-full);
+    flex: none;
+  }
+
+  .glass-icon-btn-sm {
+    width: var(--ds-touch-sm);
+    height: var(--ds-touch-sm);
+  }
+
+  .glass-icon-btn-lg {
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+
+  /* ======================================================================
+     6. גלולות, תגיות, אריחים ושדות
+     ====================================================================== */
+
+  /* גלולה מאורכת - סליידרים, רצועות מידע, מתגים */
+  .glass-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: var(--ds-r-full);
+    padding: 0.5rem 1.1rem;
+  }
+
+  /* תגית קטנה - "שלב 5", שם קבוצה, סטטוס */
+  .glass-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: var(--ds-r-full);
+    padding: 0.35rem 0.95rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--ds-text-2);
+  }
+
+  /* אריח squircle - הצורה המרכזית של לוח הבקרה */
+  .glass-tile {
+    border-radius: var(--ds-r-xl);
+    padding: 1.25rem;
+  }
+
+  .glass-card {
+    border-radius: var(--ds-r-2xl);
+    padding: 2rem;
+  }
+
+  /*
+   * שדה קלט. הזכוכית כאן **קעורה** ולא בולטת - שדה הוא חלל שנכנסים אליו,
+   * וזה מה שמבדיל אותו ויזואלית מכפתור באותו גודל.
+   */
+  .glass-input {
+    width: 100%;
+    min-height: var(--ds-touch);
+    padding-inline: 1.5rem;
+    border-radius: var(--ds-r-full);
+    background-color: color-mix(in srgb, var(--ds-glass) 75%, transparent);
+    color: var(--ds-text);
+    font-size: 1.15rem;
+    font-weight: 600;
+    box-shadow: inset 0 2px 12px -4px rgba(3, 18, 18, 0.55),
+      inset 0 -1px 0 0 rgba(242, 255, 252, 0.2), inset 0 1px 0 0 rgba(3, 18, 18, 0.35);
+    transition:
+      box-shadow var(--ds-dur) var(--ds-ease),
+      background-color var(--ds-dur) var(--ds-ease);
+  }
+
+  .glass-input::placeholder {
+    color: var(--ds-text-3);
+    font-weight: 500;
+  }
+
+  .glass-input:focus {
+    outline: none;
+    background-color: var(--ds-glass-strong);
+    box-shadow: inset 0 2px 12px -4px rgba(3, 18, 18, 0.4), 0 0 0 2px var(--ds-accent),
+      0 0 26px -4px var(--ds-glow-soft);
+  }
+
+  .glass-input:focus-visible {
+    box-shadow: inset 0 2px 12px -4px rgba(3, 18, 18, 0.4), var(--ds-focus-ring);
+  }
+
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-input {
+      -webkit-backdrop-filter: blur(var(--ds-blur)) saturate(var(--ds-saturate));
+      backdrop-filter: blur(var(--ds-blur)) saturate(var(--ds-saturate));
+    }
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-input {
+      background-color: var(--ds-glass-opaque);
+    }
+  }
+
+  /* ======================================================================
+     6b. לבנת זכוכית - פסי השבירה בקצוות
+     ----------------------------------------------------------------------
+     המאפיין הכי מזוהה בלבנה שהלקוחה שלחה: הזכוכית עבה, ולכן בשני הקצוות
+     נוצרים פסי אור אנכיים שבהם האור נשבר, והפנים מבהיר למעלה ומתעמעם
+     למטה. `background-image` פנוי כאן כי `.glass` משתמש ב-background-color
+     בלבד - ולכן זו תוספת "חינם" בלי שכבת DOM נוספת.
+
+     לשימוש בכרטיסים ובמשטחים גדולים, לא בכפתור קטן: בגודל קטן הפסים
+     צפופים מדי והאפקט נראה מלוכלך במקום עבה.
+     ====================================================================== */
+  .glass-brick {
+    background-image:
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(199, 245, 244, 0.09) 1.4%,
+        transparent 4.5%,
+        transparent 95.5%,
+        rgba(199, 245, 244, 0.09) 98.6%,
+        rgba(255, 255, 255, 0.2) 100%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(199, 245, 244, 0.14) 0%,
+        transparent 24%,
+        transparent 74%,
+        rgba(8, 27, 28, 0.2) 100%
+      );
+  }
+
+  /* ======================================================================
+     6c. מודול מקובץ - כמה כפתורים בתוך לבנה אחת
+     ----------------------------------------------------------------------
+     התבנית המרכזית של לוח הבקרה ברפרנס: רשת 2x2 של כפתורים עגולים שיושבת
+     בתוך אריח זכוכית אחד. הזכוכית הפנימית עמומה מזו של המכל, אחרת שתי
+     השכבות "מתחרות" ואי אפשר לקרוא את ההיררכיה.
+     ====================================================================== */
+  .glass-group {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: var(--ds-r-xl);
+  }
+
+  .glass-group > .glass {
+    box-shadow: var(--ds-shadow-sm), var(--ds-inset-top);
+  }
+
+  .glass-group > .glass:not(.glass-active) {
+    background-color: color-mix(in srgb, var(--ds-glass) 70%, transparent);
+  }
+
+  /* ======================================================================
+     6d. סליידר גלולה
+     ----------------------------------------------------------------------
+     הגלולה המאורכת מהרפרנס (בהירות/עוצמה). כאן היא משמשת כמד התקדמות:
+     המסלול הוא זכוכית קעורה, והמילוי הוא אותה זכוכית מוארת מבפנים.
+     `--fill` (0-100) קובע כמה מלא, ונקבע מהקוד.
+     ====================================================================== */
+  .glass-slider {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--ds-r-full);
+    background-color: color-mix(in srgb, var(--ds-glass) 70%, transparent);
+    box-shadow: inset 0 2px 12px -4px rgba(4, 20, 21, 0.6), var(--ds-inset-top);
+  }
+
+  .glass-slider__fill {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline: 0;
+    height: calc(var(--fill, 0) * 1%);
+    border-radius: inherit;
+    background-image: linear-gradient(
+      180deg,
+      var(--ds-accent) 0%,
+      var(--ds-accent-deep) 100%
+    );
+    box-shadow: 0 0 26px -2px var(--ds-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+    transition: height var(--ds-dur-slow) var(--ds-ease);
+  }
+
+  /* גרסה אופקית - למד התקדמות בתוך שורה */
+  .glass-slider--x .glass-slider__fill {
+    inset-block: 0;
+    inset-inline-end: auto;
+    height: auto;
+    width: calc(var(--fill, 0) * 1%);
+    background-image: linear-gradient(
+      90deg,
+      var(--ds-accent-deep) 0%,
+      var(--ds-accent) 100%
+    );
+    transition: width var(--ds-dur-slow) var(--ds-ease);
+  }
+
+  /* ======================================================================
+     7. טיפוגרפיה
+     ====================================================================== */
+
+  /* כותרת ראשית - גרדיאנט עדין מלבן לטורקיז חלבי, כמו אור שעובר בזכוכית */
+  .glass-title {
+    background-image: linear-gradient(
+      160deg,
+      var(--ds-text) 0%,
+      var(--ds-accent-pale) 65%,
+      var(--ds-accent-soft) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  /* נפילה רכה: דפדפן בלי background-clip:text היה מציג טקסט שקוף = בלתי
+     נראה. כאן מוודאים שתמיד יש צבע אמיתי מתחת. */
+  @supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+    .glass-title {
+      background-image: none;
+      color: var(--ds-text);
+    }
+  }
+
+  /* ======================================================================
+     8. עזרים
+     ====================================================================== */
+
+  /* פס גלילה בשפת הזכוכית */
+  .glass-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ds-accent-deep) transparent;
+  }
+
+  .glass-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .glass-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .glass-scroll::-webkit-scrollbar-thumb {
+    border-radius: var(--ds-r-full);
+    background: var(--ds-accent-deep);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  /* טקסט על גבי וידאו/תמונה, בלי קופסה מסביב */
+  .text-on-media {
+    text-shadow: 0 2px 8px rgba(3, 18, 18, 0.9), 0 0 3px rgba(3, 18, 18, 0.8);
+  }
+}

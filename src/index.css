@@ -1,21 +1,17 @@
 @import "tailwindcss";
+@import "./styles/fonts.css";
+@import "./styles/tokens.css";
+@import "./styles/glass.css";
+@import "./styles/animations.css";
 
 /*
- * מיתוג זמני (עד קבלת קובץ המיתוג הסופי מהלקוחה - ראו סעיף 10 ב-CLAUDE.md).
- * כל הצבעים והפונט מוגדרים כאן במקום אחד, כדי שהחלפה תהיה בשינוי קובץ יחיד.
+ * ============================================================================
+ *  חדר פרקטל - שכבת הבסיס
+ * ============================================================================
+ *
+ *  כאן רק מה שחל על כל הדף. הצבעים/הרדיוסים/הצללים מוגדרים ב-styles/tokens.css,
+ *  ושפת הזכוכית ב-styles/glass.css. אין להוסיף כאן ערכים קשיחים.
  */
-@theme {
-  --color-smoke-blue: #3a5a6b;
-  --color-smoke-blue-dark: #24404e;
-  --color-smoke-blue-darker: #16262e;
-  --color-wood: #8b6f4e;
-  --color-wood-dark: #6b5439;
-  --color-wood-light: #b89968;
-  --color-accent-red: #b23a3a;
-
-  /* TODO: להחליף לפונט מקומי אמיתי כשיגיע קובץ המיתוג (סעיף 10) - כרגע גופן מערכת בלבד */
-  --font-sans: "Segoe UI", Arial, sans-serif;
-}
 
 html,
 body,
@@ -23,271 +19,102 @@ body,
   height: 100%;
 }
 
+html {
+  /* מונע "קפיצה" של הפריסה כשמסך אחד גולל ואחר לא */
+  scrollbar-gutter: stable;
+}
+
 body {
   direction: rtl;
   font-family: var(--font-sans);
-  background-color: var(--color-smoke-blue-dark);
-  color: white;
-  /* מונע בחירת טקסט וסימון עכבר על המסכים בחדר, ראו סעיף 2 (מצב קיוסק) */
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  color: var(--ds-text);
+
+  /*
+   * רקע הדף: גרדיאנט טורקיז-פטרול עמוק. יושב על ה-body ולא רק על הרכיב,
+   * כדי שגם רגע הטעינה הראשון וגם גלילה מעבר לקצה יהיו בצבע הנכון ולא
+   * בלבן. כתמי האור עצמם (blobs) מגיעים מ-<AppBackground/>.
+   */
+  background-color: var(--ds-bg-solid);
+  background-image: linear-gradient(
+    160deg,
+    var(--ds-bg-from) 0%,
+    var(--ds-bg-via) 48%,
+    var(--ds-bg-to) 100%
+  );
+  background-attachment: fixed;
+
+  /* מצב קיוסק: אין בחירת טקסט ואין תפריט הקשר על המסכים בחדר (סעיף 2) */
   user-select: none;
   -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* ...חוץ משדות הקלדה, שם בחירת טקסט היא חלק מהתפקוד */
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* טורקיז גם בסימון טקסט, כדי שלא יבצבץ הכחול של מערכת ההפעלה */
+::selection {
+  background: var(--ds-accent-deep);
+  color: var(--ds-text-on-accent);
 }
 
 /*
- * ספריית אנימציות משותפת - CSS טהור, בלי ספרייה חיצונית (אין CDN, ראו
- * סעיף 2 ב-CLAUDE.md). מוגדרות פעם אחת כאן כדי שכל שלב עתידי שרוצה את אותה
- * "שפת עיצוב" (פופ-אפים/כרטיסים שקופצים בעדינות) יוכל להשתמש דרך
- * animate-[pop-in_...] וכו', בלי לשכפל keyframes בכל קומפוננטה.
+ * ברירת מחדל לטבעת המיקוד בכל רכיב אינטראקטיבי. `:focus-visible` בלבד:
+ * על מסך מגע אצבע לא מדליקה טבעת, אבל ניווט מקלדת כן - וזו דרישת נגישות.
  */
-@keyframes backdrop-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 3px;
+  border-radius: var(--ds-r-xs);
 }
 
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    transform: scale(0.75) translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
-@keyframes bounce-in {
-  0% {
-    opacity: 0;
-    transform: scale(0);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
-  }
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+  border: none;
+  background: none;
 }
 
-@keyframes shake-x {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  20% {
-    transform: translateX(-10px);
-  }
-  40% {
-    transform: translateX(9px);
-  }
-  60% {
-    transform: translateX(-6px);
-  }
-  80% {
-    transform: translateX(4px);
-  }
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  display: block;
 }
 
-@keyframes success-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.45);
-  }
-  50% {
-    box-shadow: 0 0 44px 12px rgba(74, 222, 128, 0.3);
-  }
+/* דילוג לתוכן - למקלדת בלבד, לא נראה עד שממקדים אליו */
+.skip-link {
+  position: fixed;
+  inset-block-start: -100px;
+  inset-inline-start: 1rem;
+  z-index: 100;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-accent-deep);
+  color: var(--ds-text-on-accent);
+  font-weight: 700;
+  transition: inset-block-start var(--ds-dur) var(--ds-ease);
 }
 
-/* כניסה רכה מלמטה - לשימוש עם animation-delay מדורג, כדי שהדף "יתרכב" בעדינות. */
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(28px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* כתמי האור הגדולים ברקע - תנועה איטית מאוד שנותנת תחושת "חיים" בלי להסיח. */
-@keyframes aurora-drift {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(6%, -5%) scale(1.15);
-  }
-}
-
-/* גרגרי אבק שמרחפים למעלה - קישוט אווירה. */
-@keyframes float-mote {
-  0% {
-    opacity: 0;
-    transform: translateY(0) scale(0.6);
-  }
-  15% {
-    opacity: 0.7;
-  }
-  85% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-160px) scale(1.1);
-  }
-}
-
-/* נצנוץ שעובר על פני כפתור/כרטיס - "ברק" עדין. */
-@keyframes shine-sweep {
-  0% {
-    transform: translateX(-160%) skewX(-20deg);
-  }
-  100% {
-    transform: translateX(260%) skewX(-20deg);
-  }
-}
-
-/* נשימה עדינה - לזוהר שמאחורי אלמנט מרכזי. */
-@keyframes soft-pulse {
-  0%,
-  100% {
-    opacity: 0.45;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.08);
-  }
-}
-
-/* דירוג בכוכבים בשלב 7: כוכב שעף למעלה ונעלם בכל הצבעה (כמו התגובות בזום),
-   ומונה שקופץ רגע כשהמספר משתנה. */
-@keyframes star-rise {
-  0% {
-    opacity: 0;
-    transform: translateY(0) scale(0.5);
-  }
-  18% {
-    opacity: 1;
-    transform: translateY(-16px) scale(1.15);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-140px) scale(0.95);
-  }
-}
-
-@keyframes count-pop {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.3);
-  }
-}
-
-/* גלגול רצועת הסרט בשלב 7 - משותף למסך ההקלטה ולמסך הצפייה. */
-@keyframes film-roll-x {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-/* נצנוץ עדין של כוכבי הרקע - ריחוף קטן במקום, בלי לחצות את המסך. */
-@keyframes star-twinkle {
-  0%,
-  100% {
-    opacity: var(--star-min, 0.1);
-    transform: translateY(0) scale(0.92);
-  }
-  50% {
-    opacity: var(--star-max, 0.35);
-    transform: translateY(-8px) scale(1.08);
-  }
-}
-
-/* ===== עמוד הניצחון (שלב 8) ===== */
-
-/* פתית קונפטי שנופל ומסתובב. הצבע, המהירות וההיסט מוגדרים לכל פתית בנפרד. */
-@keyframes confetti-fall {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, -12vh, 0) rotate(0deg);
-  }
-  8% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.9;
-    transform: translate3d(var(--drift, 0px), 112vh, 0) rotate(var(--spin, 720deg));
-  }
-}
-
-/* הגביע מרחף מעט למעלה ולמטה, כמו שצף באוויר. */
-@keyframes trophy-float {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-14px) scale(1.02);
-  }
-}
-
-/* קרני אור שמסתובבות מאחורי הגביע. */
-@keyframes rays-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* נצנוץ של הניצוצות סביב הגביע. */
-@keyframes sparkle {
-  0%,
-  100% {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-}
-
-/* כניסה דרמטית של שם המנצחת. */
-@keyframes winner-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.4) rotate(-6deg);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.12) rotate(2deg);
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-  }
-}
-
-/* עמודי הפודיום עולים מלמטה. */
-@keyframes podium-rise {
-  from {
-    transform: scaleY(0);
-  }
-  to {
-    transform: scaleY(1);
-  }
+.skip-link:focus {
+  inset-block-start: 1rem;
 }

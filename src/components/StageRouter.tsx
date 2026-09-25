@@ -109,12 +109,17 @@ function StageRouter({
           (myGroup.stage_started_at ?? workshopCreatedAt)
         : myGroup.stage_started_at;
 
+  // במסך הפתיחה (שלב 1) לא מציגים טיימר ולא מד התקדמות - לפי בקשת הלקוחה.
+  // הטיימר עצמו כן רץ ברקע, כי הוא זה שמעביר לשלב הבא.
+  const isOpeningScreen = stage.stage_number === 1;
+
   const waitingTimer =
     stageStartedAt && stage.duration_minutes ? (
       <Timer
         startedAt={stageStartedAt}
         durationMinutes={stage.duration_minutes}
         onTimeUp={onAdvance}
+        hidden={isOpeningScreen}
       />
     ) : null;
 
@@ -228,7 +233,7 @@ function StageRouter({
       {showPracticalConclusion && (
         <PracticalConclusionBanner workshopId={workshopId} groupId={myGroup.id} />
       )}
-      {progressBar}
+      {isOpeningScreen ? null : progressBar}
       {waitingTimer}
       {backButton}
     </>
