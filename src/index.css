@@ -215,3 +215,79 @@ body {
     transform: translateY(-8px) scale(1.08);
   }
 }
+
+/* ===== עמוד הניצחון (שלב 8) ===== */
+
+/* פתית קונפטי שנופל ומסתובב. הצבע, המהירות וההיסט מוגדרים לכל פתית בנפרד. */
+@keyframes confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -12vh, 0) rotate(0deg);
+  }
+  8% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.9;
+    transform: translate3d(var(--drift, 0px), 112vh, 0) rotate(var(--spin, 720deg));
+  }
+}
+
+/* הגביע מרחף מעט למעלה ולמטה, כמו שצף באוויר. */
+@keyframes trophy-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-14px) scale(1.02);
+  }
+}
+
+/* קרני אור שמסתובבות מאחורי הגביע. */
+@keyframes rays-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* נצנוץ של הניצוצות סביב הגביע. */
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* כניסה דרמטית של שם המנצחת. */
+@keyframes winner-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-6deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* עמודי הפודיום עולים מלמטה. */
+@keyframes podium-rise {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}

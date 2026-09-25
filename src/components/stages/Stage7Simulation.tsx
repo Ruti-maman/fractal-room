@@ -1030,16 +1030,18 @@ const STAR_FIELD: {
 function LikeStar({
   totalLikes,
   myVotes,
-  maxVotes,
+  votesLeft,
   onVote,
 }: {
   totalLikes: number;
+  /** כמה מהבנות של המסך הזה סימנו דווקא את הסרטון הזה */
   myVotes: number;
-  maxVotes: number;
+  /** כמה סימונים נשארו למסך בכל העמוד יחד */
+  votesLeft: number;
   onVote: () => void;
 }) {
   const [floats, setFloats] = useState<{ id: number; offset: number }[]>([]);
-  const full = myVotes >= maxVotes;
+  const full = votesLeft <= 0;
 
   function like() {
     if (full) return;
@@ -1068,37 +1070,35 @@ function LikeStar({
         ))}
       </div>
 
-      {/* צ'יפ תגובה בסגנון המוכר מטימס/וואטסאפ: אימוג'י כוכב אמיתי ולידו
-          המספר, קומפקטי. הכוכב הוא תו האימוג'י ⭐ ולא ציור או תו טקסט, כדי
-          שייראה בדיוק כמו כוכב אמיתי בכל מכשיר. */}
+      {/* כוכב קו דק, כמו סימון "מועדף" - בלי רקע ובלי מסגרת. הוא צבוע
+          בזהב ברגע שסימנו, והמונה הקטן יושב לידו ישירות על הסרטון. */}
       <button
         onClick={like}
         disabled={full}
-        aria-label={full ? "כל הבנות כבר דירגו" : "אהבנו"}
-        className={`flex items-center gap-2 rounded-full px-4 py-2 transition-all duration-150 ${
-          full
-            ? "cursor-not-allowed bg-white/40"
-            : "bg-white shadow-[0_2px_10px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 hover:shadow-[0_4px_18px_rgba(255,215,94,0.45)] active:scale-95"
+        aria-label={full ? "כל הסימונים נוצלו" : "אהבנו"}
+        className={`flex items-center gap-1.5 transition-transform duration-150 ${
+          full ? "cursor-not-allowed opacity-70" : "hover:scale-110 active:scale-90"
         }`}
       >
-        <span
-          className="text-2xl leading-none"
-          style={{ filter: totalLikes > 0 ? "drop-shadow(0 0 7px rgba(255,200,60,0.9))" : "none" }}
+        <svg
+          viewBox="0 0 24 24"
+          className="h-7 w-7"
+          fill={myVotes > 0 ? "#ffd75e" : "none"}
+          stroke={myVotes > 0 ? "#ffd75e" : "#ffffff"}
+          strokeWidth={1.6}
+          strokeLinejoin="round"
         >
-          ⭐
-        </span>
+          <path d="M12 3.2l2.62 5.31 5.86.85-4.24 4.13 1 5.84L12 16.58l-5.24 2.75 1-5.84-4.24-4.13 5.86-.85z" />
+        </svg>
         <span
           key={totalLikes}
-          className={`min-w-[1ch] text-lg font-black tabular-nums ${totalLikes > 0 ? "text-black" : "text-black/40"}`}
+          className="text-base font-bold text-white tabular-nums"
           style={{ animation: "count-pop 0.35s ease-out" }}
         >
           {totalLikes}
         </span>
       </button>
 
-      <p className="rounded-full bg-black/55 px-2.5 py-0.5 text-[11px] font-bold text-white/85 backdrop-blur-sm">
-        {full ? `כל ${maxVotes} הבנות סימנו` : `${myVotes}/${maxVotes} בנות סימנו`}
-      </p>
     </div>
   );
 }
@@ -1130,9 +1130,13 @@ function SharedViewing({
   }, [rows]);
   // מספר הבנות בקבוצה שלנו הוא גם מספר ההצבעות המותר לכל סרטון
   const participants = useParticipants([myGroup.id]);
-  // אם לא נרשמו משתתפות (למשל בבדיקה שדילגה על שלב 2) - מאפשרים הצבעה אחת,
+  // מכסת הסימונים של המסך היא מספר הבנות בקבוצה, ו**לכל העמוד יחד** - לא לכל
+  // סרטון בנפרד. כלומר הבנות יכולות לחלק את הסימונים איך שירצו: כולן על אותו
+  // סרטון, או מפוזר. אם לא נרשמו משתתפות (בדיקה שדילגה על שלב 2) - סימון אחד,
   // כדי שהמסך לא ייתקע במצב שאי אפשר לדרג בו בכלל.
   const maxVotes = participants.length > 0 ? participants.length : 1;
+  const usedVotes = Object.values(myVotes).reduce((sum, votes) => sum + votes.length, 0);
+  const votesLeft = Math.max(0, maxVotes - usedVotes);
   const transcripts = useClipTranscripts(workshopId);
   // אילו הקלטות שמורות כקבצים בתוך הפרויקט (ראו src/lib/projectClips.ts)
   const [projectClips, setProjectClips] = useState<string[]>([]);
@@ -1201,7 +1205,12 @@ function SharedViewing({
           שלב 7 · צפייה משותפת
         </span>
         <h1 className="text-4xl font-black tracking-tight">צפייה משותפת בכל ההסרטות</h1>
-        <p className="text-sm text-white/45">צפו בהקלטות של שאר הקבוצות, ודרגו כל אחת מהן בכוכבים.</p>
+        <p className="text-sm text-white/45">צפו בהקלטות של שאר הקבוצות וסמנו בכוכב את מה שאהבתן.</p>
+        <p className="rounded-full border border-[#ffd75e]/35 bg-[#ffd75e]/10 px-5 py-1.5 text-sm font-bold text-[#ffd75e]">
+          {votesLeft > 0
+            ? `נותרו לכן ${votesLeft} סימונים מתוך ${maxVotes}`
+            : `ניצלתן את כל ${maxVotes} הסימונים`}
+        </p>
       </div>
 
       <div className="relative flex w-full max-w-[108rem] flex-wrap items-stretch justify-center gap-8">
@@ -1214,15 +1223,10 @@ function SharedViewing({
             return (
               <div
                 key={g.id}
-                className="group flex w-[min(30vw,32rem)] flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.9)] backdrop-blur-sm transition-transform duration-200 hover:-translate-y-1"
+                className="group flex w-[min(30vw,32rem)] flex-col gap-3 transition-transform duration-200 hover:-translate-y-1"
                 style={{ animation: `fade-up 0.8s ${0.15 + i * 0.12}s ease-out both` }}
               >
-                <div className="flex items-center justify-center gap-3">
-                  <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-bold text-white/50">
-                    מסך {g.screen_number}
-                  </span>
-                  <span className="text-2xl font-bold">{g.name ?? `מסך ${g.screen_number}`}</span>
-                </div>
+                <p className="text-2xl font-bold">{g.name ?? `מסך ${g.screen_number}`}</p>
                 {clip ? (
                   <div
                     className="relative rounded-2xl p-[2px] shadow-[0_0_26px_-6px_rgba(91,192,235,0.45)] transition-shadow duration-300 group-hover:shadow-[0_0_44px_-4px_rgba(245,162,93,0.6)]"
@@ -1241,13 +1245,13 @@ function SharedViewing({
                       />
                     </div>
 
-                    {/* תגית הדירוג יושבת על הסרטון עצמו, כמו תגובה על מדיה
-                        באפליקציות המוכרות - ולא כשורה נפרדת מתחתיו. */}
-                    <div className="absolute top-3 left-3 z-10">
+                    {/* הדירוג יושב על הסרטון, בשורה של סרגל הנגן וקצת מעליו -
+                        ממש ליד סמל הרמקול, כמו סימון מועדף על מדיה. */}
+                    <div className="absolute right-[9.5rem] bottom-[1.9rem] z-10">
                       <LikeStar
                         totalLikes={(likesByGroup[g.id] ?? 0) + (pending[g.id]?.length ?? 0)}
                         myVotes={votes.length}
-                        maxVotes={maxVotes}
+                        votesLeft={votesLeft}
                         onVote={() => castVote(g.id, 1)}
                       />
                     </div>
@@ -1256,6 +1260,12 @@ function SharedViewing({
                   <div className="flex h-[min(34vh,22rem)] w-full items-center justify-center rounded-xl bg-black/40 text-base text-white/50">
                     עדיין מקליטה...
                   </div>
+                )}
+
+                {clip && votes.length > 0 && (
+                  <p className="text-xs font-bold text-white/40">
+                    {votes.length === 1 ? "בת אחת מכן סימנה" : `${votes.length} מכן סימנו`}
+                  </p>
                 )}
               </div>
             );

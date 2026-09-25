@@ -180,8 +180,12 @@ function StageRouter({
   // הפנימי של Stage4Analysis כחלק מהזרימה, לא כרצועה חוזרת).
   // לא בשלב 9 (מסך שלא מוצג), ולא בשלב 7 לפי בקשת הלקוחה - שם הרצועה
   // מתנגשת בסרגל הנגן ובכפתור ההקלטה שמתחת לתצוגה.
+  // לא בשלבים 7 ו-8: שם הרצועה חוצה את סרגל הנגן ואת הפודיום.
   const showPracticalConclusion =
-    stage.stage_number > 4 && stage.stage_number !== 9 && stage.stage_number !== 7;
+    stage.stage_number > 4 &&
+    stage.stage_number !== 9 &&
+    stage.stage_number !== 7 &&
+    stage.stage_number !== 8;
 
   return (
     <>
