@@ -3,6 +3,9 @@ import { useScreenData } from "../hooks/useScreenData";
 import { useProgramStages } from "../hooks/useProgramStages";
 import { useKioskMode } from "../hooks/useKioskMode";
 import StageRouter from "../components/StageRouter";
+import { EmptyState, ErrorState, LoadingState, GlassButton } from "../components/ui";
+
+const VALID_SCREENS = [1, 2, 3];
 
 function ScreenPage() {
   useKioskMode();
@@ -14,21 +17,52 @@ function ScreenPage() {
     useScreenData(screenNumber);
   const { stages, loading: stagesLoading } = useProgramStages(workshop?.program_id);
 
-  if (loading || stagesLoading) {
+  // כתובת כמו /screen/7 או /screen/abc - עדיף מסך שמסביר מה לעשות על פני
+  // ניסיון להתחבר לקבוצה שלא קיימת ואז "אין הפעלה פעילה" מבלבל.
+  if (!VALID_SCREENS.includes(screenNumber)) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-xl">טוענת...</p>
-      </main>
+      <ErrorState
+        title="כתובת מסך לא תקינה"
+        description="בסדנה יש שלושה מסכים. פתחו את אחת מהכתובות הבאות במסך הזה."
+        detail={`הכתובת שהתקבלה: /screen/${screenNumberParam}`}
+      />
     );
   }
 
-  if (!workshop || !myGroup) {
+  if (loading || stagesLoading) {
+    return <LoadingState title="מתחברות לחדר" description="טוענות את הסדנה הפעילה..." />;
+  }
+
+  // אין הפעלה פעילה במסד - זה המצב הרגיל לפני שנפתחה סדנה, לא תקלה.
+  if (!workshop) {
     return (
-      <main className="flex min-h-screen items-center justify-center p-8 text-center">
-        <p className="text-xl">
-          אין הפעלה פעילה כרגע, או שלא נמצאה קבוצה למסך {screenNumber}.
-        </p>
-      </main>
+      <EmptyState
+        title="אין סדנה פעילה"
+        description="כדי להתחיל, פתחו סדנה חדשה במסך הניהול. שלושת המסכים יתאפסו ויתחילו משלב 1."
+        icon="hourglass"
+      >
+        <GlassButton
+          variant="primary"
+          icon="settings"
+          onClick={() => {
+            window.location.href = "/admin";
+          }}
+        >
+          למסך הניהול
+        </GlassButton>
+      </EmptyState>
+    );
+  }
+
+  // יש הפעלה, אבל אין קבוצה שמשויכת למסך הזה - כאן זו כן תקלת נתונים.
+  if (!myGroup) {
+    return (
+      <ErrorState
+        title={`לא נמצאה קבוצה למסך ${screenNumber}`}
+        description="הסדנה פעילה, אבל אין קבוצה שמשויכת למסך הזה. פתיחת סדנה חדשה במסך הניהול תיצור מחדש את שלוש הקבוצות."
+        retryLabel="לרענן את המסך"
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 

@@ -1,4 +1,7 @@
 import type { Group } from "../types/group";
+import { cx } from "../lib/cx";
+import StageShell from "./StageShell";
+import Icon from "./ui/Icon";
 
 interface Props {
   stageNumber: number;
@@ -6,58 +9,98 @@ interface Props {
 }
 
 /**
- * מסך ההמתנה בשער סנכרון - קבוצה שהגיעה לשלב משותף לפני האחרות. מעוצב
- * באותה שפה של שאר המסכים (רקע מדורג, כתמי אור, צ'יפ שלב), כדי שלא ייראה
- * כמו הודעת מערכת אלא כמו חלק מהסדנה.
+ * מסך ההמתנה בשער סנכרון - קבוצה שהגיעה לשלב משותף לפני האחרות.
+ *
+ * ----------------------------------------------------------------------------
+ * העיקרון: המתנה שלא מרגישה כמו תקלה
+ * ----------------------------------------------------------------------------
+ * זה המסך היחיד בסדנה שבו לקבוצה אין מה לעשות, ולכן הוא המסך שהכי מסוכן
+ * שייראה כאילו משהו נתקע. שלושה דברים מונעים את זה:
+ *   1. **מד התקדמות מפורש** - "2 מתוך 3 קבוצות כאן" נאמר גם במספר וגם
+ *      בגלולה שמתמלאת, כך שרואים תנועה גם כשאין מה ללחוץ.
+ *   2. **כרטיס לכל קבוצה** - מי כבר הגיעה ומי עוד לא, בשמות. ההמתנה
+ *      הופכת ממצב מערכת למשהו חברתי שקורה בחדר.
+ *   3. **נשימה** - הכרטיס של הקבוצה שממתינים לה פועם קלות, כדי שיהיה
+ *      ברור שהמערכת חיה ולא קפאה.
  */
 function WaitingScreen({ stageNumber, allGroups }: Props) {
   const sorted = allGroups.slice().sort((a, b) => a.screen_number - b.screen_number);
   const arrivedCount = sorted.filter((g) => g.current_stage >= stageNumber).length;
+  const percent = sorted.length > 0 ? Math.round((arrivedCount / sorted.length) * 100) : 0;
 
   return (
-    <main
-      className="relative flex min-h-screen flex-col items-center justify-center gap-8 overflow-hidden px-8 py-10 text-center"
-      style={{
-        background:
-          "radial-gradient(circle at 50% 12%, var(--color-smoke-blue) 0%, var(--color-smoke-blue-dark) 60%, var(--color-smoke-blue-darker) 100%)",
-      }}
+    <StageShell
+      stage={stageNumber}
+      kicker="שלב משותף"
+      icon="users"
+      title="ממתינות לשאר הקבוצות"
+      subtitle="השלב הזה מתחיל כשכל הקבוצות מגיעות אליו. אפשר לנצל את הרגע לנשום."
+      botanical="fern"
+      width="normal"
     >
-      <div className="pointer-events-none absolute top-[-12%] left-[-6%] h-[28rem] w-[28rem] rounded-full bg-[#5bc0eb]/10 blur-[130px]" />
-      <div className="pointer-events-none absolute right-[-8%] bottom-[-14%] h-[30rem] w-[30rem] rounded-full bg-[#f5a25d]/8 blur-[140px]" />
-
-      <div className="relative flex flex-col items-center gap-3" style={{ animation: "fade-up 0.7s ease-out both" }}>
-        <span className="rounded-full border border-[#5bc0eb]/40 px-5 py-1.5 text-xs font-bold tracking-widest text-[#5bc0eb] uppercase">
-          שלב {stageNumber} · שלב משותף
-        </span>
-        <h1 className="text-4xl font-black tracking-tight">ממתינים לשאר הקבוצות</h1>
-        <p className="text-sm text-white/45">
-          {arrivedCount} מתוך {sorted.length} קבוצות הגיעו. השלב יתחיל כשכולן כאן.
-        </p>
+      {/* מד ההגעה - כמה קבוצות כבר כאן */}
+      <div className="glass glass-brick mb-8 flex w-full max-w-md flex-col gap-3 rounded-xl p-5">
+        <div className="flex items-baseline justify-between">
+          <span className="text-ink-2 text-sm font-bold">קבוצות שהגיעו</span>
+          <span className="text-accent text-2xl font-extrabold tabular-nums">
+            {arrivedCount}
+            <span className="text-ink-3 text-base"> / {sorted.length}</span>
+          </span>
+        </div>
+        <div
+          className="glass-slider glass-slider--x h-3"
+          role="progressbar"
+          aria-valuenow={arrivedCount}
+          aria-valuemin={0}
+          aria-valuemax={sorted.length}
+          style={{ ["--fill" as string]: percent }}
+        >
+          <span className="glass-slider__fill" />
+        </div>
       </div>
 
-      <div className="relative flex flex-wrap justify-center gap-4">
+      <ul className="flex w-full flex-wrap justify-center gap-4">
         {sorted.map((g, i) => {
           const arrived = g.current_stage >= stageNumber;
           return (
-            <div
+            <li
               key={g.id}
-              className={`flex w-56 flex-col items-center gap-2 rounded-2xl border px-5 py-4 transition-colors ${
-                arrived
-                  ? "border-[#6fcf7e]/40 bg-[#6fcf7e]/10"
-                  : "border-white/10 bg-white/5"
-              }`}
-              style={{ animation: `fade-up 0.8s ${0.15 + i * 0.12}s ease-out both` }}
+              className={cx(
+                "glass glass-brick flex w-56 flex-col items-center gap-3 rounded-xl p-5 text-center",
+                arrived && "!bg-ok-fill",
+              )}
+              style={{
+                animation: `glass-in var(--ds-dur-slow) ${140 + i * 110}ms var(--ds-ease) both`,
+              }}
             >
-              <span className="text-3xl">{arrived ? "✅" : "⏳"}</span>
-              <span className="text-lg font-bold">{g.name ?? `מסך ${g.screen_number}`}</span>
-              <span className={`text-xs font-bold ${arrived ? "text-[#6fcf7e]" : "text-white/40"}`}>
+              <span
+                className={cx(
+                  "glass glass-icon-btn",
+                  arrived ? "glass-active" : "text-ink-3",
+                )}
+                style={
+                  arrived
+                    ? undefined
+                    : { animation: "soft-pulse 2.2s ease-in-out infinite" }
+                }
+              >
+                <Icon name={arrived ? "check" : "hourglass"} size={26} />
+              </span>
+
+              <span className="text-ink text-lg font-extrabold">
+                {g.name ?? `מסך ${g.screen_number}`}
+              </span>
+
+              <span
+                className={cx("text-xs font-bold", arrived ? "text-ok" : "text-ink-3")}
+              >
                 {arrived ? "מוכנה" : "עדיין בשלב קודם"}
               </span>
-            </div>
+            </li>
           );
         })}
-      </div>
-    </main>
+      </ul>
+    </StageShell>
   );
 }
 

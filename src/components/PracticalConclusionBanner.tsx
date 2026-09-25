@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { useFunctioningPicture } from "../hooks/useFunctioningPicture";
+import Icon from "./ui/Icon";
+import GlassModal from "./ui/GlassModal";
 
 interface Props {
   workshopId: string;
@@ -11,17 +14,52 @@ interface Props {
  * הלקוחה: זו לא תוצאה חד-פעמית, אלא קלט שממשיך ללוות את שאר הסדנה (ראו
  * CLAUDE.md). קריאה בלבד - אין כאן generate, רק תצוגה של מה שכבר נשמר.
  * אם הקבוצה עוד לא הקלידה (או עוד לא הגיעה לשם) - לא מוצגת כלום.
+ *
+ * ----------------------------------------------------------------------------
+ * למה הרצועה נפתחת בלחיצה
+ * ----------------------------------------------------------------------------
+ * המסקנה היא משפט שלם שהקבוצה ניסחה, והרצועה הצרה בראש המסך חתכה אותו
+ * באמצע (`truncate`) - כלומר בדיוק הטקסט שאמור ללוות את הקבוצה עד הסוף
+ * היה זה שאי אפשר לקרוא. עכשיו הרצועה היא כפתור: נשארת דקה ולא גוזלת
+ * מקום מהשלב, ובלחיצה נפתחת ללבנת זכוכית עם המשפט המלא.
  */
 function PracticalConclusionBanner({ workshopId, groupId }: Props) {
   const { result, loading } = useFunctioningPicture(workshopId, groupId);
+  const [open, setOpen] = useState(false);
 
   if (loading || !result?.group_conclusion) return null;
 
+  const conclusion = result.group_conclusion;
+
   return (
-    <div className="fixed top-3 left-1/2 z-20 flex w-[min(92vw,46rem)] -translate-x-1/2 items-baseline justify-center gap-3 rounded-full border border-wood/40 bg-smoke-blue-darker/90 px-6 py-2 text-center shadow-lg shadow-black/30 backdrop-blur-sm">
-      <p className="shrink-0 text-[11px] font-bold text-white/45">מסקנה מעשית</p>
-      <p className="truncate text-sm font-bold text-white">{result.group_conclusion}</p>
-    </div>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={`המסקנה המעשית שלנו: ${conclusion}. לחצו להצגה מלאה`}
+        className="glass glass-interactive glass-pill max-w-[min(58vw,40rem)] gap-2.5 py-2 ps-4 pe-3"
+      >
+        <Icon name="lightbulb" size={17} className="text-accent-soft flex-none" />
+        <span className="text-ink-3 flex-none text-[10px] font-bold tracking-wide">
+          המסקנה שלנו
+        </span>
+        <span className="text-ink min-w-0 truncate text-sm font-bold">{conclusion}</span>
+        <Icon name="chevronDown" size={15} className="text-ink-3 flex-none" />
+      </button>
+
+      <GlassModal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="המסקנה המעשית שלנו"
+        icon="lightbulb"
+        cancelLabel="סגירה"
+      >
+        <p className="text-ink text-2xl leading-relaxed font-bold">{conclusion}</p>
+        <p className="text-ink-3 mt-5 text-sm">
+          ניסחתן אותה בשלב 4, והיא מלווה אתכן עד סוף הסדנה.
+        </p>
+      </GlassModal>
+    </>
   );
 }
 

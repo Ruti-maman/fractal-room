@@ -17,6 +17,8 @@ import Timer from "./Timer";
 import ProgressBar from "./ProgressBar";
 import InspirationsLadder from "./InspirationsLadder";
 import PracticalConclusionBanner from "./PracticalConclusionBanner";
+import TopBar, { BackButton } from "./TopBar";
+import { ErrorState } from "./ui";
 import type { Stage1Content } from "../types/stage1Content";
 import type { Stage3Content } from "../types/stage3Content";
 import type { Stage4Content } from "../types/stage4Content";
@@ -89,12 +91,17 @@ function StageRouter({
 
   if (!stage) {
     return (
-      <main className="flex min-h-screen items-center justify-center p-8 text-center">
-        <p className="text-xl">
-          אין הגדרה לשלב {myGroup.current_stage} בתוכנית הזו.
-        </p>
+      <>
+        <ErrorState
+          title={`אין הגדרה לשלב ${myGroup.current_stage}`}
+          description="התוכנית הפעילה לא כוללת את השלב הזה. אפשר לחזור לשלב הקודם, או לפתוח סדנה חדשה במסך הניהול."
+          detail={`stage_number=${myGroup.current_stage}, program stages: ${stages
+            .map((s) => s.stage_number)
+            .join(", ")}`}
+        />
         {progressBar}
-      </main>
+        {onGoBack && <BackButton onClick={onGoBack} />}
+      </>
     );
   }
 
@@ -124,14 +131,7 @@ function StageRouter({
     ) : null;
 
   const backButton =
-    myGroup.current_stage > 1 && onGoBack ? (
-      <button
-        onClick={onGoBack}
-        className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full border border-white/15 bg-black/35 px-5 py-2 text-sm font-bold text-white/60 backdrop-blur-sm transition-colors hover:bg-black/55 hover:text-white/90"
-      >
-        ← חזרה לשלב הקודם
-      </button>
-    ) : null;
+    myGroup.current_stage > 1 && onGoBack ? <BackButton onClick={onGoBack} /> : null;
 
   // שלבים 2 ו-7 מנהלים את שער הסנכרון שלהם בעצמם בתוך הרכיב (הזדהות/הקלטה
   // עצמאית, מעבר רק כשכולן סיימו) - ראו הסבר ב-CLAUDE.md, לא משתמשים במסך ההמתנה הגנרי.
@@ -140,6 +140,7 @@ function StageRouter({
     return (
       <>
         <WaitingScreen stageNumber={stage.stage_number} allGroups={allGroups} />
+        <TopBar myGroup={myGroup} screenNumber={screenNumber} />
         {progressBar}
         {waitingTimer}
         {backButton}

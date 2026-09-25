@@ -1,77 +1,77 @@
 import { useTopInspirations } from "../hooks/useTopInspirations";
+import Icon from "./ui/Icon";
 
 interface Props {
   workshopId: string;
 }
 
-const RUNG_GAP_PX = 108; // מרחק בין מרכזי השלבים - קובע כמה "ארוך" הסולם נראה
-const TOP_OFFSET_PX = 58;
-const WORD_BLOCK_HEIGHT_PX = 52; // הגובה שהמילה "יושבת" בתוכו, מעל השלב (לא עליו)
-const LADDER_SCALE = 0.55; // מקטין את הסולם כולו (כולל האותיות) פרופורציונלית, בלי לגעת בכל קבוע בנפרד
-const TITLE_SHADOW = "0 2px 6px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.9)";
-// כיתוב לבן כמו הכותרת - צל כהה מאחוריו לקריאות, בלי הילה לבנה סביב האותיות.
-const WORD_SHADOW = TITLE_SHADOW;
-
 /**
- * "סולם ההשראות" - ציור דק וארוך של סולם אמיתי (שני מוטות צמודים + שלבים
- * דקים), בלי שום תיבה/מלבן מסביב למילים ובלי כרטיס-רקע מסביב לסולם עצמו -
- * לפי בקשת הלקוחה: רק המילה שנבחרה יושבת ישירות מעל השלב (עם צל-טקסט
- * שנותן קריאות על רקע הדף, לא רקע צבוע). כל השלבים באותו גוון עץ אחיד - אין
- * צבעוניות דירוג, הסדר מלמעלה למטה כבר אומר הכל.
+ * "סולם ההשראות" - ההשראות שנבחרו בשלב 3, מוצגות מהשלב החשוב ביותר כלפי
+ * מטה. מוזרק גלובלית מ-StageRouter לכל השלבים משלב 4 (שקף 6) ואילך, לפי
+ * בקשת הלקוחה - לא רק בתוך שלב 4 עצמו. אם עדיין לא נבחרה אף השראה, לא
+ * מוצג כלום.
  *
- * ממוקם ב-top-0 left-0 עם סיבוב קל סביב הפינה עצמה (origin-top-left, בלי
- * הזזה שלילית) - כדי שלעולם לא "יחתך" מעל/משמאל לדף: הסיבוב יכול רק לדחוף
- * את הסולם פנימה לתוך הדף, אף פעם לא מעבר לקצוות שלו.
+ * ----------------------------------------------------------------------------
+ * מה השתנה בעיצוב, ולמה
+ * ----------------------------------------------------------------------------
+ * הגרסה הקודמת ציירה סולם עץ ממשי (שני מוטות + שלבים) מוטה ב-3 מעלות,
+ * עם המילים מרחפות מעליו וצל טקסט שיחזיק אותן קריאות מול כל רקע. זה עבד,
+ * אבל היה האובייקט היחיד בסדנה שלא היה עשוי מאותו חומר כמו כל השאר - וגם
+ * הסיבוב וגודל האותיות הקבוע היו נשברים על מסך צר.
  *
- * מוזרק גלובלית מ-StageRouter לכל השלבים משלב 4 (שקף 6) ואילך, לפי בקשת
- * הלקוחה - לא רק בתוך שלב 4 עצמו. אם עדיין לא נבחרה אף השראה - לא מציגה כלום.
+ * כאן הסולם הוא רכיב זכוכית ככל השאר: מסילה אנכית צרה בקצה המסך, שכל שלב
+ * בה הוא לבנה קטנה. ההיררכיה נשמרת - הראשונה מוארת (glass-active) והשאר
+ * שקופות ומתעמעמות כלפי מטה, כך שסדר החשיבות עדיין נקרא במבט אחד.
+ *
+ * המסילה `pointer-events-none`: היא תצוגה בלבד, ואסור שתחסום נגיעה על
+ * הקנבס של שלב 4 שנמצא מתחתיה.
  */
 function InspirationsLadder({ workshopId }: Props) {
   const { items, loading } = useTopInspirations(workshopId);
 
   if (loading || items.length === 0) return null;
 
-  const ladderHeight = items.length * RUNG_GAP_PX + TOP_OFFSET_PX;
-
   return (
-    <div
-      className="fixed top-0 left-0 z-30 origin-top-left select-none"
-      style={{ transform: `scale(${LADDER_SCALE}) rotate(-3deg)` }}
+    <aside
+      aria-label="סולם ההשראות שנבחרו"
+      className="glass glass-brick pointer-events-none fixed top-24 left-4 z-20 hidden w-[10.5rem] flex-col gap-2 rounded-xl p-3 lg:flex"
+      style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
     >
-      <p
-        className="mr-10 mb-2 text-lg font-extrabold text-white"
-        style={{ textShadow: TITLE_SHADOW }}
-      >
-        🪜 סולם ההשראות
-      </p>
-      <div className="relative w-44" style={{ height: ladderHeight }}>
-        {/* שני מוטות הצד - דקים וצמודים, כמו סולם אמיתי. */}
-        <div className="absolute inset-y-0 right-3 w-2 rounded-full bg-wood shadow-md" />
-        <div className="absolute inset-y-0 left-3 w-2 rounded-full bg-wood shadow-md" />
-
-        {items.map((item, i) => {
-          const rungTop = TOP_OFFSET_PX + i * RUNG_GAP_PX;
-          return (
-            <div key={item.text} className="absolute inset-x-3">
-              {/* השלב עצמו - פס דק שמחבר בין שני המוטות. */}
-              <div className="absolute inset-x-0 h-2 rounded-full bg-wood shadow-md" style={{ top: rungTop }} />
-              {/* המילה יושבת מעל השלב, כמו חפץ שמונח עליו - לא חופפת לקו עצמו. */}
-              <div
-                className="absolute inset-x-0 flex items-end justify-center"
-                style={{ top: rungTop - WORD_BLOCK_HEIGHT_PX, height: WORD_BLOCK_HEIGHT_PX }}
-              >
-                <span
-                  className="px-2 pb-1 text-center text-2xl font-extrabold text-white"
-                  style={{ textShadow: WORD_SHADOW }}
-                >
-                  {item.text}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+      <div className="text-ink-3 flex items-center gap-1.5 px-1 text-[11px] font-bold tracking-wide">
+        <Icon name="ladder" size={14} />
+        סולם ההשראות
       </div>
-    </div>
+
+      <ol className="flex flex-col gap-1.5">
+        {items.map((item, i) => (
+          <li
+            key={item.text}
+            className={
+              i === 0
+                ? "glass glass-active flex items-center gap-2 rounded-sm px-2.5 py-2"
+                : "glass glass-dim flex items-center gap-2 rounded-sm px-2.5 py-2"
+            }
+            style={{
+              // כל שלב נמוך יותר מעט יותר עמום - הסדר עצמו הוא המידע
+              opacity: i === 0 ? 1 : Math.max(0.5, 1 - i * 0.14),
+              animation: `fade-up var(--ds-dur-slow) ${i * 70}ms var(--ds-ease) both`,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              className={
+                i === 0
+                  ? "text-[10px] font-extrabold opacity-80"
+                  : "text-ink-3 text-[10px] font-extrabold"
+              }
+            >
+              {i + 1}
+            </span>
+            <span className="truncate text-[13px] font-bold">{item.text}</span>
+          </li>
+        ))}
+      </ol>
+    </aside>
   );
 }
 
