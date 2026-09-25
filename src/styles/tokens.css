@@ -93,6 +93,13 @@
   --ds-danger: #f09b96;
   --ds-danger-fill: rgba(240, 155, 150, 0.1);
 
+  /* אדום ההקלטה. זה הצבע היחיד בפרויקט שאינו מהפלטה, וזו החלטה מודעת:
+     נקודה אדומה = "מקליט" היא מוסכמה אוניברסלית, ומשתתפת שעומדת מול
+     מצלמה חייבת לזהות במבט אם המצלמה פועלת. גוון אלמוג רך ולא אדום
+     צעקני, כדי שעדיין יישב בהרמוניה מול הטורקיז. */
+  --ds-record: #e4685f;
+  --ds-record-glow: rgba(228, 104, 95, 0.55);
+
   /* --- צללים --- */
   --ds-shadow-sm: 0 4px 14px -6px rgba(3, 18, 18, 0.7);
   --ds-shadow: 0 18px 40px -18px rgba(3, 18, 18, 0.85);
@@ -173,6 +180,9 @@
   --ds-warn-fill: rgba(138, 99, 16, 0.12);
   --ds-danger: #9c3a37;
   --ds-danger-fill: rgba(156, 58, 55, 0.1);
+
+  --ds-record: #c2483f;
+  --ds-record-glow: rgba(194, 72, 63, 0.45);
 
   --ds-shadow-sm: 0 4px 14px -6px rgba(12, 62, 60, 0.22);
   --ds-shadow: 0 18px 40px -18px rgba(12, 62, 60, 0.3);
@@ -276,6 +286,7 @@
   --color-warn-fill: var(--ds-warn-fill);
   --color-danger: var(--ds-danger);
   --color-danger-fill: var(--ds-danger-fill);
+  --color-record: var(--ds-record);
 
   --radius-xs: var(--ds-r-xs);
   --radius-sm: var(--ds-r-sm);

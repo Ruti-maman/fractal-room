@@ -17,11 +17,16 @@ import {
 } from "../../hooks/useClipTranscripts";
 import type { Group } from "../../types/group";
 import type { MediaItem } from "../../types/media";
+import { BackgroundLayers } from "../ui/AppBackground";
+import Icon from "../ui/Icon";
+import { GlassButton, Spinner } from "../ui/Glass";
+import { LoadingState, Skeleton } from "../ui/Feedback";
+import StageShell from "../StageShell";
 
 const RECORD_SECONDS = 10;
 
-/** פלטת הצבעים של הסדנה - אותה פלטה שמשמשת את שעון החול בשלב 6. */
-const PALETTE = ["#6fcf7e", "#9ed75b", "#5bc0eb", "#f5a25d", "#f07b7b"];
+/** סולם הטורקיז של לבנת הזכוכית - אותם ערכים שמשמשים את שעון החול בשלב 6. */
+const PALETTE = ["#c7f5f4", "#a7e9e5", "#84c7c1", "#6bacA6", "#4e8f8b"];
 
 /**
  * ההוראות מופיעות אחת אחרי השנייה, ורק בסוף נחשפת תיבת ההקלדה - לפי
@@ -232,7 +237,7 @@ function RecordingLens() {
           </linearGradient>
           <radialGradient id="lens-glass" cx="0.36" cy="0.3" r="0.75">
             <stop offset="0%" stopColor="#ffffff" stopOpacity={0.3} />
-            <stop offset="55%" stopColor="#5bc0eb" stopOpacity={0.12} />
+            <stop offset="55%" stopColor="#84c7c1" stopOpacity={0.14} />
             <stop offset="100%" stopColor="#000000" stopOpacity={0.35} />
           </radialGradient>
         </defs>
@@ -247,7 +252,7 @@ function RecordingLens() {
           strokeWidth={4} strokeLinecap="round" />
 
         {/* נורית הקלטה */}
-        <circle cx="100" cy="100" r="9" fill="#f07b7b"
+        <circle cx="100" cy="100" r="9" fill="#e4685f"
           style={{ transformOrigin: "100px 100px", animation: "rec-pulse 1.6s ease-in-out infinite" }} />
       </svg>
     </div>
@@ -498,10 +503,6 @@ function SolutionAndRecord({
     return (
       <main
         className="relative flex min-h-screen flex-col items-center justify-center gap-10 overflow-hidden px-8 py-12 text-center"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 12%, var(--color-smoke-blue) 0%, var(--color-smoke-blue-dark) 62%, var(--color-smoke-blue-darker) 100%)",
-        }}
       >
         <style>{`
           @keyframes step-in {
@@ -510,15 +511,14 @@ function SolutionAndRecord({
           }
         `}</style>
 
-        {/* כתמי אור רכים - בלי עיגולים מסתובבים, לפי בקשת הלקוחה */}
-        <div className="pointer-events-none absolute top-[-12%] right-[8%] h-96 w-96 rounded-full bg-wood-light/10 blur-[110px]" />
-        <div className="pointer-events-none absolute bottom-[-16%] left-[6%] h-96 w-96 rounded-full bg-smoke-blue/25 blur-[120px]" />
+        <BackgroundLayers />
 
         <div className="relative flex flex-col items-center gap-3" style={{ animation: "fade-up 0.7s ease-out both" }}>
-          <span className="rounded-full border border-white/15 bg-white/5 px-5 py-1.5 text-xs font-bold tracking-widest text-white/50 uppercase">
+          <span className="glass glass-chip text-accent-soft gap-2">
+            <Icon name="camera" size={15} />
             שלב 7 · סימולציות
           </span>
-          <h1 className="text-4xl font-black tracking-tight">הוראות לעריכת הסימולציה</h1>
+          <h1 className="glass-title text-4xl sm:text-5xl">הוראות לעריכת הסימולציה</h1>
         </div>
 
         {/* העדשה - הלב החזותי, כמו שעון החול בשלב 6 */}
@@ -526,49 +526,58 @@ function SolutionAndRecord({
           <RecordingLens />
         </div>
 
-        {/* ההוראות נחשפות אחת אחרי השנייה */}
-        <ol className="relative flex w-full max-w-2xl flex-col gap-4 text-right">
+        {/* ההוראות נחשפות אחת אחרי השנייה. כל אחת היא לבנה בפני עצמה -
+            קודם הן היו שורות טקסט עם עיגול צבעוני, וחמישה צבעים שונים
+            רמזו על היררכיה שלא קיימת: כל ההוראות שוות בחשיבותן. */}
+        <ol className="relative flex w-full max-w-2xl flex-col gap-3 text-right">
           {SIMULATION_STEPS.map((step, i) => (
             <li
               key={i}
-              className="flex items-center gap-4"
+              className="glass glass-dim flex items-center gap-4 rounded-lg px-5 py-3.5"
               style={{ animation: `step-in 0.6s ${(i + 1) * STEP_DELAY_SECONDS}s cubic-bezier(0.22, 1, 0.36, 1) both` }}
             >
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-black"
-                style={{ borderColor: step.color, color: step.color }}
+                aria-hidden="true"
+                className="glass glass-active flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
               >
                 {i + 1}
               </span>
-              <span className="text-xl font-bold text-white/90">{step.text}</span>
+              <span className="text-ink text-lg font-bold sm:text-xl">{step.text}</span>
             </li>
           ))}
         </ol>
 
         <div
-          className="relative w-full max-w-2xl"
+          className="relative w-full max-w-2xl text-right"
           style={{ animation: `step-in 0.7s ${inputDelay}s cubic-bezier(0.22, 1, 0.36, 1) both` }}
         >
-          <p className="mb-3 text-sm font-bold text-white/50">הקלידו את הפתרון שגיבשתם</p>
+          <label
+            htmlFor="stage7-solution"
+            className="text-ink-2 mb-3 flex items-center gap-2 px-2 text-sm font-bold"
+          >
+            <Icon name="edit" size={15} className="text-accent-soft" />
+            הקלידו את הפתרון שגיבשתם
+          </label>
           <textarea
-            className="focus:border-wood-light/60 h-28 w-full rounded-2xl border border-white/15 bg-black/25 p-5 text-lg text-white shadow-inner shadow-black/40 outline-none placeholder:text-white/30"
+            id="stage7-solution"
+            className="glass-input h-32 w-full resize-none !rounded-2xl py-4 !text-lg"
             value={solution}
             onChange={(e) => setSolution(e.target.value)}
             placeholder="הקלידו כאן..."
           />
         </div>
 
-        <button
-          className="group relative flex w-full max-w-2xl items-center justify-center gap-3 rounded-full bg-white/10 px-8 py-5 text-xl font-bold transition-all duration-200 hover:bg-white/15 active:scale-95 disabled:opacity-40"
-          style={{ animation: `step-in 0.7s ${inputDelay + 0.35}s cubic-bezier(0.22, 1, 0.36, 1) both` }}
-          onClick={handleSaveSolution}
-          disabled={!solution.trim()}
-        >
-          המשך להקלטה
-          <span className="transition-transform duration-200 group-hover:-translate-x-1" aria-hidden="true">
-            ←
-          </span>
-        </button>
+        <div style={{ animation: `step-in 0.7s ${inputDelay + 0.35}s cubic-bezier(0.22, 1, 0.36, 1) both` }}>
+          <GlassButton
+            variant="primary"
+            size="lg"
+            iconAfter="arrowNext"
+            onClick={handleSaveSolution}
+            disabled={!solution.trim()}
+          >
+            המשך להקלטה
+          </GlassButton>
+        </div>
       </main>
     );
   }
@@ -583,7 +592,7 @@ function SolutionAndRecord({
   const playerBox = (
           <div
             ref={playerRef}
-            className={`overflow-hidden border border-white/10 bg-black shadow-[0_40px_90px_-25px_rgba(0,0,0,0.9)] ${
+            className={`glass !bg-black overflow-hidden shadow-glass-lg ${
               expanded ? "fixed inset-0 z-50 rounded-none" : "relative rounded-[2rem]"
             }`}
           >
@@ -612,8 +621,8 @@ function SolutionAndRecord({
             {/* חיווי קטן שהכתוביות החיות מאזינות - כדי שיהיה ברור שהטקסט זז
                 כי מדברים, ולא סתם. */}
             {status === "recording" && captionState === "listening" && (
-              <div className="pointer-events-none absolute top-5 left-5 flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm font-bold text-white/80">
-                <span className="h-2 w-2 rounded-full bg-[#6fcf7e]" style={{ animation: "rec-dot 1.4s ease-in-out infinite" }} />
+              <div className="pointer-events-none absolute top-5 left-5 flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm font-bold text-ink-2">
+                <span className="h-2 w-2 rounded-full bg-ok" style={{ animation: "rec-dot 1.4s ease-in-out infinite" }} />
                 כתוביות חיות
               </div>
             )}
@@ -622,15 +631,15 @@ function SolutionAndRecord({
                 השפות, וזו בדיוק ה"חתימה" החזותית שמזהים מיד. שאר המסך נשאר RTL. */}
             <div
               dir="ltr"
-              className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent px-6 pt-24 pb-5"
+              className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/95 via-black/60 to-transparent px-6 pt-24 pb-5"
             >
               {/* ציר הזמן - הרוחב מצויר ישירות ב-requestAnimationFrame (ראו
                   ה-effect למעלה), ולכן הוא זוחל ברציפות ולא קופץ פעם בשנייה. */}
               <div className="relative mx-1 h-2 rounded-full bg-white/20">
-                <div ref={barRef} className="h-full w-0 rounded-full bg-[#ff2d2d]" />
+                <div ref={barRef} className="h-full w-0 rounded-full bg-record" />
                 <span
                   ref={knobRef}
-                  className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ff2d2d] shadow-md transition-opacity duration-200"
+                  className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-record shadow-md transition-opacity duration-200"
                   style={{ left: "0%", opacity: status === "recording" ? 1 : 0 }}
                 />
               </div>
@@ -648,17 +657,17 @@ function SolutionAndRecord({
                   {status === "recording" ? (
                     <span className="h-5 w-5 rounded-[3px] bg-white" />
                   ) : (
-                    <span className="h-6 w-6 rounded-full bg-[#ff2d2d] shadow-[0_0_12px_rgba(255,45,45,0.9)]" />
+                    <span className="h-6 w-6 rounded-full bg-record shadow-[0_0_14px_var(--ds-record-glow)]" />
                   )}
                 </button>
 
-                <span className="text-base font-bold text-white/90 tabular-nums">
+                <span className="text-base font-bold text-ink tabular-nums">
                   <span ref={elapsedRef}>{fmtTime(0)}</span> / {fmtTime(RECORD_SECONDS)}
                 </span>
 
                 {/* מד קליטת המיקרופון - חמישה פסים שמתמלאים לפי העוצמה */}
                 <span className="flex items-center gap-2 px-2" title={micSilent ? "המיקרופון לא קולט" : "קליטת מיקרופון"}>
-                  <svg viewBox="0 0 24 24" className={`h-5 w-5 ${micSilent ? "text-[#ff8a8a]" : "text-white/70"}`} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                  <svg viewBox="0 0 24 24" className={`h-5 w-5 ${micSilent ? "text-record" : "text-ink-2"}`} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                     <rect x="9" y="3" width="6" height="11" rx="3" />
                     <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
                   </svg>
@@ -667,7 +676,7 @@ function SolutionAndRecord({
                       <span
                         key={threshold}
                         className={`w-[3px] rounded-full transition-colors duration-75 ${
-                          micLevel > threshold ? "bg-[#6fcf7e]" : "bg-white/20"
+                          micLevel > threshold ? "bg-ok" : "bg-white/20"
                         }`}
                         style={{ height: 6 + i * 3 }}
                       />
@@ -676,9 +685,9 @@ function SolutionAndRecord({
                 </span>
 
                 {status === "recording" && (
-                  <span className="flex items-center gap-2 rounded-full bg-[#ff2d2d]/20 px-3 py-1 text-sm font-black text-[#ff8a8a]">
+                  <span className="flex items-center gap-2 rounded-full bg-record/20 px-3 py-1 text-sm font-black text-record">
                     <span
-                      className="h-2.5 w-2.5 rounded-full bg-[#ff2d2d]"
+                      className="h-2.5 w-2.5 rounded-full bg-record"
                       style={{ animation: "rec-dot 1.1s ease-in-out infinite" }}
                     />
                     REC
@@ -687,35 +696,26 @@ function SolutionAndRecord({
 
                 <div className="flex-1" />
 
-                <PlayerButton label="תצוגת מראה" active={mirrored} onClick={() => setMirrored((m) => !m)}>
-                  <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 3v18" strokeDasharray="3 3" />
-                    <path d="M9 7 3.5 12 9 17z" />
-                    <path d="M15 7l5.5 5L15 17z" />
-                  </svg>
-                </PlayerButton>
+                <PlayerButton
+                  label="תצוגת מראה"
+                  icon="mirror"
+                  active={mirrored}
+                  onClick={() => setMirrored((m) => !m)}
+                />
 
                 <PlayerButton
                   label="כיתוב"
+                  text="CC"
                   active={showCaption}
                   onClick={() => setShowCaption((c) => !c)}
-                >
-                  <span className="text-base font-black tracking-tight">CC</span>
-                </PlayerButton>
+                />
 
                 <PlayerButton
                   label={expanded ? "יציאה ממסך מלא" : "מסך מלא"}
+                  icon={expanded ? "fullscreenExit" : "fullscreen"}
                   active={expanded}
                   onClick={() => setExpanded((e) => !e)}
-                >
-                  <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    {expanded ? (
-                      <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />
-                    ) : (
-                      <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
-                    )}
-                  </svg>
-                </PlayerButton>
+                />
               </div>
             </div>
           </div>
@@ -724,10 +724,6 @@ function SolutionAndRecord({
   return (
     <main
       className="relative flex min-h-screen flex-col items-center justify-center gap-6 overflow-hidden px-8 py-8 text-center"
-      style={{
-        background:
-          "radial-gradient(circle at 50% 12%, var(--color-smoke-blue) 0%, var(--color-smoke-blue-dark) 62%, var(--color-smoke-blue-darker) 100%)",
-      }}
     >
       <style>{`
         @keyframes rec-dot {
@@ -743,8 +739,8 @@ function SolutionAndRecord({
           to { transform: translateX(-50%); }
         }
         @keyframes rec-ring {
-          0%, 100% { opacity: 0.85; box-shadow: 0 0 18px 2px rgba(255,45,45,0.35); }
-          50% { opacity: 1; box-shadow: 0 0 34px 6px rgba(255,45,45,0.55); }
+          0%, 100% { opacity: 0.85; box-shadow: 0 0 18px 2px var(--ds-record-glow); }
+          50% { opacity: 1; box-shadow: 0 0 36px 7px var(--ds-record-glow); }
         }
         @keyframes ring-spin {
           from { transform: translate(-50%, -50%) rotate(0deg); }
@@ -753,8 +749,8 @@ function SolutionAndRecord({
       `}</style>
 
       {/* כתמי אור מטושטשים בפינות - קו העיצוב הקבוע של כל מסכי הסדנה */}
-      <div className="pointer-events-none absolute top-[-12%] right-[8%] h-96 w-96 rounded-full bg-wood-light/10 blur-[110px]" />
-      <div className="pointer-events-none absolute bottom-[-16%] left-[6%] h-96 w-96 rounded-full bg-smoke-blue/25 blur-[120px]" />
+      <div className="pointer-events-none absolute top-[-12%] right-[8%] h-96 w-96 rounded-full bg-glow-soft blur-[110px]" />
+      <div className="pointer-events-none absolute bottom-[-16%] left-[6%] h-96 w-96 rounded-full bg-glow-soft blur-[120px]" />
 
       {/* זרקור רך מלמעלה - כמו על סט צילום, מאיר את אזור המצלמה */}
       <div
@@ -773,10 +769,11 @@ function SolutionAndRecord({
       </div>
 
       <div className="relative flex flex-col items-center gap-3" style={{ animation: "fade-up 0.7s ease-out both" }}>
-        <span className="rounded-full border border-white/15 bg-white/5 px-5 py-1.5 text-xs font-bold tracking-widest text-white/50 uppercase">
+        <span className="glass glass-chip text-accent-soft gap-2">
+          <Icon name="record" size={15} />
           שלב 7 · הקלטה
         </span>
-        <h1 className="text-3xl font-black tracking-tight">היכונו להקלטה מול המצלמה</h1>
+        <h1 className="glass-title text-3xl sm:text-4xl">היכונו להקלטה מול המצלמה</h1>
       </div>
 
       <div className="relative" style={{ animation: "fade-up 0.9s 0.15s ease-out both" }}>
@@ -801,7 +798,7 @@ function SolutionAndRecord({
             כך שהמצב "מקליטים עכשיו" ברור מכל מקום בחדר. */}
         {status === "recording" ? (
           <div
-            className="absolute -inset-[2px] rounded-[2.1rem] bg-[#ff2d2d]"
+            className="absolute -inset-[2px] rounded-[2.1rem] bg-record"
             style={{ animation: "rec-ring 2.4s ease-in-out infinite" }}
           />
         ) : (
@@ -836,9 +833,9 @@ function SolutionAndRecord({
       </div>
 
       {error && (
-        <div className="relative flex max-w-xl flex-col items-center gap-1 rounded-2xl border border-[#f07b7b]/40 bg-[#f07b7b]/10 px-6 py-4">
-          <p className="font-bold text-[#ff9bae]">לא הצלחנו לגשת למצלמה</p>
-          <p className="text-sm text-white/50">{error}</p>
+        <div className="relative flex max-w-xl flex-col items-center gap-1 rounded-2xl border border-danger/40 bg-danger-fill px-6 py-4">
+          <p className="font-bold text-danger">לא הצלחנו לגשת למצלמה</p>
+          <p className="text-sm text-ink-3">{error}</p>
         </div>
       )}
 
@@ -846,28 +843,36 @@ function SolutionAndRecord({
         {status === "idle" && (
           // הכפתור האדום הגדול הוסר לפי בקשת הלקוחה - ההקלטה מתחילה
           // מהכפתור העגול שבסרגל הנגן, כמו בכל נגן וידאו.
-          <p className="text-lg font-bold text-white/60">
+          <p className="glass glass-pill text-ink-2 gap-2.5 px-6 py-3 text-lg font-bold">
+            <Icon
+              name={streamReady ? "record" : "camera"}
+              size={18}
+              className={streamReady ? "text-record" : "text-accent-soft"}
+            />
             {streamReady ? "לחצי על כפתור ההקלטה האדום בסרגל שמתחת לתצוגה" : "מפעילה מצלמה..."}
           </p>
         )}
 
         {status === "recording" && (
-          <div className="flex items-center gap-5">
-            <p className="text-2xl font-black text-[#ff9bae]">מקליטה... {secondsLeft}</p>
-            <button
-              className="flex items-center gap-3 rounded-full border-2 border-white/25 px-8 py-4 text-lg font-bold text-white transition-colors duration-150 hover:bg-white/10 active:scale-95"
-              onClick={stopRecording}
-            >
-              <span className="h-4 w-4 rounded-[3px] bg-white" />
+          <div className="flex items-center gap-4">
+            <p className="glass glass-pill text-record gap-2.5 px-6 py-3 text-2xl font-extrabold tabular-nums">
+              <span
+                aria-hidden="true"
+                className="bg-record h-3 w-3 rounded-full"
+                style={{ animation: "rec-dot 1.1s ease-in-out infinite" }}
+              />
+              מקליטה... {secondsLeft}
+            </p>
+            <GlassButton icon="stop" size="lg" onClick={stopRecording}>
               סיימתי
-            </button>
+            </GlassButton>
           </div>
         )}
 
         {status === "uploading" && (
-          <div className="flex items-center gap-3">
-            <div className="border-t-wood-light h-6 w-6 animate-spin rounded-full border-2 border-white/20" />
-            <p className="text-xl font-bold text-white/80">מעלה את ההקלטה...</p>
+          <div className="glass glass-pill gap-3 px-6 py-3">
+            <Spinner size={22} />
+            <p className="text-ink-2 text-xl font-bold">מעלה את ההקלטה...</p>
           </div>
         )}
       </div>
@@ -941,14 +946,15 @@ function GroupClip({
 
   if (failed) {
     return (
-      <div className="flex h-[min(34vh,22rem)] w-full flex-col items-center justify-center gap-2 rounded-xl bg-black/40 px-3 text-center">
-        <p className="text-sm font-bold text-[#ff9bae]">הסרטון לא נטען</p>
-        <p className="text-xs text-white/50">ההקלטה נשמרה, אבל הדפדפן לא הצליח להוריד אותה</p>
+      <div className="glass glass-dim flex h-[min(34vh,22rem)] w-full flex-col items-center justify-center gap-2 rounded-2xl px-4 text-center">
+        <Icon name="alert" size={26} className="text-warn" />
+        <p className="text-warn text-sm font-bold">הסרטון לא נטען</p>
+        <p className="text-ink-3 text-xs">ההקלטה נשמרה, אבל הדפדפן לא הצליח להוריד אותה</p>
       </div>
     );
   }
 
-  if (!src) return <div className="h-[min(34vh,22rem)] w-full animate-pulse rounded-xl bg-black/40" />;
+  if (!src) return <Skeleton className="h-[min(34vh,22rem)] w-full !rounded-2xl" />;
 
   // נגן ברירת המחדל של הדפדפן, לפי בקשת הלקוחה - חזרה לעיצוב שהיה קודם.
   // בקרות הקול והמסך המלא של הדפדפן זמינות כאן כרגיל.
@@ -1058,20 +1064,21 @@ function LikeStar({
         {floats.map((f) => (
           <span
             key={f.id}
-            className="absolute text-3xl"
+            aria-hidden="true"
+            className="text-accent absolute"
             style={{
               marginInlineStart: f.offset,
-              filter: "drop-shadow(0 0 10px rgba(255,200,60,0.9))",
+              filter: "drop-shadow(0 0 10px var(--ds-glow))",
               animation: "star-rise 1.5s ease-out forwards",
             }}
           >
-            ⭐
+            <Icon name="star" size={30} filled />
           </span>
         ))}
       </div>
 
-      {/* כוכב קו דק, כמו סימון "מועדף" - בלי רקע ובלי מסגרת. הוא צבוע
-          בזהב ברגע שסימנו, והמונה הקטן יושב לידו ישירות על הסרטון. */}
+      {/* כוכב קו דק, כמו סימון "מועדף" - בלי רקע ובלי מסגרת. הוא נצבע
+          בטורקיז ברגע שסימנו, והמונה הקטן יושב לידו ישירות על הסרטון. */}
       <button
         onClick={like}
         disabled={full}
@@ -1083,8 +1090,8 @@ function LikeStar({
         <svg
           viewBox="0 0 24 24"
           className="h-7 w-7"
-          fill={myVotes > 0 ? "#ffd75e" : "none"}
-          stroke={myVotes > 0 ? "#ffd75e" : "#ffffff"}
+          fill={myVotes > 0 ? "var(--ds-accent)" : "none"}
+          stroke={myVotes > 0 ? "var(--ds-accent)" : "currentColor"}
           strokeWidth={1.6}
           strokeLinejoin="round"
         >
@@ -1092,7 +1099,7 @@ function LikeStar({
         </svg>
         <span
           key={totalLikes}
-          className="text-base font-bold text-white tabular-nums"
+          className="text-base font-bold text-white tabular-nums drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
           style={{ animation: "count-pop 0.35s ease-out" }}
         >
           {totalLikes}
@@ -1148,21 +1155,8 @@ function SharedViewing({
   return (
     <main
       className="relative flex min-h-screen flex-col items-center justify-center gap-8 overflow-hidden px-8 py-10 text-center"
-      style={{
-        background:
-          "radial-gradient(circle at 50% 12%, var(--color-smoke-blue) 0%, var(--color-smoke-blue-dark) 62%, var(--color-smoke-blue-darker) 100%)",
-      }}
     >
-      {/* כתמי אור שנעים לאט מאוד - נותנים לרקע תחושת חיים בלי להסיח את העין
-          מהסרטונים. התנועה איטית בכוונה (30-40 שניות למחזור). */}
-      <div
-        className="pointer-events-none absolute top-[-14%] left-[-6%] h-[30rem] w-[30rem] rounded-full bg-[#5bc0eb]/12 blur-[120px]"
-        style={{ animation: "aurora-drift 34s ease-in-out infinite" }}
-      />
-      <div
-        className="pointer-events-none absolute right-[-8%] bottom-[-16%] h-[32rem] w-[32rem] rounded-full bg-[#f5a25d]/10 blur-[130px]"
-        style={{ animation: "aurora-drift 41s ease-in-out infinite reverse" }}
-      />
+      <BackgroundLayers />
 
       {/* שדה כוכבים על כל המסך - אותו מוטיב של הדירוג, בצבעי הפלטה. הם
           מרחפים לאט מלמטה למעלה בכל רוחב העמוד, בשקיפות נמוכה, כדי שייתנו
@@ -1171,21 +1165,21 @@ function SharedViewing({
         {STAR_FIELD.map((star, i) => (
           <span
             key={`${star.left}-${star.top}`}
+            aria-hidden="true"
             className="absolute select-none"
             style={
               {
                 insetInlineStart: `${star.left}%`,
                 top: `${star.top}%`,
                 color: PALETTE[i % PALETTE.length],
-                fontSize: star.size,
-                textShadow: `0 0 ${star.size}px currentColor`,
+                filter: `drop-shadow(0 0 ${star.size / 2}px currentColor)`,
                 "--star-min": star.min,
                 "--star-max": star.max,
                 animation: `star-twinkle ${star.duration}s ${star.delay}s ease-in-out infinite`,
               } as CSSProperties
             }
           >
-            ★
+            <Icon name="star" size={star.size} filled />
           </span>
         ))}
       </div>
@@ -1200,16 +1194,30 @@ function SharedViewing({
         className="relative flex flex-col items-center gap-4"
         style={{ animation: "fade-up 0.7s ease-out both" }}
       >
-        <span className="rounded-full border border-[#5bc0eb]/40 px-5 py-1.5 text-xs font-bold tracking-widest text-[#5bc0eb] uppercase">
+        <span className="glass glass-chip text-accent-soft gap-2">
+          <Icon name="film" size={15} />
           שלב 7 · צפייה משותפת
         </span>
-        <h1 className="text-4xl font-black tracking-tight">צפייה משותפת בכל ההסרטות</h1>
-        <p className="text-sm text-white/45">צפו בהקלטות של שאר הקבוצות וסמנו בכוכב את מה שאהבתן.</p>
-        <p className="rounded-full border border-[#ffd75e]/35 bg-[#ffd75e]/10 px-5 py-1.5 text-sm font-bold text-[#ffd75e]">
-          {votesLeft > 0
-            ? `נותרו לכן ${votesLeft} סימונים מתוך ${maxVotes}`
-            : `ניצלתן את כל ${maxVotes} הסימונים`}
+        <h1 className="glass-title text-4xl sm:text-5xl">צפייה משותפת בכל ההסרטות</h1>
+        <p className="text-ink-2 text-lg">
+          צפו בהקלטות של שאר הקבוצות וסמנו בכוכב את מה שאהבתן.
         </p>
+        {/* מונה הסימונים הוא מד ולא רק טקסט: כמה נשאר נקרא גם בגלולה
+            שמתרוקנת, בלי לקרוא את המספר. */}
+        <div className="glass glass-pill gap-3 px-5 py-2">
+          <Icon name="star" size={16} className="text-accent" filled />
+          <span className="text-ink text-sm font-bold">
+            {votesLeft > 0
+              ? `נותרו לכן ${votesLeft} סימונים מתוך ${maxVotes}`
+              : `ניצלתן את כל ${maxVotes} הסימונים`}
+          </span>
+          <span
+            className="glass-slider glass-slider--x h-2 w-20"
+            style={{ ["--fill" as string]: maxVotes > 0 ? (votesLeft / maxVotes) * 100 : 0 }}
+          >
+            <span className="glass-slider__fill" />
+          </span>
+        </div>
       </div>
 
       <div className="relative flex w-full max-w-[108rem] flex-wrap items-stretch justify-center gap-8">
@@ -1225,13 +1233,12 @@ function SharedViewing({
                 className="group flex w-[min(30vw,32rem)] flex-col gap-3 transition-transform duration-200 hover:-translate-y-1"
                 style={{ animation: `fade-up 0.8s ${0.15 + i * 0.12}s ease-out both` }}
               >
-                <p className="text-2xl font-bold">{g.name ?? `מסך ${g.screen_number}`}</p>
+                <p className="text-ink text-2xl font-extrabold">
+                  {g.name ?? `מסך ${g.screen_number}`}
+                </p>
                 {clip ? (
                   <div
-                    className="relative rounded-2xl p-[2px] shadow-[0_0_26px_-6px_rgba(91,192,235,0.45)] transition-shadow duration-300 group-hover:shadow-[0_0_44px_-4px_rgba(245,162,93,0.6)]"
-                    style={{
-                      background: `linear-gradient(135deg, ${PALETTE[0]}, ${PALETTE[2]}, ${PALETTE[4]})`,
-                    }}
+                    className="glass relative rounded-2xl p-[3px] transition-shadow duration-300 group-hover:shadow-[0_0_46px_-4px_var(--ds-glow)]"
                   >
                     <div className="overflow-hidden rounded-[calc(1rem-2px)] bg-black">
                       <GroupClip
@@ -1256,13 +1263,19 @@ function SharedViewing({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex h-[min(34vh,22rem)] w-full items-center justify-center rounded-xl bg-black/40 text-base text-white/50">
-                    עדיין מקליטה...
+                  <div className="glass glass-dim flex h-[min(34vh,22rem)] w-full flex-col items-center justify-center gap-3 rounded-2xl text-base">
+                    <span
+                      className="glass glass-icon-btn text-accent-soft"
+                      style={{ animation: "soft-pulse 2.2s ease-in-out infinite" }}
+                    >
+                      <Icon name="record" size={24} />
+                    </span>
+                    <span className="text-ink-3 font-bold">עדיין מקליטה...</span>
                   </div>
                 )}
 
                 {clip && votes.length > 0 && (
-                  <p className="text-xs font-bold text-white/40">
+                  <p className="text-xs font-bold text-ink-3">
                     {votes.length === 1 ? "בת אחת מכן סימנה" : `${votes.length} מכן סימנו`}
                   </p>
                 )}
@@ -1286,17 +1299,7 @@ function Stage7Simulation({ workshopId, myGroup, allGroups, onAdvance }: Props) 
   // ריקה לרגע, מסך ההוראות נפתח, ומיד כשהנתונים מגיעים הוא מוחלף - מה
   // שנראה כאילו השקופית "נעלמה אחרי שנייה".
   if (mediaLoading) {
-    return (
-      <main
-        className="flex min-h-screen items-center justify-center"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 12%, var(--color-smoke-blue) 0%, var(--color-smoke-blue-dark) 62%, var(--color-smoke-blue-darker) 100%)",
-        }}
-      >
-        <div className="border-t-wood-light h-10 w-10 animate-spin rounded-full border-4 border-white/20" />
-      </main>
-    );
+    return <LoadingState title="רגע אחד" description="בודקות מי כבר הקליטה..." />;
   }
 
   if (!myClipExists && !myClipReady) {
@@ -1309,21 +1312,74 @@ function Stage7Simulation({ workshopId, myGroup, allGroups, onAdvance }: Props) 
     );
   }
 
+  // מסך ההמתנה להקלטות. קודם הוא היה שורת כותרת ושלוש שורות עם אמוג'י,
+  // וזה המסך שקבוצה שסיימה ראשונה תבהה בו הכי הרבה זמן בכל הסדנה - לכן
+  // הוא מקבל את אותו טיפול כמו שער הסנכרון: מד התקדמות מפורש וכרטיס
+  // לכל קבוצה, כדי שההמתנה תיראה כמו החדר עובד ולא כמו מסך תקוע.
   if (!allReady) {
+    const sorted = allGroups.slice().sort((a, b) => a.screen_number - b.screen_number);
+    const doneCount = sorted.filter((g) => media.some((m) => m.group_id === g.id)).length;
+
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-        <h1 className="text-2xl font-bold">ממתינים שכל הקבוצות יסיימו להקליט...</h1>
-        <div className="flex flex-col gap-2">
-          {allGroups
-            .slice()
-            .sort((a, b) => a.screen_number - b.screen_number)
-            .map((g) => (
-              <div key={g.id}>
-                {media.some((m) => m.group_id === g.id) ? "✅" : "⏳"} {g.name ?? `מסך ${g.screen_number}`}
-              </div>
-            ))}
+      <StageShell
+        stage={7}
+        kicker="סימולציות"
+        icon="film"
+        title="ממתינות לשאר ההקלטות"
+        subtitle="ההקלטה שלכן נשמרה. הצפייה המשותפת תתחיל כשכל הקבוצות יסיימו."
+        botanical="fern"
+      >
+        <div className="glass glass-brick mb-8 flex w-full max-w-md flex-col gap-3 rounded-xl p-5">
+          <div className="flex items-baseline justify-between">
+            <span className="text-ink-2 text-sm font-bold">הקלטות שהושלמו</span>
+            <span className="text-accent text-2xl font-extrabold tabular-nums">
+              {doneCount}
+              <span className="text-ink-3 text-base"> / {sorted.length}</span>
+            </span>
+          </div>
+          <div
+            className="glass-slider glass-slider--x h-3"
+            role="progressbar"
+            aria-valuenow={doneCount}
+            aria-valuemin={0}
+            aria-valuemax={sorted.length}
+            style={{
+              ["--fill" as string]:
+                sorted.length > 0 ? (doneCount / sorted.length) * 100 : 0,
+            }}
+          >
+            <span className="glass-slider__fill" />
+          </div>
         </div>
-      </main>
+
+        <ul className="flex w-full flex-wrap justify-center gap-4">
+          {sorted.map((g, i) => {
+            const done = media.some((m) => m.group_id === g.id);
+            return (
+              <li
+                key={g.id}
+                className="glass glass-brick flex w-56 flex-col items-center gap-3 rounded-xl p-5 text-center"
+                style={{
+                  animation: `glass-in var(--ds-dur-slow) ${140 + i * 110}ms var(--ds-ease) both`,
+                }}
+              >
+                <span
+                  className={done ? "glass glass-icon-btn glass-active" : "glass glass-icon-btn text-ink-3"}
+                  style={done ? undefined : { animation: "soft-pulse 2.2s ease-in-out infinite" }}
+                >
+                  <Icon name={done ? "check" : "record"} size={26} />
+                </span>
+                <span className="text-ink text-lg font-extrabold">
+                  {g.name ?? `מסך ${g.screen_number}`}
+                </span>
+                <span className={done ? "text-ok text-xs font-bold" : "text-ink-3 text-xs font-bold"}>
+                  {done ? "ההקלטה נשמרה" : "עדיין מקליטה"}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </StageShell>
     );
   }
 
