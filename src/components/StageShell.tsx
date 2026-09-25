@@ -73,13 +73,25 @@ function StageShell({
         "relative flex min-h-screen flex-col items-center",
         // ריווח שמפנה מקום לסרגל העליון ולכרום התחתון
         "px-4 pt-20 pb-44 sm:px-8 sm:pt-24 sm:pb-52",
-        center && "justify-center",
         className,
       )}
     >
       <BackgroundLayers botanical={botanical} />
 
-      <div className={cx("relative flex w-full flex-col items-center", WIDTH[width])}>
+      {/*
+        המרכוז האנכי נעשה ב-`my-auto` על עמודת התוכן ולא ב-`justify-center`
+        על המעטפת, וזה ההבדל בין מסך שנראה טוב למסך שנחתך: `justify-center`
+        על תוכן גבוה מהחלון דוחף אותו החוצה **משני הקצוות**, כולל מעבר
+        לריווח התחתון - וכך כפתור הפעולה של השלב נחתך בתחתית המסך.
+        `my-auto` ממרכז כשיש מקום, ומוותר על המרכוז כשאין.
+      */}
+      <div
+        className={cx(
+          "relative flex w-full flex-col items-center",
+          center && "my-auto",
+          WIDTH[width],
+        )}
+      >
         {hasHeader && (
           <header
             className="mb-8 flex flex-col items-center gap-3 text-center sm:mb-10"

@@ -17,7 +17,7 @@ import Timer from "./Timer";
 import ProgressBar from "./ProgressBar";
 import InspirationsLadder from "./InspirationsLadder";
 import PracticalConclusionBanner from "./PracticalConclusionBanner";
-import TopBar, { BackButton } from "./TopBar";
+import TopBar from "./TopBar";
 import { ErrorState } from "./ui";
 import type { Stage1Content } from "../types/stage1Content";
 import type { Stage3Content } from "../types/stage3Content";
@@ -99,8 +99,8 @@ function StageRouter({
             .map((s) => s.stage_number)
             .join(", ")}`}
         />
+        <TopBar myGroup={myGroup} screenNumber={screenNumber} onGoBack={onGoBack} />
         {progressBar}
-        {onGoBack && <BackButton onClick={onGoBack} />}
       </>
     );
   }
@@ -130,8 +130,9 @@ function StageRouter({
       />
     ) : null;
 
-  const backButton =
-    myGroup.current_stage > 1 && onGoBack ? <BackButton onClick={onGoBack} /> : null;
+  // כפתור החזרה מוצג מתוך הסרגל העליון (ראו BackButton), ולכן כאן רק
+  // מחליטים אם הוא רלוונטי בכלל.
+  const canGoBack = myGroup.current_stage > 1 && Boolean(onGoBack);
 
   // שלבים 2 ו-7 מנהלים את שער הסנכרון שלהם בעצמם בתוך הרכיב (הזדהות/הקלטה
   // עצמאית, מעבר רק כשכולן סיימו) - ראו הסבר ב-CLAUDE.md, לא משתמשים במסך ההמתנה הגנרי.
@@ -140,10 +141,13 @@ function StageRouter({
     return (
       <>
         <WaitingScreen stageNumber={stage.stage_number} allGroups={allGroups} />
-        <TopBar myGroup={myGroup} screenNumber={screenNumber} />
+        <TopBar
+          myGroup={myGroup}
+          screenNumber={screenNumber}
+          onGoBack={canGoBack ? onGoBack : undefined}
+        />
         {progressBar}
         {waitingTimer}
-        {backButton}
       </>
     );
   }
@@ -237,6 +241,7 @@ function StageRouter({
         <TopBar
           myGroup={myGroup}
           screenNumber={screenNumber}
+          onGoBack={canGoBack ? onGoBack : undefined}
           center={
             showPracticalConclusion ? (
               <PracticalConclusionBanner workshopId={workshopId} groupId={myGroup.id} />
@@ -246,7 +251,6 @@ function StageRouter({
       )}
       {isOpeningScreen ? null : progressBar}
       {waitingTimer}
-      {backButton}
     </>
   );
 }
