@@ -36,6 +36,7 @@ function WaitingScreen({ stageNumber, allGroups }: Props) {
       title="ממתינות לשאר הקבוצות"
       subtitle="השלב הזה מתחיל כשכל הקבוצות מגיעות אליו. אפשר לנצל את הרגע לנשום."
       botanical="fern"
+      background="ripple"
       width="normal"
     >
       {/* מד ההגעה - כמה קבוצות כבר כאן */}

@@ -44,6 +44,7 @@ function PlaceholderStage({ screenNumber, stage, onAdvance }: Props) {
       title="השלב הזה עוד נבנה"
       subtitle={description}
       botanical="sprig"
+      background="quiet"
       width="narrow"
       actions={
         <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={handleClick}>

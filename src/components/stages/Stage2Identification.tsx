@@ -94,6 +94,7 @@ function IdentificationForm({ myGroup }: { myGroup: Group }) {
       title="מי אתן?"
       subtitle="בחרו שם לקבוצה והוסיפו את שמות המשתתפות. השמות יופיעו אצל כל הקבוצות בחדר."
       botanical="lavender"
+      background="ripple"
       width="narrow"
       actions={
         <GlassButton
@@ -213,6 +214,7 @@ function RoomStatusNames({
           : `${identifiedCount} מתוך ${allGroups.length} קבוצות הזדהו. ממתינות לשאר.`
       }
       botanical="fern"
+      background="ripple"
       width="wide"
       actions={
         allIdentified ? (
@@ -303,6 +305,7 @@ function DilemmaVideo({ content }: { content?: Stage2Content }) {
         content?.dilemma_text ?? "הצגת הדילמה המרכזית שאיתה נתמודד לאורך הסדנה."
       }
       botanical={false}
+      background="quiet"
       width="wide"
     >
       {content?.dilemma_video_url ? (

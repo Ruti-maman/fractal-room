@@ -18,6 +18,7 @@ import ProgressBar from "./ProgressBar";
 import InspirationsLadder from "./InspirationsLadder";
 import PracticalConclusionBanner from "./PracticalConclusionBanner";
 import TopBar from "./TopBar";
+import StageTransition from "./StageTransition";
 import { ErrorState } from "./ui";
 import type { Stage1Content } from "../types/stage1Content";
 import type { Stage3Content } from "../types/stage3Content";
@@ -233,7 +234,7 @@ function StageRouter({
 
   return (
     <>
-      {stageContent}
+      <StageTransition stageKey={stage.stage_number}>{stageContent}</StageTransition>
       {showInspirationsLadder && <InspirationsLadder workshopId={workshopId} />}
       {/* הסרגל העליון מושהה במסך הפתיחה (שלב 1) יחד עם המד והטיימר: לפני
           ההזדהות לקבוצה עוד אין שם להציג, ואין לאן לחזור. */}

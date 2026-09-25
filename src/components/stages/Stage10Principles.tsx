@@ -37,6 +37,7 @@ function Stage10Principles({ workshopId, myGroup }: Props) {
       kicker="סיום התהליך"
       icon="sparkles"
       title="העיקרון שעולה מהסדנה שלכן"
+      background="night"
       width="wide"
     >
       {loading && (

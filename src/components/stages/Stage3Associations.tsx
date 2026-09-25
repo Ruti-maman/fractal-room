@@ -20,6 +20,10 @@ const FLY_DURATION_MS = 550;
 const RAY_ANGLES = [42, 4, -32, -90, -148, 176, 143];
 const RADIUS = 230;
 
+/** טבעת הטעינה סביב הליבה - רדיוס והיקף, לחישוב ה-strokeDasharray. */
+const CORE_RING = 128;
+const CORE_CIRC = 2 * Math.PI * CORE_RING;
+
 interface Props {
   workshopId: string;
   myGroup: Group;
@@ -73,11 +77,17 @@ function FlyingChipEl({ chip }: { chip: FlyingChip }) {
  * ראו ההסבר המלא בסעיף 8.5 ב-CLAUDE.md.
  *
  * ----------------------------------------------------------------------------
- * העיצוב: שמש שבאמת מאירה
+ * העיצוב: טעינת מקור אור
  * ----------------------------------------------------------------------------
- * המרכז הוא עדשת זכוכית עבה עם הילה שנושמת מאחוריה - הדילמה היא מקור האור,
- * והקרניים יוצאות ממנה. קרן שההשראה שלה נבחרה **נדלקת** (מתעבה ומקבלת
- * זוהר טורקיז), כך שהקשר בין הבחירה לשמש נראה ולא רק נרמז.
+ * זה המסך הכי "משחקי" בסדנה, והמכניקה שלו היא **טעינה**: הליבה במרכז
+ * מתחילה עמומה, וכל השראה שנבחרת מזינה אותה. שלושה דברים זזים יחד עם
+ * `charge` (0 עד 1):
+ *   - טבעת טעינה סביב הליבה מתמלאת,
+ *   - ההילה גדלה והליבה מתנפחת קלות וזוהרת חזק יותר,
+ *   - הקרן שנבחרה נדלקת, ופולס אור רץ לאורכה **פנימה** אל הליבה.
+ *
+ * זה הופך את הבחירה מ"לחצתי על כפתור" ל"הזנתי את השמש", וזה גם מה שעונה
+ * בלי מילים על "כמה עוד נשאר".
  *
  * הרדיוס והזוויות נשארו בדיוק כפי שחולצו מהמצגת. כדי שזה לא יישבר על מסך
  * צר, השמש כולה מוקטנת פרופורציונלית (`scale`) במקום לשנות את הגאומטריה -
@@ -151,6 +161,9 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
   }
 
   const remaining = MAX_SELECTED - selectedCount;
+  // 0 עד 1. זה מה שמניע את טבעת הטעינה, גודל ההילה ועוצמת הזוהר של
+  // הליבה - כך שהשלב מרגיש כמו טעינת מקור אור ולא כמו מילוי טופס.
+  const charge = selectedCount / MAX_SELECTED;
 
   return (
     <StageShell
@@ -159,6 +172,7 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
       icon="sun"
       title="מה עולה לכן מהדילמה?"
       subtitle="השלימו את ההשראות סביב השמש, ובחרו את הארבע החזקות ביותר."
+      background="radiant"
       width="full"
       className="!pb-56"
       overlay={
@@ -235,14 +249,22 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
             className="relative"
             style={{ width: RADIUS * 2 + 200, height: RADIUS * 2 + 120 }}
           >
-            {/* הילת השמש - נושמת מאחורי המרכז */}
+            {/* ההילה גדלה ומתחזקת ככל שהליבה נטענת */}
             <div
               aria-hidden="true"
-              className="bg-glow-soft absolute top-1/2 left-1/2 h-[26rem] w-[26rem] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[90px]"
-              style={{ animation: "soft-pulse 6s ease-in-out infinite" }}
+              className="bg-glow-soft absolute top-1/2 left-1/2 rounded-full blur-[90px] transition-all duration-700"
+              style={{
+                width: 360 + charge * 140,
+                height: 360 + charge * 140,
+                transform: "translate(-50%, -50%)",
+                opacity: 0.45 + charge * 0.45,
+                animation: "soft-pulse 6s ease-in-out infinite",
+              }}
             />
 
-            {/* קווי הקרניים - נדלקות כשההשראה שעליהן נבחרה */}
+            {/* קווי הקרניים. קרן שנבחרה **נדלקת** ופולסת פנימה אל הליבה -
+                זה מה שהופך את הבחירה לפעולה שמזינה את השמש, ולא רק
+                לכפתור שמשנה צבע. */}
             {RAY_ANGLES.map((deg, i) => {
               const rad = (deg * Math.PI) / 180;
               const x1 = 92 * Math.cos(rad);
@@ -257,44 +279,89 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                 <div
                   key={`line-${i}`}
                   aria-hidden="true"
-                  className="absolute rounded-full transition-all duration-500"
+                  className="absolute overflow-hidden rounded-full transition-all duration-500"
                   style={{
                     left: "50%",
                     top: "50%",
                     width: length,
-                    height: lit ? 5 : 2,
+                    height: lit ? 6 : 2,
                     background: lit
-                      ? "linear-gradient(90deg, var(--ds-accent), var(--ds-accent-soft))"
+                      ? "linear-gradient(90deg, var(--ds-accent-pale), var(--ds-accent))"
                       : "var(--ds-edge)",
-                    boxShadow: lit ? "0 0 16px 1px var(--ds-glow)" : "none",
-                    opacity: lit ? 1 : 0.5,
-                    transform: `translate(${x1}px, ${y1}px) rotate(${lineAngle}deg) translateY(${lit ? -2.5 : -1}px)`,
+                    boxShadow: lit ? "0 0 18px 1px var(--ds-glow)" : "none",
+                    opacity: lit ? 1 : 0.45,
+                    transform: `translate(${x1}px, ${y1}px) rotate(${lineAngle}deg) translateY(${lit ? -3 : -1}px)`,
                     transformOrigin: "0 0",
                   }}
-                />
+                >
+                  {/* פולס האנרגיה שרץ לאורך הקרן פנימה */}
+                  {lit && (
+                    <span
+                      className="absolute inset-y-0 w-16"
+                      style={{
+                        background:
+                          "linear-gradient(90deg, transparent, #ffffff, transparent)",
+                        opacity: 0.85,
+                        animation: `ray-pulse 2.4s ${i * 0.3}s linear infinite`,
+                      }}
+                    />
+                  )}
+                </div>
               );
             })}
 
-            {/* מרכז השמש - הדילמה עצמה, נקראת מהמסד ולא כתובה בקוד
-                (כלל הברזל בסעיף 4 ב-CLAUDE.md). */}
+            {/* --- הליבה --- */}
             <div
-              className="glass glass-brick absolute flex h-60 w-60 items-center justify-center rounded-full p-7 text-center"
-              style={{
-                left: "50%",
-                top: "50%",
-                transform: "translate(-50%, -50%)",
-                boxShadow:
-                  "var(--ds-shadow-lg), 0 0 60px -6px var(--ds-glow), var(--ds-inset-top)",
-              }}
+              className="absolute"
+              style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
             >
-              <span
-                className={cx(
-                  "font-extrabold leading-snug",
-                  content.dilemma_text ? "text-base" : "text-xl",
-                )}
+              {/* טבעת הטעינה סביב הליבה - מד ההתקדמות של השלב */}
+              <svg
+                viewBox="0 0 280 280"
+                className="pointer-events-none absolute -inset-4 -rotate-90"
+                aria-hidden="true"
               >
-                {content.dilemma_text || "הדילמה שלנו"}
-              </span>
+                <circle
+                  cx="140"
+                  cy="140"
+                  r={CORE_RING}
+                  fill="none"
+                  stroke="var(--ds-glass-strong)"
+                  strokeWidth="5"
+                />
+                <circle
+                  cx="140"
+                  cy="140"
+                  r={CORE_RING}
+                  fill="none"
+                  stroke="var(--ds-accent)"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeDasharray={CORE_CIRC}
+                  strokeDashoffset={CORE_CIRC * (1 - charge)}
+                  style={{
+                    transition: "stroke-dashoffset 600ms var(--ds-ease-spring)",
+                    filter: "drop-shadow(0 0 8px var(--ds-glow))",
+                  }}
+                />
+              </svg>
+
+              <div
+                className="glass glass-brick relative flex h-60 w-60 items-center justify-center rounded-full p-7 text-center transition-all duration-500"
+                style={{
+                  transform: `scale(${1 + charge * 0.06})`,
+                  boxShadow: `var(--ds-shadow-lg), 0 0 ${40 + charge * 70}px -6px var(--ds-glow), var(--ds-inset-top)`,
+                }}
+              >
+                <span
+                  className={cx(
+                    "font-extrabold leading-snug",
+                    content.dilemma_text ? "text-base" : "text-xl",
+                  )}
+                >
+                  {content.dilemma_text || "הדילמה שלנו"}
+                </span>
+              </div>
             </div>
 
             {/* 7 משבצות ההשראה */}
@@ -310,7 +377,7 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                 return (
                   <input
                     key={i}
-                    className="glass-input absolute w-40 -translate-x-1/2 -translate-y-1/2 !min-h-[3.25rem] !px-3 text-center !text-base"
+                    className="glass-input absolute w-40 -translate-x-1/2 -translate-y-1/2 !min-h-[3.5rem] !px-3 text-center !text-base"
                     style={style}
                     placeholder="כתבו כאן"
                     aria-label={`השראה ${i + 1}`}
@@ -328,10 +395,15 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                   type="button"
                   aria-pressed={isSelected}
                   className={cx(
-                    "glass glass-interactive absolute w-40 -translate-x-1/2 -translate-y-1/2 rounded-full px-3 py-3.5 text-center text-base font-bold",
+                    "glass glass-interactive absolute w-40 -translate-x-1/2 -translate-y-1/2 rounded-full px-3 py-4 text-center text-base font-bold",
                     isSelected && "glass-active",
                   )}
-                  style={style}
+                  style={{
+                    ...style,
+                    ...(isSelected
+                      ? { boxShadow: "var(--ds-shadow), 0 0 30px -2px var(--ds-glow)" }
+                      : null),
+                  }}
                   onClick={(e) => toggleSelected(i, e)}
                 >
                   {item.text}

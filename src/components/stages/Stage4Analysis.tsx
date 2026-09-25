@@ -549,6 +549,7 @@ function FunctioningPictureStep({
       kicker="שקף 8 · תמונת תפקוד"
       icon="sparkles"
       title="תמונת תפקוד כוללת ומסקנה מעשית"
+      background="quiet"
       width="normal"
       actions={
         result && !generating ? (
@@ -1145,6 +1146,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         icon="ladder"
         title="טבלת סנכרון אוטומטית"
         subtitle="הטבלה נבנתה לבד ממה שסימנתן. אם משהו חסר, אפשר לחזור ולסמן."
+        background="quiet"
         width="wide"
         actions={
           <GlassButton
@@ -1178,6 +1180,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
       icon="marker"
       title="ניתוח דילמה"
       subtitle="סמנו את הטקסט בגרירה, כמו במרקר אמיתי על דף."
+      background="quiet"
       width="normal"
       actions={
         <GlassButton

@@ -511,7 +511,7 @@ function SolutionAndRecord({
           }
         `}</style>
 
-        <BackgroundLayers />
+        <BackgroundLayers variant="deep" />
 
         <div className="relative flex flex-col items-center gap-3" style={{ animation: "fade-up 0.7s ease-out both" }}>
           <span className="glass glass-chip text-accent-soft gap-2">
@@ -1156,7 +1156,7 @@ function SharedViewing({
     <main
       className="relative flex min-h-screen flex-col items-center justify-center gap-8 overflow-hidden px-8 py-10 text-center"
     >
-      <BackgroundLayers />
+      <BackgroundLayers variant="deep" />
 
       {/* שדה כוכבים על כל המסך - אותו מוטיב של הדירוג, בצבעי הפלטה. הם
           מרחפים לאט מלמטה למעלה בכל רוחב העמוד, בשקיפות נמוכה, כדי שייתנו
@@ -1328,6 +1328,7 @@ function Stage7Simulation({ workshopId, myGroup, allGroups, onAdvance }: Props) 
         title="ממתינות לשאר ההקלטות"
         subtitle="ההקלטה שלכן נשמרה. הצפייה המשותפת תתחיל כשכל הקבוצות יסיימו."
         botanical="fern"
+        background="ripple"
       >
         <div className="glass glass-brick mb-8 flex w-full max-w-md flex-col gap-3 rounded-xl p-5">
           <div className="flex items-baseline justify-between">

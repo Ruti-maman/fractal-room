@@ -83,20 +83,48 @@ function AnimatedHourglass({ className = "h-[34rem] w-auto" }: Props) {
         }
       `}</style>
 
-      {/* הילה רכה מאחורי השעון */}
+      {/* הילה רכה מאחורי השעון - בטורקיז של הפלטה ולא בתכלת הישן */}
       <div
         className="pointer-events-none absolute h-[34rem] w-[34rem] rounded-full"
         style={{
           background:
-            "radial-gradient(circle, rgba(255,255,255,0.10) 0%, rgba(91,192,235,0.07) 45%, transparent 72%)",
+            "radial-gradient(circle, rgba(255,255,255,0.12) 0%, var(--ds-glow-soft) 42%, transparent 72%)",
+          animation: "soft-pulse 9s ease-in-out infinite",
         }}
       />
 
-      {/* צל על הרצפה - מחוץ ל-SVG בכוונה, כדי שלא יסתובב יחד עם השעון */}
+      {/*
+        הבסיס שעליו השעון עומד.
+
+        בלעדיו השעון פשוט ריחף באמצע הדף כמו איור מודבק. אליפסה אחת
+        בפרספקטיבה מספיקה כדי שהעין תקרא "חפץ שמונח על משטח", וזה גם מה
+        שמחבר אותו לשאר הסדנה: הבסיס עשוי מאותה זכוכית כמו כל השאר.
+      */}
       <div
-        className="pointer-events-none absolute bottom-[5%] h-8 w-[34%] rounded-[50%] blur-md"
-        style={{ background: "rgba(0,0,0,0.35)" }}
-      />
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-[3%] flex w-[46%] flex-col items-center"
+      >
+        {/* ברכת האור שמתחת לשעון - כאילו הוא מאיר על המשטח */}
+        <div
+          className="h-10 w-full rounded-[50%] blur-xl"
+          style={{ background: "var(--ds-glow-soft)" }}
+        />
+        {/* משטח הזכוכית עצמו */}
+        <div
+          className="-mt-7 h-6 w-[78%] rounded-[50%]"
+          style={{
+            background:
+              "linear-gradient(180deg, var(--ds-glass-strong), transparent 85%)",
+            boxShadow:
+              "inset 0 1px 0 0 var(--ds-edge), 0 10px 26px -10px rgba(5, 32, 33, 0.7)",
+          }}
+        />
+        {/* הצל שהחפץ מטיל */}
+        <div
+          className="-mt-2 h-4 w-[52%] rounded-[50%] blur-md"
+          style={{ background: "rgba(5, 32, 33, 0.45)" }}
+        />
+      </div>
 
       <svg viewBox="-50 -2 300 304" className={`relative ${className}`} overflow="visible">
         <defs>

@@ -11,16 +11,64 @@
  *  מרווח/פריסה נקודתית בלי לשכפל את הרכיב.
  */
 
-import type {
-  ButtonHTMLAttributes,
-  ElementType,
-  HTMLAttributes,
-  InputHTMLAttributes,
-  ReactNode,
-  Ref,
+import {
+  useCallback,
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+  type ElementType,
+  type HTMLAttributes,
+  type InputHTMLAttributes,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  type Ref,
 } from "react";
 import { cx } from "../../lib/cx";
+import { buzz, playTap } from "../../lib/tapFeedback";
 import Icon, { type IconName } from "./Icon";
+
+/* ==========================================================================
+   משוב מגע
+   ========================================================================== */
+
+/**
+ * אדוות מגע. כל נגיעה יוצרת עיגול שמתפשט **מנקודת הנגיעה עצמה** ונמוג.
+ *
+ * למה זה לא קישוט: על מסך מגע אין סמן ואין hover, והאצבע מכסה בדיוק את
+ * מה שנגעו בו. בלי משוב שיוצא מתחת לאצבע אין שום דרך לדעת אם הלחיצה
+ * נקלטה - וזו הסיבה המרכזית שמשתתפת לוחצת פעמיים.
+ *
+ * ה-timeout לא מנוקה בכוונה: `setRipples` על רכיב שכבר ירד הוא no-op
+ * ב-React 18+, והאדווה ממילא נעלמת יחד עם הכפתור.
+ */
+function useTapRipple() {
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
+  const nextId = useRef(0);
+
+  const spawn = useCallback((e: ReactPointerEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const id = nextId.current++;
+    setRipples((current) => [
+      ...current,
+      { id, x: e.clientX - rect.left, y: e.clientY - rect.top },
+    ]);
+    window.setTimeout(
+      () => setRipples((current) => current.filter((r) => r.id !== id)),
+      560,
+    );
+  }, []);
+
+  const layer =
+    ripples.length > 0 ? (
+      <span className="tap-ripples" aria-hidden="true">
+        {ripples.map((r) => (
+          <span key={r.id} className="tap-ripple" style={{ left: r.x, top: r.y }} />
+        ))}
+      </span>
+    ) : null;
+
+  return { spawn, layer };
+}
 
 /* ==========================================================================
    משטח כללי
@@ -147,15 +195,25 @@ export function GlassButton({
   disabled,
   className,
   children,
+  onPointerDown,
   ...rest
 }: ButtonProps) {
   const iconSize = size === "lg" ? 26 : size === "sm" ? 18 : 22;
+  const { spawn, layer } = useTapRipple();
 
   return (
     <button
       type="button"
       disabled={disabled || loading}
       aria-busy={loading || undefined}
+      onPointerDown={(e) => {
+        if (!disabled && !loading) {
+          spawn(e);
+          playTap(variant === "primary" ? "primary" : "soft");
+          buzz();
+        }
+        onPointerDown?.(e);
+      }}
       className={cx(
         "glass glass-interactive glass-btn",
         SIZE_CLASS[size],
@@ -167,6 +225,7 @@ export function GlassButton({
       )}
       {...rest}
     >
+      {layer}
       {loading ? (
         <Spinner size={iconSize} />
       ) : (
@@ -206,14 +265,27 @@ export function GlassIconButton({
   active = false,
   filled = false,
   className,
+  onPointerDown,
+  disabled,
   ...rest
 }: IconButtonProps) {
+  const { spawn, layer } = useTapRipple();
+
   return (
     <button
       type="button"
       aria-label={label}
       aria-pressed={active}
       title={label}
+      disabled={disabled}
+      onPointerDown={(e) => {
+        if (!disabled) {
+          spawn(e);
+          playTap("soft");
+          buzz();
+        }
+        onPointerDown?.(e);
+      }}
       className={cx(
         "glass glass-interactive glass-icon-btn",
         ICON_BTN_SIZE[size],
@@ -222,6 +294,7 @@ export function GlassIconButton({
       )}
       {...rest}
     >
+      {layer}
       <Icon name={icon} size={size === "lg" ? 30 : size === "sm" ? 20 : 24} filled={filled} />
     </button>
   );

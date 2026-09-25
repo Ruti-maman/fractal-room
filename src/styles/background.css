@@ -173,6 +173,165 @@
 }
 
 /* ==========================================================================
+   גרסאות רקע לפי שלב
+   --------------------------------------------------------------------------
+   לא כל מסך רוצה את אותו רקע. מסך פתיחה רוצה אור עולה, שמש
+   האסוציאציות רוצה קרניים שיוצאות מהמרכז, מסך הסימון רוצה שקט כדי
+   שהדף יהיה הגיבור, ומסך הסיום רוצה לילה. כולן מאותה פלטה ומאותו
+   חומר - רק הדגש משתנה, כך שהמעבר בין שלבים מרגיש כמו תנועה בתוך
+   אותו חלל ולא כמו קפיצה לאתר אחר.
+
+   השכבות למטה נוספות על הבסיס; `BackgroundLayers` מחליט מי מהן נדלקת.
+   ========================================================================== */
+
+/* --- קרניים שיוצאות ממרכז המסך ומסתובבות לאט (שלב 3) --- */
+.bg-rays {
+  position: absolute;
+  inset: -40%;
+  opacity: 0.4;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--ds-glow-soft) 6deg,
+    transparent 14deg,
+    transparent 40deg,
+    var(--ds-glow-soft) 46deg,
+    transparent 54deg,
+    transparent 80deg,
+    var(--ds-glow-soft) 86deg,
+    transparent 94deg,
+    transparent 130deg,
+    var(--ds-glow-soft) 136deg,
+    transparent 144deg,
+    transparent 180deg,
+    var(--ds-glow-soft) 186deg,
+    transparent 194deg,
+    transparent 230deg,
+    var(--ds-glow-soft) 236deg,
+    transparent 244deg,
+    transparent 280deg,
+    var(--ds-glow-soft) 286deg,
+    transparent 294deg,
+    transparent 330deg,
+    var(--ds-glow-soft) 336deg,
+    transparent 344deg
+  );
+  -webkit-mask-image: radial-gradient(circle, #000 8%, rgba(0, 0, 0, 0.5) 34%, transparent 62%);
+  mask-image: radial-gradient(circle, #000 8%, rgba(0, 0, 0, 0.5) 34%, transparent 62%);
+  animation: rays-spin 120s linear infinite;
+}
+
+/* --- גלי אור אופקיים שזורמים לרוחב (שלבים 5-6) --- */
+.bg-waves {
+  position: absolute;
+  inset: -20% -50%;
+  opacity: 0.35;
+  background-image: repeating-linear-gradient(
+    177deg,
+    transparent 0 46px,
+    var(--ds-glow-soft) 46px 49px,
+    transparent 49px 120px
+  );
+  -webkit-mask-image: radial-gradient(ellipse at 50% 60%, #000 0%, transparent 75%);
+  mask-image: radial-gradient(ellipse at 50% 60%, #000 0%, transparent 75%);
+  animation: wave-flow 46s linear infinite;
+}
+
+@keyframes wave-flow {
+  from {
+    transform: translateX(0) translateY(0);
+  }
+  to {
+    transform: translateX(6%) translateY(-120px);
+  }
+}
+
+/* --- בועה שעולה לאט, כמו מתוך מים --- */
+.bg-bubble {
+  position: absolute;
+  border-radius: 9999px;
+  border: 1px solid var(--ds-accent-soft);
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgba(255, 255, 255, 0.5) 0%,
+    transparent 45%
+  );
+  opacity: 0;
+  animation-name: bubble-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes bubble-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) scale(0.7);
+  }
+  12% {
+    opacity: 0.55;
+  }
+  88% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-78vh) translateX(var(--sway, 20px)) scale(1);
+  }
+}
+
+/* --- כוכב מנצנץ (שלבים 8, 10) --- */
+.bg-star {
+  position: absolute;
+  border-radius: 9999px;
+  background: var(--ds-accent-pale);
+  animation-name: star-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+/* --- זוהר עולה מלמטה, כמו שחר מעבר לאופק (שלב 1) --- */
+.bg-dawn {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 120% 55% at 50% 108%,
+    var(--ds-blob-a) 0%,
+    transparent 70%
+  );
+  animation: dawn-breathe 26s ease-in-out infinite;
+}
+
+@keyframes dawn-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.07);
+  }
+}
+
+/* גרסאות שקטות - למסכים שבהם התוכן צריך את כל תשומת הלב */
+.bg-aurora--calm {
+  animation-duration: 70s;
+  opacity: 0.55;
+}
+
+.bg-caustics--soft {
+  opacity: 0.22;
+}
+
+:root[data-effects="lite"] .bg-rays,
+:root[data-effects="lite"] .bg-waves,
+:root[data-effects="lite"] .bg-bubble,
+:root[data-effects="lite"] .bg-star,
+:root[data-effects="lite"] .bg-dawn {
+  display: none;
+}
+
+/* ==========================================================================
    מצב אפקטים מופחתים
    --------------------------------------------------------------------------
    כשמכבים את הזכוכית בגלל ביצועים, אין שום היגיון להשאיר את השכבות

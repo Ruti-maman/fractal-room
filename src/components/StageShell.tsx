@@ -18,7 +18,7 @@
 
 import type { ReactNode } from "react";
 import { cx } from "../lib/cx";
-import { BackgroundLayers } from "./ui/AppBackground";
+import { BackgroundLayers, type BackgroundVariant } from "./ui/AppBackground";
 import Icon, { type IconName } from "./ui/Icon";
 
 type Botanical = "lavender" | "fern" | "seagrass" | "sprig";
@@ -35,6 +35,8 @@ interface Props {
   /** אזור הפעולות התחתון - כפתורים ראשיים של השלב. */
   actions?: ReactNode;
   botanical?: Botanical | false;
+  /** אווירת הרקע של השלב. ראו BackgroundVariant. */
+  background?: BackgroundVariant;
   /** רוחב עמודת התוכן. `full` לשלבים שצריכים את כל המסך (קנבס, וידאו). */
   width?: "narrow" | "normal" | "wide" | "full";
   /** מרכוז אנכי. שלב עם מעט תוכן נראה טוב יותר ממורכז. */
@@ -60,6 +62,7 @@ function StageShell({
   children,
   actions,
   botanical = false,
+  background,
   width = "normal",
   center = true,
   className,
@@ -76,7 +79,7 @@ function StageShell({
         className,
       )}
     >
-      <BackgroundLayers botanical={botanical} />
+      <BackgroundLayers botanical={botanical} variant={background} />
 
       {/*
         המרכוז האנכי נעשה ב-`my-auto` על עמודת התוכן ולא ב-`justify-center`

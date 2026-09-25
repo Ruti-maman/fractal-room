@@ -220,7 +220,7 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center gap-5 overflow-hidden px-6 pt-20 pb-44 text-center">
-      <BackgroundLayers />
+      <BackgroundLayers variant="night" />
 
       {/* קונפטי - רק כשיש תוצאה אמיתית להכריז עליה.
           `motion-safe` מוודא שהוא לא רץ כשביקשו פחות תנועה. */}

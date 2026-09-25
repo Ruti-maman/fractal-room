@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { startNewWorkshop } from "../lib/workshopActions";
 import { useLiteEffects } from "../hooks/useTheme";
+import { setTapSoundEnabled, tapSoundEnabled } from "../lib/tapFeedback";
 import { BackgroundLayers } from "../components/ui/AppBackground";
 import Icon from "../components/ui/Icon";
 import GlassModal from "../components/ui/GlassModal";
@@ -31,6 +32,7 @@ function AdminPage() {
   const [working, setWorking] = useState(false);
   const [lastResult, setLastResult] = useState<{ ok: boolean; message: string } | null>(null);
   const { lite, setLite } = useLiteEffects();
+  const [tapSound, setTapSound] = useState(tapSoundEnabled);
   const toast = useToast();
 
   async function handleConfirm() {
@@ -169,6 +171,31 @@ function AdminPage() {
               onClick={() => {
                 setLite(!lite);
                 toast(lite ? "האפקטים המלאים חזרו" : "האפקטים הופחתו", { tone: "info" });
+              }}
+            />
+          </div>
+
+          <div className="glass glass-dim mt-3 flex items-center justify-between gap-4 rounded-lg p-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <Icon name="volume" size={22} className="text-accent-soft mt-0.5 flex-none" />
+              <div className="min-w-0">
+                <p className="text-ink font-bold">צלילי מגע</p>
+                <p className="text-ink-2 text-sm leading-relaxed">
+                  טיק קצר ורך בכל לחיצה. שלוש פלזמות בחדר אחד - אם זה מרגיש
+                  רועש, כבו כאן.
+                </p>
+              </div>
+            </div>
+
+            <GlassIconButton
+              icon={tapSound ? "volume" : "volumeOff"}
+              label={tapSound ? "כיבוי צלילי מגע" : "הפעלת צלילי מגע"}
+              active={tapSound}
+              onClick={() => {
+                const next = !tapSound;
+                setTapSoundEnabled(next);
+                setTapSound(next);
+                toast(next ? "צלילי המגע דלוקים" : "צלילי המגע כבויים", { tone: "info" });
               }}
             />
           </div>
