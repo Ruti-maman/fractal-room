@@ -3,7 +3,6 @@ import { requestKioskPermissions } from "../../hooks/useKioskMode";
 import { primeAudio } from "../../lib/audioUnlock";
 import AutoPlayVideo from "../AutoPlayVideo";
 import { BackgroundLayers } from "../ui/AppBackground";
-import Botanical from "../ui/Botanical";
 import Icon from "../ui/Icon";
 import { GlassButton } from "../ui/Glass";
 
@@ -43,16 +42,6 @@ function ContentFrame({ children }: { children: React.ReactNode }) {
       className="glass glass-brick relative flex min-h-[18rem] w-full items-center justify-center overflow-hidden rounded-2xl p-8 sm:min-h-[22rem] sm:p-12"
       style={{ animation: "glass-in var(--ds-dur-slow) var(--ds-ease) both" }}
     >
-      <Botanical
-        variant="lavender"
-        size={190}
-        className="text-accent pointer-events-none absolute -bottom-8 -left-6 opacity-[0.14]"
-      />
-      <Botanical
-        variant="fern"
-        size={150}
-        className="text-accent pointer-events-none absolute -top-6 -right-4 rotate-180 opacity-[0.1]"
-      />
       <div className="relative flex w-full items-center justify-center">{children}</div>
     </div>
   );

@@ -308,24 +308,31 @@
   }
 }
 
-/* אבן חן: צצה, מחזיקה רגע, ונעלמת. הסיבוב הקל בכניסה וביציאה הוא מה
-   שמונע מהרשת להיראות כמו טבלה שמהבהבת. */
-@keyframes gem-pop {
+/* ההחשכה של המעבר: עולה מהר, יורדת לאט. */
+@keyframes stage-fade {
   0% {
     opacity: 0;
-    scale: 0.2;
-    rotate: var(--spin, 0deg);
   }
-  34%,
-  62% {
+  38% {
     opacity: 1;
-    scale: 1.55;
-    rotate: 0deg;
   }
   100% {
     opacity: 0;
-    scale: 0.2;
-    rotate: calc(var(--spin, 0deg) * -1);
+  }
+}
+
+/* גל האור שחוצה את ההחשכה פעם אחת. */
+@keyframes stage-sweep {
+  0% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateX(300%);
+    opacity: 0;
   }
 }
 

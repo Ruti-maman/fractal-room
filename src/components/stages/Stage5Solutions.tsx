@@ -167,7 +167,6 @@ function Stage5Solutions({ content, onAdvance }: Props) {
       icon="lightbulb"
       title="איזו דרך פתרון בוחרות?"
       subtitle="קראו את ארבע האפשרויות, דונו ביניכן, ובחרו את זו שנראית לכן הנכונה."
-      botanical="sprig"
       background="tide"
       width="wide"
       overlay={

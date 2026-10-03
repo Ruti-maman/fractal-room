@@ -1,7 +1,6 @@
 import type { Group } from "../../types/group";
 import { useClosingPrinciple } from "../../hooks/useClosingPrinciple";
 import StageShell from "../StageShell";
-import Botanical from "../ui/Botanical";
 import Icon from "../ui/Icon";
 import { Spinner } from "../ui/Glass";
 import { InlineNotice } from "../ui/Feedback";
@@ -66,16 +65,6 @@ function Stage10Principles({ workshopId, myGroup }: Props) {
           className="glass glass-brick relative w-full overflow-hidden rounded-2xl px-8 py-14 text-center sm:px-16"
           style={{ animation: "glass-in 1.4s 200ms var(--ds-ease) both" }}
         >
-          <Botanical
-            variant="lavender"
-            size={190}
-            className="text-accent absolute -bottom-10 -left-4 opacity-[0.15]"
-          />
-          <Botanical
-            variant="lavender"
-            size={190}
-            className="text-accent absolute -right-4 -bottom-10 scale-x-[-1] opacity-[0.15]"
-          />
 
           <Icon
             name="sparkles"

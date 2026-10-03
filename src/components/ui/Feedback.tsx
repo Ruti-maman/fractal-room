@@ -15,7 +15,6 @@ import type { ReactNode } from "react";
 import { cx } from "../../lib/cx";
 import Icon, { type IconName } from "./Icon";
 import { GlassButton, Spinner } from "./Glass";
-import Botanical from "./Botanical";
 import { BackgroundLayers } from "./AppBackground";
 
 /* ==========================================================================
@@ -80,16 +79,10 @@ interface StateProps {
 }
 
 /** מעטפת משותפת - מרכזת את התוכן על רקע מלא, עם ענף בוטני שקט. */
-function StateShell({
-  children,
-  botanical = "seagrass",
-}: {
-  children: ReactNode;
-  botanical?: "lavender" | "fern" | "seagrass" | "sprig";
-}) {
+function StateShell({ children }: { children: ReactNode }) {
   return (
     <main className="relative flex min-h-screen items-center justify-center p-6">
-      <BackgroundLayers botanical={botanical} />
+      <BackgroundLayers />
       <div
         className="glass glass-brick glass-card relative w-full max-w-xl text-center"
         style={{ animation: "glass-in var(--ds-dur-slow) var(--ds-ease) both" }}
@@ -103,7 +96,7 @@ function StateShell({
 /** מסך טעינה מלא - כשעוד לא ידוע מה ייטען (לפני שהתוכנית נקראה). */
 export function LoadingState({ title = "רגע אחד", description }: Partial<StateProps>) {
   return (
-    <StateShell botanical="fern">
+    <StateShell>
       <div className="flex flex-col items-center gap-6">
         <div className="relative flex h-24 w-24 items-center justify-center">
           {/* הילה שנושמת מאחורי הספינר - מרמזת שהמערכת חיה ולא תקועה */}
@@ -125,7 +118,7 @@ export function LoadingState({ title = "רגע אחד", description }: Partial<S
 /** מסך ריק - אין מה להציג, אבל זה לא תקלה. */
 export function EmptyState({ title, description, icon = "info", children }: StateProps) {
   return (
-    <StateShell botanical="sprig">
+    <StateShell>
       <div className="flex flex-col items-center gap-5">
         <div className="glass glass-icon-btn glass-icon-btn-lg text-accent-soft">
           <Icon name={icon} size={32} />
@@ -157,7 +150,7 @@ export function ErrorState({
   retryLabel?: string;
 }) {
   return (
-    <StateShell botanical="seagrass">
+    <StateShell>
       <div className="flex flex-col items-center gap-5">
         <div className="glass glass-icon-btn glass-icon-btn-lg text-warn">
           <Icon name="alert" size={32} />
@@ -241,19 +234,3 @@ export function InlineNotice({
   );
 }
 
-/** ענף בוטני כנגיעה בפינת כרטיס גדול. מיוצא כאן כדי שמסכים לא ייבאו ישירות. */
-export function CardSprig({
-  variant = "lavender",
-  className,
-}: {
-  variant?: "lavender" | "fern" | "seagrass" | "sprig";
-  className?: string;
-}) {
-  return (
-    <Botanical
-      variant={variant}
-      size={150}
-      className={cx("text-accent absolute opacity-[0.16]", className)}
-    />
-  );
-}

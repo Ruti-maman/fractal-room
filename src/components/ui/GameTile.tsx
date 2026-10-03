@@ -84,8 +84,10 @@ export function LevelBadge({
         />
       </svg>
 
+      {/* הדיסקית היא **בועה** ולא לבנת זכוכית: עיגול הוא הצורה שבה
+          החומר הזה הכי משכנע, וזה גם מה שקושר את תג השלב לשאר השפה. */}
       <span
-        className="glass glass-active relative flex flex-col items-center justify-center rounded-full leading-none"
+        className="bubble relative flex flex-col items-center justify-center leading-none"
         style={{ width: size - 18, height: size - 18 }}
       >
         <span className="text-[0.55em] font-bold opacity-75" style={{ fontSize: size * 0.14 }}>

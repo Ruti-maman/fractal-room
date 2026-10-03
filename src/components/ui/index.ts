@@ -20,7 +20,6 @@ export {
 } from "./Glass";
 
 export { default as GlassModal } from "./GlassModal";
-export { default as Botanical } from "./Botanical";
 export { default as GameTile, LevelBadge } from "./GameTile";
 export type { TileScene } from "./GameTile";
 export { default as AppBackground, BackgroundLayers } from "./AppBackground";
@@ -32,7 +31,6 @@ export {
   EmptyState,
   ErrorState,
   InlineNotice,
-  CardSprig,
 } from "./Feedback";
 
 export { ToastProvider, useToast } from "./Toast";

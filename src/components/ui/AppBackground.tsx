@@ -20,7 +20,6 @@
 
 import type { ReactNode } from "react";
 import { cx } from "../../lib/cx";
-import Botanical from "./Botanical";
 import LightTrails from "./LightTrails";
 
 /**
@@ -42,11 +41,8 @@ export type BackgroundVariant =
   | "tide"
   | "night";
 
-type BotanicalVariant = "lavender" | "fern" | "seagrass" | "sprig";
-
 interface Props {
   children?: ReactNode;
-  botanical?: false | BotanicalVariant;
   variant?: BackgroundVariant;
   className?: string;
 }
@@ -73,12 +69,13 @@ const BUBBLES = Array.from({ length: 10 }, (_, i) => ({
 }));
 
 /*
- * לבנים מרחפות. כל אחת בעומק אחר (`depth`: 0 רחוק, 1 קרוב), וזה מה
- * ששולט בגודל, בחדות, בעוצמת הצל ובשקיפות - כך שהן נקראות כחלל עם
- * עומק ולא כאוסף ריבועים על רקע.
+ * בועות מרחפות. כל אחת בעומק אחר (`depth`: 0 רחוק, 1 קרוב), וזה מה
+ * ששולט בגודל, בחדות ובעוצמת הנצנוץ - כך שהחלל נקרא כעמוק ולא כאוסף
+ * עיגולים על רקע.
  *
- * מעט מאוד מהן (7), והן יושבות בשוליים: הן אמורות להיות משהו שמרגישים
- * בפריפריה, לא משהו שמסתכלים עליו במקום על התוכן.
+ * החליפו ריבועים מעוגלים שנראו כמו לבנים מרחפות, ואת הענפים הבוטניים
+ * שהיו פה קודם: שניהם היו "חפצים" על הדף. בועה היא קלילה, היא שייכת
+ * לחלל, והיא גם החומר השני של המערכת (ראו .bubble ב-glass.css).
  */
 const ORBS = Array.from({ length: 7 }, (_, i) => {
   const depth = 0.18 + seeded(i, 51.3) * 0.8;
@@ -107,10 +104,7 @@ const STARS = Array.from({ length: 46 }, (_, i) => ({
   max: 0.4 + seeded(i, 82.6) * 0.45,
 }));
 
-export function BackgroundLayers({
-  botanical = false,
-  variant = "deep",
-}: Pick<Props, "botanical" | "variant">) {
+export function BackgroundLayers({ variant = "deep" }: Pick<Props, "variant">) {
   const quiet = variant === "quiet";
   const night = variant === "night";
 
@@ -202,13 +196,15 @@ export function BackgroundLayers({
         ORBS.map((orb, i) => (
           <span
             key={i}
-            className="glass-orb"
+            className="bubble bubble-hollow absolute"
             style={{
               insetInlineStart: `${orb.left}%`,
               top: `${orb.top}%`,
               width: orb.size,
               height: orb.size,
               ["--depth" as string]: orb.depth,
+              opacity: 0.22 + orb.depth * 0.4,
+              filter: `blur(${(1 - orb.depth) * 1.8}px)`,
               ["--dx" as string]: `${orb.dx}px`,
               ["--dy" as string]: `${orb.dy}px`,
               ["--spin-from" as string]: `${orb.spinFrom}deg`,
@@ -222,13 +218,6 @@ export function BackgroundLayers({
       {/* הכהיית קצוות - ממקדת את העין פנימה */}
       <div className="bg-vignette" />
 
-      {botanical && (
-        <Botanical
-          variant={botanical}
-          size={360}
-          className="text-accent absolute -bottom-16 -left-12 rotate-[8deg] opacity-[0.12]"
-        />
-      )}
     </div>
   );
 }
@@ -237,10 +226,10 @@ export function BackgroundLayers({
  * עטיפת מסך מלא. כל מסך בסדנה יושב בתוכה, כך שהרקע, הריווח הבסיסי
  * והמרכוז מוגדרים פעם אחת ולא בכל שלב מחדש.
  */
-function AppBackground({ children, botanical = false, variant, className }: Props) {
+function AppBackground({ children, variant, className }: Props) {
   return (
     <>
-      <BackgroundLayers botanical={botanical} variant={variant} />
+      <BackgroundLayers variant={variant} />
       <div className={cx("relative min-h-screen", className)}>{children}</div>
     </>
   );

@@ -1327,7 +1327,6 @@ function Stage7Simulation({ workshopId, myGroup, allGroups, onAdvance }: Props) 
         icon="film"
         title="ממתינות לשאר ההקלטות"
         subtitle="ההקלטה שלכן נשמרה. הצפייה המשותפת תתחיל כשכל הקבוצות יסיימו."
-        botanical="fern"
         background="ripple"
       >
         <div className="glass glass-brick mb-8 flex w-full max-w-md flex-col gap-3 rounded-xl p-5">

@@ -179,8 +179,8 @@ function PlaceDisc({ place }: { place: number }) {
     <span
       aria-hidden="true"
       className={cx(
-        "glass flex h-11 w-11 items-center justify-center rounded-full text-lg font-extrabold",
-        place === 1 ? "glass-active" : "glass-dim text-ink-2",
+        "flex h-12 w-12 items-center justify-center text-lg font-extrabold",
+        place === 1 ? "bubble" : "bubble bubble-hollow text-ink-2",
       )}
     >
       {place}

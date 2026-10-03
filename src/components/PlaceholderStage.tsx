@@ -43,7 +43,6 @@ function PlaceholderStage({ screenNumber, stage, onAdvance }: Props) {
       icon="edit"
       title="השלב הזה עוד נבנה"
       subtitle={description}
-      botanical="sprig"
       background="quiet"
       width="narrow"
       actions={

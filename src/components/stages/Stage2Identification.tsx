@@ -93,7 +93,6 @@ function IdentificationForm({ myGroup }: { myGroup: Group }) {
       icon="users"
       title="מי אתן?"
       subtitle="בחרו שם לקבוצה והוסיפו את שמות המשתתפות. השמות יופיעו אצל כל הקבוצות בחדר."
-      botanical="lavender"
       background="ripple"
       width="narrow"
       actions={
@@ -146,8 +145,8 @@ function IdentificationForm({ myGroup }: { myGroup: Group }) {
                 <span
                   aria-hidden="true"
                   className={cx(
-                    "glass flex h-11 w-11 flex-none items-center justify-center rounded-full text-sm font-extrabold",
-                    p.trim() ? "glass-active" : "text-ink-3 glass-dim",
+                    "flex h-11 w-11 flex-none items-center justify-center text-sm font-extrabold",
+                    p.trim() ? "bubble" : "bubble bubble-hollow text-ink-3",
                   )}
                 >
                   {i + 1}
@@ -213,7 +212,6 @@ function RoomStatusNames({
           ? "כל הקבוצות הזדהו. אפשר להתחיל."
           : `${identifiedCount} מתוך ${allGroups.length} קבוצות הזדהו. ממתינות לשאר.`
       }
-      botanical="fern"
       background="ripple"
       width="wide"
       actions={
@@ -249,8 +247,8 @@ function RoomStatusNames({
                   <span
                     aria-hidden="true"
                     className={cx(
-                      "glass glass-icon-btn flex-none",
-                      identified ? "glass-active" : "text-ink-3 glass-dim",
+                      "flex h-16 w-16 flex-none items-center justify-center",
+                      identified ? "bubble" : "bubble bubble-hollow text-ink-3",
                     )}
                   >
                     {identified ? <Icon name="check" size={24} /> : g.screen_number}
@@ -317,9 +315,8 @@ function DilemmaVideo({
       subtitle={
         content?.dilemma_text ?? "הצגת הדילמה המרכזית שאיתה נתמודד לאורך הסדנה."
       }
-      botanical={false}
       background="quiet"
-      width="wide"
+      width="full"
       actions={
         <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={onAdvance}>
           המשך
@@ -327,14 +324,16 @@ function DilemmaVideo({
       }
     >
       {content?.dilemma_video_url ? (
-        <div className="glass glass-brick w-full overflow-hidden rounded-2xl p-3">
+        /* הסרטון הוא הגיבור של המסך הזה, ולכן הוא מקבל את כל הרוחב
+           ואת כל הגובה שנשאר - מסגרת זכוכית דקה בלבד מסביבו. */
+        <div className="glass glass-brick flex h-full w-full items-center justify-center overflow-hidden rounded-2xl p-2">
           <AutoPlayVideo
             src={content.dilemma_video_url}
-            className="max-h-[56vh] w-full rounded-xl"
+            className="max-h-full w-full rounded-xl object-contain"
           />
         </div>
       ) : (
-        <div className="glass glass-brick flex min-h-[20rem] w-full items-center justify-center rounded-2xl">
+        <div className="glass glass-brick flex h-full min-h-[22rem] w-full items-center justify-center rounded-2xl">
           <div className="text-ink-3 flex flex-col items-center gap-3">
             <span className="glass glass-dim glass-icon-btn glass-icon-btn-lg">
               <Icon name="film" size={30} />

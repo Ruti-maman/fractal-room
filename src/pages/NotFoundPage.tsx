@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { BackgroundLayers } from "../components/ui/AppBackground";
-import Botanical from "../components/ui/Botanical";
 import Icon from "../components/ui/Icon";
 
 /**
@@ -21,11 +20,6 @@ function NotFoundPage() {
         className="glass glass-brick glass-card relative w-full max-w-xl overflow-hidden text-center"
         style={{ animation: "glass-in var(--ds-dur-slow) var(--ds-ease) both" }}
       >
-        <Botanical
-          variant="seagrass"
-          size={200}
-          className="text-accent absolute -bottom-10 -left-8 opacity-[0.14]"
-        />
 
         <div className="relative flex flex-col items-center gap-5">
           <div className="glass glass-icon-btn glass-icon-btn-lg text-accent-soft">

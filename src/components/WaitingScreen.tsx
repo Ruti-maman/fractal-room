@@ -35,7 +35,6 @@ function WaitingScreen({ stageNumber, allGroups }: Props) {
       icon="users"
       title="ממתינות לשאר הקבוצות"
       subtitle="השלב הזה מתחיל כשכל הקבוצות מגיעות אליו. אפשר לנצל את הרגע לנשום."
-      botanical="fern"
       background="ripple"
       width="normal"
     >
@@ -76,8 +75,8 @@ function WaitingScreen({ stageNumber, allGroups }: Props) {
             >
               <span
                 className={cx(
-                  "glass glass-icon-btn",
-                  arrived ? "glass-active" : "text-ink-3",
+                  "flex h-16 w-16 items-center justify-center",
+                  arrived ? "bubble" : "bubble bubble-hollow text-ink-3",
                 )}
                 style={
                   arrived

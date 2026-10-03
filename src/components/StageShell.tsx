@@ -22,8 +22,6 @@ import { BackgroundLayers, type BackgroundVariant } from "./ui/AppBackground";
 import Icon, { type IconName } from "./ui/Icon";
 import { LevelBadge } from "./ui/GameTile";
 
-type Botanical = "lavender" | "fern" | "seagrass" | "sprig";
-
 interface Props {
   /** מספר השלב - מוצג בתגית העליונה. */
   stage?: number;
@@ -37,7 +35,6 @@ interface Props {
   children: ReactNode;
   /** אזור הפעולות התחתון - כפתורים ראשיים של השלב. */
   actions?: ReactNode;
-  botanical?: Botanical | false;
   /** אווירת הרקע של השלב. ראו BackgroundVariant. */
   background?: BackgroundVariant;
   /** רוחב עמודת התוכן. `full` לשלבים שצריכים את כל המסך (קנבס, וידאו). */
@@ -65,7 +62,6 @@ function StageShell({
   subtitle,
   children,
   actions,
-  botanical = false,
   background,
   width = "normal",
   center = true,
@@ -96,7 +92,7 @@ function StageShell({
         className,
       )}
     >
-      <BackgroundLayers botanical={botanical} variant={background} />
+      <BackgroundLayers variant={background} />
 
       <div
         className={cx(

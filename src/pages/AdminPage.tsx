@@ -57,7 +57,7 @@ function AdminPage() {
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center px-4 py-12">
-      <BackgroundLayers botanical="lavender" />
+      <BackgroundLayers />
 
       <div className="absolute top-5 left-5">
         <ThemeToggle />
