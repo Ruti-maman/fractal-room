@@ -21,6 +21,8 @@ export {
 
 export { default as GlassModal } from "./GlassModal";
 export { default as Botanical } from "./Botanical";
+export { default as GameTile, LevelBadge } from "./GameTile";
+export type { TileScene } from "./GameTile";
 export { default as AppBackground, BackgroundLayers } from "./AppBackground";
 
 export {

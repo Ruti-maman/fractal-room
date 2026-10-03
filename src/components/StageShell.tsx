@@ -20,14 +20,17 @@ import type { ReactNode } from "react";
 import { cx } from "../lib/cx";
 import { BackgroundLayers, type BackgroundVariant } from "./ui/AppBackground";
 import Icon, { type IconName } from "./ui/Icon";
+import { LevelBadge } from "./ui/GameTile";
 
 type Botanical = "lavender" | "fern" | "seagrass" | "sprig";
 
 interface Props {
   /** מספר השלב - מוצג בתגית העליונה. */
   stage?: number;
-  /** כיתוב התגית שליד מספר השלב, למשל "שלב משותף". */
+  /** כיתוב התגית שמתחת לתג השלב, למשל "שלב משותף". */
   kicker?: string;
+  /** מספר השלבים בתוכנית - ממלא את טבעת תג השלב. */
+  totalStages?: number;
   icon?: IconName;
   title?: ReactNode;
   subtitle?: ReactNode;
@@ -56,6 +59,7 @@ const WIDTH: Record<NonNullable<Props["width"]>, string> = {
 function StageShell({
   stage,
   kicker,
+  totalStages = 10,
   icon,
   title,
   subtitle,
@@ -105,11 +109,23 @@ function StageShell({
             className="mb-6 flex flex-none flex-col items-center gap-3 text-center sm:mb-8"
             style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
           >
-            {(stage || kicker) && (
+            {/*
+              תג השלב, בסגנון לוח בחירת שלבים של משחק: מספר גדול בתוך
+              עיגול עם טבעת שמתמלאת לפי ההתקדמות בסדנה. החליף צ'יפ טקסט
+              קטן - שם "שלב 5" היה מידע, וכאן הוא **מיקום**: רואים במבט
+              אחד כמה כבר עברנו וכמה נשאר.
+            */}
+            {stage && (
+              <LevelBadge
+                value={stage}
+                progress={totalStages ? stage / totalStages : 1}
+                size={96}
+              />
+            )}
+
+            {kicker && (
               <span className="glass glass-chip text-accent-soft gap-2">
                 {icon && <Icon name={icon} size={15} />}
-                {stage ? `שלב ${stage}` : null}
-                {stage && kicker ? " · " : null}
                 {kicker}
               </span>
             )}

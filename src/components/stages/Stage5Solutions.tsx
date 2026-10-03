@@ -3,6 +3,7 @@ import type { Stage5Content, SolutionOption } from "../../types/stage5Content";
 import StageShell from "../StageShell";
 import Icon from "../ui/Icon";
 import GlassModal from "../ui/GlassModal";
+import GameTile, { LevelBadge, type TileScene } from "../ui/GameTile";
 import { cx } from "../../lib/cx";
 
 interface Props {
@@ -153,6 +154,9 @@ function AnswerMark({ ok }: { ok: boolean }) {
 
 const OPTION_LETTERS = ["א", "ב", "ג", "ד", "ה", "ו"];
 
+/** סצנה לכל אפשרות. שונות בצורה בלבד - אף אחת לא "מרמזת" שהיא הנכונה. */
+const OPTION_SCENES: TileScene[] = ["peaks", "horizon", "grid", "arc"];
+
 function Stage5Solutions({ content, onAdvance }: Props) {
   const [chosen, setChosen] = useState<SolutionOption | null>(null);
 
@@ -194,33 +198,36 @@ function Stage5Solutions({ content, onAdvance }: Props) {
         </GlassModal>
       }
     >
-      <ul className="grid w-full grid-cols-1 gap-5 md:grid-cols-2">
+      {/*
+        ארבעה אריחי משחק, בדיוק כמו לוח בחירת משחק: סצנה מאוירת בראש
+        האריח, תג עגול עם אות האפשרות על הגבול, והטקסט בגוף.
+
+        הכלל הפדגוגי עדיין חולש על הכל - **הארבעה חייבים להיראות זהים**.
+        לכן כל אחד מקבל סצנה אחרת (כדי שיהיה לו אופי), אבל אף אחת מהן
+        לא "חמה" או "קרה" יותר מהשנייה, ואין שום רמז לאיזו נכונה.
+      */}
+      <ul className="grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
         {content.options.map((opt, i) => (
-          <li key={i}>
-            <button
-              type="button"
+          <li key={i} className="flex">
+            <GameTile
+              title={`אפשרות ${OPTION_LETTERS[i] ?? i + 1}`}
+              scene={OPTION_SCENES[i % OPTION_SCENES.length]}
+              badge={<LevelBadge value={OPTION_LETTERS[i] ?? i + 1} label="" size={76} />}
               onClick={() => setChosen(opt)}
-              className={cx(
-                "glass glass-brick glass-interactive group flex min-h-[13rem] w-full flex-col items-center justify-center gap-5 rounded-2xl p-8 text-center",
-              )}
+              footer={
+                <span className="flex items-center gap-2">
+                  לבחירה
+                  <Icon name="arrowNext" size={16} />
+                </span>
+              }
               style={{
                 animation: `glass-in var(--ds-dur-slow) ${i * 90}ms var(--ds-ease) both`,
               }}
             >
-              <span
-                aria-hidden="true"
-                className="glass glass-dim flex h-11 w-11 flex-none items-center justify-center rounded-full text-lg font-extrabold"
-              >
-                {OPTION_LETTERS[i] ?? i + 1}
-              </span>
-
-              <p className="text-ink text-2xl leading-snug font-bold">{opt.label}</p>
-
-              <span className="text-ink-3 group-hover:text-ink-2 flex items-center gap-2 text-sm font-bold transition-colors">
-                לבחירה
-                <Icon name="arrowNext" size={16} />
-              </span>
-            </button>
+              <p className="text-ink text-xl leading-snug font-bold sm:text-2xl">
+                {opt.label}
+              </p>
+            </GameTile>
           </li>
         ))}
       </ul>
