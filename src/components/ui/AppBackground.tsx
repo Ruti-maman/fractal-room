@@ -21,6 +21,7 @@
 import type { ReactNode } from "react";
 import { cx } from "../../lib/cx";
 import Botanical from "./Botanical";
+import LightTrails from "./LightTrails";
 
 /**
  * האווירות האפשריות.
@@ -121,10 +122,15 @@ export function BackgroundLayers({
       {/* זוהר שעולה מהאופק - פתיחה */}
       {variant === "dawn" && <div className="bg-dawn" />}
 
-      {/* אדוות - בכל האווירות חוץ מ-quiet, חזקות יותר ב-ripple */}
-      {!quiet && !night && (
-        <div className={cx("bg-caustics", variant !== "ripple" && "bg-caustics--soft")} />
-      )}
+      {/*
+        שבילי האור - המרקם המרכזי של הרקע, בכל האווירות.
+        החליפו גם את האדוות (שנקראו כמטרה) וגם את הרשת (שנקראה כנייר
+        משבצות): שתיהן היו דוגמאות שחוזרות על עצמן, וזה בדיוק מה שהורג
+        תחושת חלל. ראו LightTrails.tsx.
+      */}
+      <div className={cx("absolute inset-0", quiet && "opacity-40")}>
+        <LightTrails />
+      </div>
 
       {/* קרניים שיוצאות מהמרכז - שמש האסוציאציות */}
       {variant === "radiant" && <div className="bg-rays" />}
@@ -134,9 +140,6 @@ export function BackgroundLayers({
 
       {/* קרני אור מלמעלה */}
       {(variant === "deep" || variant === "dawn") && <div className="bg-shafts" />}
-
-      {/* רשת עדינה - מרקם שהזכוכית שוברת */}
-      {!night && <div className="bg-grid" />}
 
       {/* שדה כוכבים - חגיגה וסיום */}
       {night &&

@@ -275,6 +275,17 @@
   }
 }
 
+/* שכבת שבילי אור נעה לאט הצידה ומעט למעלה. `--shift` משתנה בין
+   השכבות, וההפרש ביניהן הוא מה שיוצר את הפרלקסה. */
+@keyframes trail-flow {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(var(--shift, 3%), calc(var(--shift, 3%) * -0.4), 0);
+  }
+}
+
 /* לבנה מרחפת: עולה, יורדת ומסתובבת קלות. `alternate` בקוד הרכיב, כך
    שהיא אף פעם לא "קופצת" חזרה להתחלה. */
 @keyframes orb-drift {
@@ -297,17 +308,24 @@
   }
 }
 
-/* להב התריס: נכנס, נעצר רגע כשהמסך מכוסה, וממשיך החוצה באותו כיוון. */
-@keyframes blade-sweep {
+/* אבן חן: צצה, מחזיקה רגע, ונעלמת. הסיבוב הקל בכניסה וביציאה הוא מה
+   שמונע מהרשת להיראות כמו טבלה שמהבהבת. */
+@keyframes gem-pop {
   0% {
-    transform: translateY(var(--from)) skewX(-9deg);
+    opacity: 0;
+    scale: 0.2;
+    rotate: var(--spin, 0deg);
   }
-  38%,
-  58% {
-    transform: translateY(0) skewX(-9deg);
+  34%,
+  62% {
+    opacity: 1;
+    scale: 1.55;
+    rotate: 0deg;
   }
   100% {
-    transform: translateY(var(--to)) skewX(-9deg);
+    opacity: 0;
+    scale: 0.2;
+    rotate: calc(var(--spin, 0deg) * -1);
   }
 }
 

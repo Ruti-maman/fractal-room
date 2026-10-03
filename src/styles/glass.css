@@ -215,12 +215,12 @@
   }
 
   /* ----------------------------------------------------------------------
-     תריס הזכוכית - המעבר בין שלבים
+     אבני החן - המעבר בין שלבים
      ----------------------------------------------------------------------
-     להבים אלכסוניים שנסגרים על המסך, מכריזים על השלב הבא, ונפתחים.
-     ראו StageTransition.tsx להסבר המלא על למה דווקא כך.
+     רשת מעוינים שצצים מפוזר, מכסים, ונעלמים. ראו StageTransition.tsx
+     להסבר למה דווקא כך, ומה הוחלף.
      ---------------------------------------------------------------------- */
-  .stage-wipe {
+  .stage-gems {
     position: fixed;
     inset: 0;
     z-index: 48;
@@ -228,23 +228,26 @@
     pointer-events: none;
   }
 
-  .stage-wipe__blade {
+  .stage-gems__gem {
     position: absolute;
-    inset-block: -12%;
+    /* מעוין, לא ריבוע - זו הצורה שקוראים כ"אבן חן" */
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
     background: linear-gradient(
-      180deg,
+      145deg,
       var(--ds-accent-pale) 0%,
-      var(--ds-accent) 45%,
+      var(--ds-accent) 48%,
       var(--ds-accent-deep) 100%
     );
-    box-shadow: 0 0 40px -4px var(--ds-glow);
-    transform: translateY(var(--from)) skewX(-9deg);
-    animation-name: blade-sweep;
-    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+    /* מעט גדול מהתא שלו, כדי שהמעוינים ייגעו זה בזה ולא יישארו
+       רווחים בין האלכסונים כשהמסך מכוסה */
+    scale: 1.55;
+    opacity: 0;
+    animation-name: gem-pop;
+    animation-timing-function: var(--ds-ease);
     animation-fill-mode: both;
   }
 
-  .stage-wipe__badge {
+  .stage-gems__badge {
     position: absolute;
     inset-block-start: 50%;
     inset-inline-start: 50%;
@@ -253,151 +256,20 @@
     gap: 0.65rem;
     translate: 50% -50%;
     color: var(--ds-accent-ink);
-    animation: badge-flash 620ms 190ms var(--ds-ease) both;
+    animation: badge-flash 640ms 210ms var(--ds-ease) both;
   }
 
-  .stage-wipe__badge-label {
+  .stage-gems__badge-label {
     font-size: 1.5rem;
     font-weight: 800;
     opacity: 0.6;
   }
 
-  .stage-wipe__badge-num {
+  .stage-gems__badge-num {
     font-size: 6rem;
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.04em;
-  }
-
-  .glass-interactive:disabled,
-  .glass-interactive[aria-disabled="true"] {
-    cursor: not-allowed;
-    opacity: 0.42;
-    transform: none;
-    box-shadow: var(--ds-shadow-sm);
-  }
-
-  /* טבעת מיקוד זוהרת - ניווט מקלדת. `:focus-visible` בלבד, כדי שלא תופיע
-     בכל נגיעה על מסך המגע בחדר. */
-  .glass-interactive:focus-visible,
-  .focus-glass:focus-visible {
-    outline: none;
-    box-shadow: var(--ds-focus-ring), var(--ds-shadow);
-  }
-
-  /* ======================================================================
-     3b. תלת-ממד: חפץ שמרחף מעל המשטח
-     ----------------------------------------------------------------------
-     עד כאן הזכוכית הייתה **שטוחה** - מלבן יפה עם צל רך מתחתיו. כדי
-     שהיא תיראה כמו חפץ פיזי שאפשר ללחוץ עליו, היא צריכה שלושה דברים
-     שרק יחד עובדים:
-
-       1. **עובי** - פס כהה מתחת לרכיב (`0 lift 0 0`), שהוא בעצם הדופן
-          הצדדית שלו. זה מה שהופך אותו מציור של כפתור לכפתור.
-       2. **צל מקורקע** - צל רך שנופל על המשטח *מתחת* לדופן, במרחק
-          שגדל עם הגובה. בלעדיו העובי נראה כמו קו ולא כמו נפח.
-       3. **נסיעה בלחיצה** - הרכיב יורד אל המשטח, הדופן מתקצרת והצל
-          מתכווץ. זו התנועה שהמוח מזהה כ"נלחץ", והיא מה שנותן למסך מגע
-          את התחושה המספקת של משחק ולא של טופס.
-
-     `--side` הוא צבע הדופן, ומשתנה לפי הווריאנט (ראו למטה).
-     ====================================================================== */
-  .glass-3d {
-    --side: rgba(0, 0, 0, 0.5);
-    transform: translateY(calc(var(--ds-lift) * -1));
-    box-shadow:
-      0 var(--ds-lift) 0 0 var(--side),
-      0 calc(var(--ds-lift) + 14px) 30px -8px rgba(0, 0, 0, 0.7),
-      var(--ds-inset-top),
-      inset 0 -3px 8px -3px rgba(0, 0, 0, 0.45);
-    transition:
-      transform 110ms var(--ds-ease),
-      box-shadow 110ms var(--ds-ease),
-      background-color var(--ds-dur) var(--ds-ease);
-  }
-
-  @media (hover: hover) {
-    .glass-3d:hover:not(:disabled) {
-      transform: translateY(calc((var(--ds-lift) + 2px) * -1));
-      box-shadow:
-        0 calc(var(--ds-lift) + 2px) 0 0 var(--side),
-        0 calc(var(--ds-lift) + 20px) 38px -8px rgba(0, 0, 0, 0.72),
-        0 0 30px -6px var(--ds-glow-soft),
-        var(--ds-inset-top);
-    }
-  }
-
-  /* הרכיב נוסע אל המשטח. מגיע אחרי `.glass-interactive:active` בקובץ
-     בכוונה - אותה ספציפיות, והמאוחר מנצח, כך שהנסיעה מחליפה את
-     ה-scale השטוח. */
-  .glass-3d:active:not(:disabled) {
-    transform: translateY(calc(var(--ds-lift-press) * -1)) scale(0.985);
-    box-shadow:
-      0 var(--ds-lift-press) 0 0 var(--side),
-      0 calc(var(--ds-lift-press) + 6px) 12px -4px rgba(0, 0, 0, 0.6),
-      var(--ds-inset-top),
-      inset 0 3px 10px -2px rgba(0, 0, 0, 0.5);
-  }
-
-  .glass-3d:disabled,
-  .glass-3d[aria-disabled="true"] {
-    transform: none;
-    box-shadow: var(--ds-shadow-sm);
-  }
-
-  /* הדופן של הכפתור הראשי צבועה בטורקיז העמוק ולא בשחור - כך הוא
-     נראה כמו גוש זכוכית מלא ולא כמו משטח עם צל. */
-  .glass-btn-primary.glass-3d {
-    --side: var(--ds-accent-deeper);
-  }
-
-  .glass-active.glass-3d {
-    --side: var(--ds-accent-deeper);
-  }
-
-  /* ======================================================================
-     3c. אובייקטים מרחפים
-     ----------------------------------------------------------------------
-     לבנים קטנות שמרחפות בחלל מאחורי התוכן, כל אחת בעומק אחר: הרחוקות
-     קטנות, מטושטשות ועמומות, הקרובות חדות ועם צל חזק. זה מה שהופך את
-     הדף מ"רקע עם תוכן עליו" לחלל שיש בו עומק.
-
-     `--depth` (0 רחוק, 1 קרוב) שולט בהכל, כך שאפשר לפזר אותן בקוד
-     בלי לכוון כל אחת בנפרד.
-     ====================================================================== */
-  .glass-orb {
-    position: absolute;
-    border-radius: 28%;
-    /*
-     * על רקע שחור **הצל הוא האויב**. צל שחור על שחור לא נקרא כהרמה
-     * אלא ככתם מלוכלך, וזה בדיוק מה שהפך את הלבנות האלה לגושים
-     * אפורים בניסיון הראשון. לכן מה שמגדיר אותן כאן הוא **אור**:
-     * שפה עליונה בוהקת, מילוי שמתעמעם כלפי מטה, והילת זוהר רכה
-     * במקום צל. העומק מגיע מגודל, חדות ועוצמת האור - לא מהצללה.
-     */
-    /*
-     * כמעט בלי מילוי. מילוי לבן-שקוף מעל שחור נותן **אפור**, וזה מה
-     * שהפך את הלבנות האלה לגושים מלוכלכים פעמיים ברצף. לבנת זכוכית
-     * אמיתית בחושך לא מראה גוף - היא מראה את הקצוות שתפסו אור.
-     * לכן כאן: שפה מוארת, ברק בפינה העליונה, הילה רכה מסביב, ופנים
-     * כמעט שקוף לחלוטין.
-     */
-    background-image: radial-gradient(
-      120% 90% at 22% 12%,
-      rgba(208, 239, 238, calc(0.07 + var(--depth, 0.5) * 0.08)) 0%,
-      transparent 62%
-    );
-    border: 1px solid rgba(208, 239, 238, calc(0.16 + var(--depth, 0.5) * 0.44));
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, calc(0.3 + var(--depth, 0.5) * 0.55)),
-      inset 0 0 18px -6px rgba(208, 239, 238, 0.35),
-      0 0 calc(var(--depth, 0.5) * 46px + 14px) -8px var(--ds-glow-soft);
-    opacity: calc(0.34 + var(--depth, 0.5) * 0.42);
-    filter: blur(calc((1 - var(--depth, 0.5)) * 1.6px));
-    animation-name: orb-drift;
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
-    animation-direction: alternate;
   }
 
   /* ======================================================================
@@ -743,26 +615,22 @@
      8. עזרים
      ====================================================================== */
 
-  /* פס גלילה בשפת הזכוכית */
+  /*
+   * אזור שגולל בפנים - **בלי סרגל גלילה גלוי**.
+   *
+   * ניסיון קודם צבע את הסרגל בטורקיז כדי שישתלב. התוצאה הייתה קו אנכי
+   * בוהק בצד המסך שנראה כמו אלמנט בממשק, ולא כמו פקד מערכת. על מסך מגע
+   * אין בו שום צורך - גוללים באצבע - ולכן הוא פשוט מוסתר.
+   */
   .glass-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: var(--ds-accent-deep) transparent;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
   .glass-scroll::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-
-  .glass-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .glass-scroll::-webkit-scrollbar-thumb {
-    border-radius: var(--ds-r-full);
-    background: var(--ds-accent-deep);
-    border: 2px solid transparent;
-    background-clip: content-box;
+    width: 0;
+    height: 0;
+    display: none;
   }
 
   /* טקסט על גבי וידאו/תמונה, בלי קופסה מסביב */
