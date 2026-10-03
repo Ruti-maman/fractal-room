@@ -87,6 +87,50 @@ export function playTap(tone: "soft" | "primary" = "soft") {
 }
 
 /**
+ * ה-whoosh של מעבר שלב: רעש לבן קצר שעובר דרך מסנן נע, מלמעלה למטה.
+ * זה בדיוק מה שמשחקים עושים כדי שמעבר בין מסכים יישמע כמו תנועה ולא
+ * כמו קליק - והאוזן תופסת את זה גם כשהעין עסוקה בלהבים.
+ */
+export function playWhoosh() {
+  if (!tapSoundEnabled()) return;
+  const ctx = getContext();
+  if (!ctx) return;
+  if (ctx.state === "suspended") ctx.resume().catch(() => {});
+
+  try {
+    const now = ctx.currentTime;
+    const seconds = 0.5;
+
+    // רעש לבן נוצר כאן ולא נטען מקובץ - אין CDN, ואין טעם לארוז קובץ
+    // שמע ל-build בשביל חצי שנייה של רעש.
+    const frames = Math.floor(ctx.sampleRate * seconds);
+    const buffer = ctx.createBuffer(1, frames, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < frames; i++) data[i] = Math.random() * 2 - 1;
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.Q.value = 1.1;
+    filter.frequency.setValueAtTime(1800, now);
+    filter.frequency.exponentialRampToValueAtTime(320, now + seconds);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.1, now + 0.07);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + seconds);
+
+    source.connect(filter).connect(gain).connect(ctx.destination);
+    source.start(now);
+    source.stop(now + seconds);
+  } catch {
+    // בלי צליל - לא עוצרים שום זרימה בגללו
+  }
+}
+
+/**
  * רטט קצר, איפה שהמכשיר תומך. על פלזמת אנדרואיד זה בדרך כלל לא יעשה
  * כלום, ועל טאבלט/טלפון זה מוסיף הרבה - ולכן זה נקרא בלי תנאי ובלי
  * להיכשל כשאין תמיכה.

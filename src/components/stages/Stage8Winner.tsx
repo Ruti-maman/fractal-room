@@ -219,7 +219,7 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
   const places = [2, 1, 3];
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center gap-5 overflow-hidden px-6 pt-20 pb-44 text-center">
+    <main className="relative flex h-dvh flex-col items-center justify-center gap-4 overflow-hidden px-6 pt-20 pb-40 text-center">
       <BackgroundLayers variant="night" />
 
       {/* קונפטי - רק כשיש תוצאה אמיתית להכריז עליה.

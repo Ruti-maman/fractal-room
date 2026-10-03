@@ -129,7 +129,7 @@ function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center gap-10 px-4 py-10 sm:px-8">
+    <main className="relative flex h-dvh flex-col items-center justify-center gap-8 overflow-hidden px-4 py-8 sm:px-8">
       <BackgroundLayers variant="dawn" />
 
       <header

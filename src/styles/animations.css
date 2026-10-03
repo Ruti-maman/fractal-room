@@ -297,18 +297,34 @@
   }
 }
 
-/* פריחת אור שעוברת על המסך ברגע המעבר - זה מה שמרכך את הקפיצה. */
-@keyframes veil-bloom {
+/* להב התריס: נכנס, נעצר רגע כשהמסך מכוסה, וממשיך החוצה באותו כיוון. */
+@keyframes blade-sweep {
+  0% {
+    transform: translateY(var(--from)) skewX(-9deg);
+  }
+  38%,
+  58% {
+    transform: translateY(0) skewX(-9deg);
+  }
+  100% {
+    transform: translateY(var(--to)) skewX(-9deg);
+  }
+}
+
+/* ההכרזה באמצע - נראית רק בחלון שבו המסך מכוסה. */
+@keyframes badge-flash {
   0% {
     opacity: 0;
-    transform: scale(1.12);
+    scale: 0.82;
   }
-  35% {
-    opacity: 0.85;
+  28%,
+  62% {
+    opacity: 1;
+    scale: 1;
   }
   100% {
     opacity: 0;
-    transform: scale(1);
+    scale: 1.1;
   }
 }
 

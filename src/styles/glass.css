@@ -215,20 +215,58 @@
   }
 
   /* ----------------------------------------------------------------------
-     וילון המעבר בין שלבים
+     תריס הזכוכית - המעבר בין שלבים
+     ----------------------------------------------------------------------
+     להבים אלכסוניים שנסגרים על המסך, מכריזים על השלב הבא, ונפתחים.
+     ראו StageTransition.tsx להסבר המלא על למה דווקא כך.
      ---------------------------------------------------------------------- */
-  .stage-veil {
+  .stage-wipe {
     position: fixed;
     inset: 0;
-    z-index: 45;
+    z-index: 48;
+    overflow: hidden;
     pointer-events: none;
-    background: radial-gradient(
-      ellipse 80% 60% at 50% 50%,
-      var(--ds-glow) 0%,
-      var(--ds-glow-soft) 35%,
-      transparent 72%
+  }
+
+  .stage-wipe__blade {
+    position: absolute;
+    inset-block: -12%;
+    background: linear-gradient(
+      180deg,
+      var(--ds-accent-pale) 0%,
+      var(--ds-accent) 45%,
+      var(--ds-accent-deep) 100%
     );
-    animation: veil-bloom 620ms var(--ds-ease) forwards;
+    box-shadow: 0 0 40px -4px var(--ds-glow);
+    transform: translateY(var(--from)) skewX(-9deg);
+    animation-name: blade-sweep;
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+    animation-fill-mode: both;
+  }
+
+  .stage-wipe__badge {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    display: flex;
+    align-items: baseline;
+    gap: 0.65rem;
+    translate: 50% -50%;
+    color: var(--ds-accent-ink);
+    animation: badge-flash 620ms 190ms var(--ds-ease) both;
+  }
+
+  .stage-wipe__badge-label {
+    font-size: 1.5rem;
+    font-weight: 800;
+    opacity: 0.6;
+  }
+
+  .stage-wipe__badge-num {
+    font-size: 6rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
   }
 
   .glass-interactive:disabled,

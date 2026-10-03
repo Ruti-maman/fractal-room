@@ -36,7 +36,7 @@ interface Props {
 
 function Stage6Discussion({ content }: Props) {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-between overflow-hidden px-4 pt-24 pb-44 text-center sm:px-8">
+    <main className="relative flex h-dvh flex-col items-center justify-between overflow-hidden px-4 pt-24 pb-40 text-center sm:px-8">
       <BackgroundLayers variant="tide" />
 
       {/* המשפט למעלה - הוא מה שהקבוצה אמורה לדבר עליו */}
