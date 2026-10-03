@@ -211,7 +211,13 @@ function Stage5Solutions({ content, onAdvance }: Props) {
             <GameTile
               title={`אפשרות ${OPTION_LETTERS[i] ?? i + 1}`}
               scene={OPTION_SCENES[i % OPTION_SCENES.length]}
-              badge={<LevelBadge value={OPTION_LETTERS[i] ?? i + 1} label="" size={76} />}
+              /*
+                כל ארבעת התגים **באותו צבע**, בכוונה. ניסיון לתת לכל אפשרות
+                בועה בצבע אחר יצר בדיוק את הבעיה שהשלב הזה חייב להימנע
+                ממנה: אלמוג נקרא כ"שגוי" וענבר כ"אזהרה", כלומר הצבע עצמו
+                רמז לתשובה. הצבעוניות של המסך מגיעה מהרקע ומהסצנות.
+              */
+              badge={<LevelBadge value={OPTION_LETTERS[i] ?? i + 1} label="" size={84} />}
               onClick={() => setChosen(opt)}
               footer={
                 <span className="flex items-center gap-2">

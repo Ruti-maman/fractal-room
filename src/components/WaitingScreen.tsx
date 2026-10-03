@@ -76,7 +76,9 @@ function WaitingScreen({ stageNumber, allGroups }: Props) {
               <span
                 className={cx(
                   "flex h-16 w-16 items-center justify-center",
-                  arrived ? "bubble" : "bubble bubble-hollow text-ink-3",
+                  arrived
+                    ? `bubble bubble--${((g.screen_number - 1) % 5) + 1}`
+                    : "bubble bubble-hollow text-ink-3",
                 )}
                 style={
                   arrived

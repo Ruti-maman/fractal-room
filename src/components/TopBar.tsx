@@ -34,7 +34,7 @@ function TopBar({ myGroup, screenNumber, center, onGoBack }: Props) {
       <div className="glass glass-pill pointer-events-auto flex-none gap-2.5 py-2 ps-3 pe-4">
         <span
           aria-hidden="true"
-          className="bubble flex h-8 w-8 flex-none items-center justify-center text-sm font-extrabold"
+          className={`bubble bubble--${((screenNumber - 1) % 5) + 1} flex h-9 w-9 flex-none items-center justify-center text-sm font-extrabold`}
         >
           {screenNumber}
         </span>

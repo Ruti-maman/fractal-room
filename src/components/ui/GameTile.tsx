@@ -30,6 +30,8 @@ import Icon, { type IconName } from "./Icon";
 interface BadgeProps {
   /** המספר הגדול בתוך התג. */
   value: ReactNode;
+  /** צבע מפלטת הבועות (1-5). בלעדיו - טורקיז. */
+  tone?: 1 | 2 | 3 | 4 | 5;
   /** הכיתוב הקטן מעליו, למשל "שלב". */
   label?: string;
   /** 0 עד 1 - כמה מהטבעת מלאה. בלעדיו הטבעת מלאה. */
@@ -46,6 +48,7 @@ interface BadgeProps {
  */
 export function LevelBadge({
   value,
+  tone,
   label = "שלב",
   progress = 1,
   size = 92,
@@ -87,7 +90,10 @@ export function LevelBadge({
       {/* הדיסקית היא **בועה** ולא לבנת זכוכית: עיגול הוא הצורה שבה
           החומר הזה הכי משכנע, וזה גם מה שקושר את תג השלב לשאר השפה. */}
       <span
-        className="bubble relative flex flex-col items-center justify-center leading-none"
+        className={cx(
+          "bubble relative flex flex-col items-center justify-center leading-none",
+          tone && `bubble--${tone}`,
+        )}
         style={{ width: size - 18, height: size - 18 }}
       >
         <span className="text-[0.55em] font-bold opacity-75" style={{ fontSize: size * 0.14 }}>

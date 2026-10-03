@@ -196,14 +196,14 @@ export function BackgroundLayers({ variant = "deep" }: Pick<Props, "variant">) {
         ORBS.map((orb, i) => (
           <span
             key={i}
-            className="bubble bubble-hollow absolute"
+            className={`bubble bubble--${(i % 5) + 1} absolute`}
             style={{
               insetInlineStart: `${orb.left}%`,
               top: `${orb.top}%`,
               width: orb.size,
               height: orb.size,
               ["--depth" as string]: orb.depth,
-              opacity: 0.22 + orb.depth * 0.4,
+              opacity: 0.35 + orb.depth * 0.5,
               filter: `blur(${(1 - orb.depth) * 1.8}px)`,
               ["--dx" as string]: `${orb.dx}px`,
               ["--dy" as string]: `${orb.dy}px`,

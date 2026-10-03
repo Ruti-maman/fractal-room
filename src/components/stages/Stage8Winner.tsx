@@ -180,7 +180,7 @@ function PlaceDisc({ place }: { place: number }) {
       aria-hidden="true"
       className={cx(
         "flex h-12 w-12 items-center justify-center text-lg font-extrabold",
-        place === 1 ? "bubble" : "bubble bubble-hollow text-ink-2",
+        place === 1 ? "bubble bubble--4" : place === 2 ? "bubble bubble--2" : "bubble bubble--5",
       )}
     >
       {place}

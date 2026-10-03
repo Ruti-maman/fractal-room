@@ -146,7 +146,7 @@ function IdentificationForm({ myGroup }: { myGroup: Group }) {
                   aria-hidden="true"
                   className={cx(
                     "flex h-11 w-11 flex-none items-center justify-center text-sm font-extrabold",
-                    p.trim() ? "bubble" : "bubble bubble-hollow text-ink-3",
+                    p.trim() ? `bubble bubble--${(i % 5) + 1}` : "bubble bubble-hollow text-ink-3",
                   )}
                 >
                   {i + 1}
@@ -248,7 +248,9 @@ function RoomStatusNames({
                     aria-hidden="true"
                     className={cx(
                       "flex h-16 w-16 flex-none items-center justify-center",
-                      identified ? "bubble" : "bubble bubble-hollow text-ink-3",
+                      identified
+                        ? `bubble bubble--${((g.screen_number - 1) % 5) + 1}`
+                        : "bubble bubble-hollow text-ink-3",
                     )}
                   >
                     {identified ? <Icon name="check" size={24} /> : g.screen_number}
@@ -316,7 +318,7 @@ function DilemmaVideo({
         content?.dilemma_text ?? "הצגת הדילמה המרכזית שאיתה נתמודד לאורך הסדנה."
       }
       background="quiet"
-      width="full"
+      width="wide"
       actions={
         <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={onAdvance}>
           המשך
@@ -324,16 +326,22 @@ function DilemmaVideo({
       }
     >
       {content?.dilemma_video_url ? (
-        /* הסרטון הוא הגיבור של המסך הזה, ולכן הוא מקבל את כל הרוחב
-           ואת כל הגובה שנשאר - מסגרת זכוכית דקה בלבד מסביבו. */
-        <div className="glass glass-brick flex h-full w-full items-center justify-center overflow-hidden rounded-2xl p-2">
+        /*
+          נגן בגודל נורמלי, לא פרוס על כל המסך.
+          ניסיון קודם נתן לו את כל הרוחב ואת כל הגובה שנשאר, והתוצאה
+          הייתה סרטון מרוח לרוחב עם פסים שחורים ענקיים מעל ומתחת -
+          כי יחס הגובה-רוחב של הסרטון לא משתנה רק כי המסגרת גדלה.
+          כאן המסגרת **נגזרת מהסרטון**: יחס 16:9 קבוע, ברוחב סביר,
+          וממורכזת.
+        */
+        <div className="glass glass-brick mx-auto w-full max-w-4xl overflow-hidden rounded-2xl p-2">
           <AutoPlayVideo
             src={content.dilemma_video_url}
-            className="max-h-full w-full rounded-xl object-contain"
+            className="aspect-video w-full rounded-xl object-cover"
           />
         </div>
       ) : (
-        <div className="glass glass-brick flex h-full min-h-[22rem] w-full items-center justify-center rounded-2xl">
+        <div className="glass glass-brick mx-auto flex aspect-video w-full max-w-4xl items-center justify-center rounded-2xl">
           <div className="text-ink-3 flex flex-col items-center gap-3">
             <span className="glass glass-dim glass-icon-btn glass-icon-btn-lg">
               <Icon name="film" size={30} />

@@ -327,6 +327,42 @@
     opacity: 0.7;
   }
 
+  /*
+   * חמשת צבעי הבועות. כל מחלקה מחליפה רק את שלושת משתני הגוון, וכל
+   * השאר - הנצנוץ, האור החוזר, הצל - נשאר זהה. כך בועה ענברית ובועה
+   * טורקיז הן בבירור אותו חפץ בצבע אחר, ולא שני אובייקטים שונים.
+   */
+  .bubble--1 {
+    --bubble-light: color-mix(in srgb, var(--ds-bubble-1) 45%, white);
+    --bubble-mid: var(--ds-bubble-1);
+    --bubble-deep: color-mix(in srgb, var(--ds-bubble-1) 45%, #021a17);
+    --bubble-glow: color-mix(in srgb, var(--ds-bubble-1) 60%, transparent);
+  }
+  .bubble--2 {
+    --bubble-light: color-mix(in srgb, var(--ds-bubble-2) 45%, white);
+    --bubble-mid: var(--ds-bubble-2);
+    --bubble-deep: color-mix(in srgb, var(--ds-bubble-2) 45%, #02101f);
+    --bubble-glow: color-mix(in srgb, var(--ds-bubble-2) 60%, transparent);
+  }
+  .bubble--3 {
+    --bubble-light: color-mix(in srgb, var(--ds-bubble-3) 45%, white);
+    --bubble-mid: var(--ds-bubble-3);
+    --bubble-deep: color-mix(in srgb, var(--ds-bubble-3) 45%, #021a0d);
+    --bubble-glow: color-mix(in srgb, var(--ds-bubble-3) 60%, transparent);
+  }
+  .bubble--4 {
+    --bubble-light: color-mix(in srgb, var(--ds-bubble-4) 45%, white);
+    --bubble-mid: var(--ds-bubble-4);
+    --bubble-deep: color-mix(in srgb, var(--ds-bubble-4) 45%, #241400);
+    --bubble-glow: color-mix(in srgb, var(--ds-bubble-4) 60%, transparent);
+  }
+  .bubble--5 {
+    --bubble-light: color-mix(in srgb, var(--ds-bubble-5) 45%, white);
+    --bubble-mid: var(--ds-bubble-5);
+    --bubble-deep: color-mix(in srgb, var(--ds-bubble-5) 45%, #240604);
+    --bubble-glow: color-mix(in srgb, var(--ds-bubble-5) 60%, transparent);
+  }
+
   /* בועה שקופה - לקישוט ברקע, בלי גוף מלא */
   .bubble-hollow {
     background-image:
