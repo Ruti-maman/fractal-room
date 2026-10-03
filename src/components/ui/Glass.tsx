@@ -215,7 +215,10 @@ export function GlassButton({
         onPointerDown?.(e);
       }}
       className={cx(
+        // glass-3d נותן לכפתור דופן, צל מקורקע ונסיעה בלחיצה (ראו glass.css).
+        // `ghost` יוצא מהכלל: הוא כפתור "שטוח" בכוונה ואין לו גוף להרים.
         "glass glass-interactive glass-btn",
+        variant !== "ghost" && "glass-3d",
         SIZE_CLASS[size],
         variant === "primary" && "glass-btn-primary",
         variant === "ghost" && "!bg-transparent !shadow-none",
@@ -287,7 +290,7 @@ export function GlassIconButton({
         onPointerDown?.(e);
       }}
       className={cx(
-        "glass glass-interactive glass-icon-btn",
+        "glass glass-interactive glass-icon-btn glass-3d",
         ICON_BTN_SIZE[size],
         active ? "glass-active" : "text-ink-2",
         className,

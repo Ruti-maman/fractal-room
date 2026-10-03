@@ -294,7 +294,20 @@ function RoomStatusNames({
    ג. סרטון הדילמה
    ========================================================================== */
 
-function DilemmaVideo({ content }: { content?: Stage2Content }) {
+/**
+ * מסך סרטון הדילמה.
+ *
+ * יש כאן כפתור "המשך" מאותה סיבה בדיוק שבגללה הוא נוסף לתשובה הנכונה
+ * בשלב 5 (ראו סעיף 10 ב-CLAUDE.md): בלעדיו קבוצה שסיימה לצפות יושבת מול
+ * מסך נעול עד שהשעון ייגמר. הטיימר עדיין מעביר לבד אם לא לוחצים.
+ */
+function DilemmaVideo({
+  content,
+  onAdvance,
+}: {
+  content?: Stage2Content;
+  onAdvance: () => void;
+}) {
   return (
     <StageShell
       stage={2}
@@ -307,6 +320,11 @@ function DilemmaVideo({ content }: { content?: Stage2Content }) {
       botanical={false}
       background="quiet"
       width="wide"
+      actions={
+        <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={onAdvance}>
+          המשך
+        </GlassButton>
+      }
     >
       {content?.dilemma_video_url ? (
         <div className="glass glass-brick w-full overflow-hidden rounded-2xl p-3">
@@ -336,28 +354,25 @@ function DilemmaVideo({ content }: { content?: Stage2Content }) {
 function RoomStatus({
   allGroups,
   content,
+  onAdvance,
 }: {
   allGroups: Group[];
   content?: Stage2Content;
+  onAdvance: () => void;
 }) {
   const [showingVideo, setShowingVideo] = useState(false);
 
   if (showingVideo) {
-    return <DilemmaVideo content={content} />;
+    return <DilemmaVideo content={content} onAdvance={onAdvance} />;
   }
   return <RoomStatusNames allGroups={allGroups} onNext={() => setShowingVideo(true)} />;
 }
 
-/**
- * במסך סרטון הדילמה אין כפתור "הבא" בכוונה - הטיימר הוא שמעביר לשלב
- * הבא (תשובת הלקוחה, סעיף 10 ב-CLAUDE.md). לכן `onAdvance` מגיע מהראוטר
- * אבל לא נצרך כאן.
- */
-function Stage2Identification({ myGroup, allGroups, content }: Props) {
+function Stage2Identification({ myGroup, allGroups, content, onAdvance }: Props) {
   if (!myGroup.name) {
     return <IdentificationForm myGroup={myGroup} />;
   }
-  return <RoomStatus allGroups={allGroups} content={content} />;
+  return <RoomStatus allGroups={allGroups} content={content} onAdvance={onAdvance} />;
 }
 
 export default Stage2Identification;

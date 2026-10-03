@@ -221,28 +221,35 @@
   animation: rays-spin 120s linear infinite;
 }
 
-/* --- גלי אור אופקיים שזורמים לרוחב (שלבים 5-6) --- */
-.bg-waves {
+/* --- זוהר רחב שנודד לאורך הדף (שלבים 5-6) ---
+   החליף פסים אופקיים חוזרים (`repeating-linear-gradient`) שנראו כמו
+   טפט ישן ברגע שהרקע הפך לשחור נקי: דוגמה חוזרת וקשיחה היא בדיוק מה
+   שסותר את התחושה של חלל. כאן יש במקומה שתי לשונות אור רחבות שנעות
+   לאט על פני הדף - בלי קצוות, בלי חזרה, ובלי שום קו ישר. */
+.bg-drift {
   position: absolute;
-  inset: -20% -50%;
-  opacity: 0.35;
-  background-image: repeating-linear-gradient(
-    177deg,
-    transparent 0 46px,
-    var(--ds-glow-soft) 46px 49px,
-    transparent 49px 120px
-  );
-  -webkit-mask-image: radial-gradient(ellipse at 50% 60%, #000 0%, transparent 75%);
-  mask-image: radial-gradient(ellipse at 50% 60%, #000 0%, transparent 75%);
-  animation: wave-flow 46s linear infinite;
+  inset: -30%;
+  opacity: 0.6;
+  background-image:
+    radial-gradient(
+      60rem 22rem at 20% 35%,
+      var(--ds-blob-a) 0%,
+      transparent 68%
+    ),
+    radial-gradient(
+      48rem 18rem at 78% 68%,
+      var(--ds-blob-c) 0%,
+      transparent 70%
+    );
+  animation: drift-slow 58s ease-in-out infinite alternate;
 }
 
-@keyframes wave-flow {
+@keyframes drift-slow {
   from {
-    transform: translateX(0) translateY(0);
+    transform: translate3d(-3%, 1%, 0) scale(1);
   }
   to {
-    transform: translateX(6%) translateY(-120px);
+    transform: translate3d(4%, -2%, 0) scale(1.12);
   }
 }
 
@@ -324,7 +331,8 @@
 }
 
 :root[data-effects="lite"] .bg-rays,
-:root[data-effects="lite"] .bg-waves,
+:root[data-effects="lite"] .bg-drift,
+:root[data-effects="lite"] .glass-orb,
 :root[data-effects="lite"] .bg-bubble,
 :root[data-effects="lite"] .bg-star,
 :root[data-effects="lite"] .bg-dawn {

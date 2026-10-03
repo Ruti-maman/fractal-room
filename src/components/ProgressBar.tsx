@@ -39,8 +39,11 @@ function ProgressBar({ allGroups, myScreenNumber, totalStages }: Props) {
 
       {sorted.map((g) => {
         const isMine = g.screen_number === myScreenNumber;
+        // קבוצה שעברה את השלב האחרון (הטיימר ממשיך לקדם גם אחרי הסוף)
+        // הציגה "11/10", שנראה כמו באג. התצוגה נעצרת על מספר השלבים.
+        const shownStage = Math.min(g.current_stage, totalStages);
         const percent =
-          totalStages > 0 ? Math.min(100, Math.round((g.current_stage / totalStages) * 100)) : 0;
+          totalStages > 0 ? Math.min(100, Math.round((shownStage / totalStages) * 100)) : 0;
 
         return (
           <div key={g.id} className="flex flex-col gap-1">
@@ -67,17 +70,17 @@ function ProgressBar({ allGroups, myScreenNumber, totalStages }: Props) {
                 )}
               </span>
               <span className="text-ink-3 flex-none text-[11px] font-bold tabular-nums">
-                {g.current_stage}/{totalStages}
+                {shownStage}/{totalStages}
               </span>
             </div>
 
             <div
               className={cx("glass-slider glass-slider--x h-2.5", !isMine && "opacity-70")}
               role="progressbar"
-              aria-valuenow={g.current_stage}
+              aria-valuenow={shownStage}
               aria-valuemin={0}
               aria-valuemax={totalStages}
-              aria-label={`${g.name ?? `מסך ${g.screen_number}`}: שלב ${g.current_stage} מתוך ${totalStages}`}
+              aria-label={`${g.name ?? `מסך ${g.screen_number}`}: שלב ${shownStage} מתוך ${totalStages}`}
               style={{ ["--fill" as string]: percent }}
             >
               <span className="glass-slider__fill" />

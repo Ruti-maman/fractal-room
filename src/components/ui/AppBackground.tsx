@@ -71,6 +71,31 @@ const BUBBLES = Array.from({ length: 10 }, (_, i) => ({
   sway: Math.round(seeded(i, 88.2) * 60 - 30),
 }));
 
+/*
+ * לבנים מרחפות. כל אחת בעומק אחר (`depth`: 0 רחוק, 1 קרוב), וזה מה
+ * ששולט בגודל, בחדות, בעוצמת הצל ובשקיפות - כך שהן נקראות כחלל עם
+ * עומק ולא כאוסף ריבועים על רקע.
+ *
+ * מעט מאוד מהן (7), והן יושבות בשוליים: הן אמורות להיות משהו שמרגישים
+ * בפריפריה, לא משהו שמסתכלים עליו במקום על התוכן.
+ */
+const ORBS = Array.from({ length: 7 }, (_, i) => {
+  const depth = 0.18 + seeded(i, 51.3) * 0.8;
+  return {
+    depth,
+    // מרוכזות בשוליים הימניים והשמאליים, רחוק ממרכז המסך
+    left: i % 2 === 0 ? 2 + seeded(i, 19.1) * 16 : 82 + seeded(i, 23.7) * 15,
+    top: 8 + seeded(i, 67.5) * 78,
+    size: Math.round(26 + depth * 76),
+    duration: 14 + Math.round(seeded(i, 88.9) * 14),
+    delay: Math.round(seeded(i, 35.2) * 10),
+    dx: Math.round(seeded(i, 72.4) * 34 - 17),
+    dy: -(18 + Math.round(seeded(i, 44.8) * 30)),
+    spinFrom: Math.round(seeded(i, 15.6) * 16 - 8),
+    spinTo: Math.round(seeded(i, 91.2) * 18 - 6),
+  };
+});
+
 const STARS = Array.from({ length: 46 }, (_, i) => ({
   left: Math.round(seeded(i, 21.4) * 98) + 1,
   top: Math.round(seeded(i, 47.9) * 92) + 2,
@@ -104,8 +129,8 @@ export function BackgroundLayers({
       {/* קרניים שיוצאות מהמרכז - שמש האסוציאציות */}
       {variant === "radiant" && <div className="bg-rays" />}
 
-      {/* גלי אור אופקיים */}
-      {variant === "tide" && <div className="bg-waves" />}
+      {/* זוהר רחב שנודד לאורך הדף */}
+      {variant === "tide" && <div className="bg-drift" />}
 
       {/* קרני אור מלמעלה */}
       {(variant === "deep" || variant === "dawn") && <div className="bg-shafts" />}
@@ -164,6 +189,29 @@ export function BackgroundLayers({
               height: mote.size,
               animationDuration: `${mote.duration}s`,
               animationDelay: `${mote.delay}s`,
+            }}
+          />
+        ))}
+
+      {/* לבנים מרחפות - העומק של החלל. לא במסך השקט, שבו התוכן
+          צריך את כל תשומת הלב. */}
+      {!quiet &&
+        ORBS.map((orb, i) => (
+          <span
+            key={i}
+            className="glass-orb"
+            style={{
+              insetInlineStart: `${orb.left}%`,
+              top: `${orb.top}%`,
+              width: orb.size,
+              height: orb.size,
+              ["--depth" as string]: orb.depth,
+              ["--dx" as string]: `${orb.dx}px`,
+              ["--dy" as string]: `${orb.dy}px`,
+              ["--spin-from" as string]: `${orb.spinFrom}deg`,
+              ["--spin-to" as string]: `${orb.spinTo}deg`,
+              animationDuration: `${orb.duration}s`,
+              animationDelay: `${orb.delay}s`,
             }}
           />
         ))}

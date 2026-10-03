@@ -275,13 +275,25 @@
   }
 }
 
+/* לבנה מרחפת: עולה, יורדת ומסתובבת קלות. `alternate` בקוד הרכיב, כך
+   שהיא אף פעם לא "קופצת" חזרה להתחלה. */
+@keyframes orb-drift {
+  from {
+    transform: translate3d(0, 0, 0) rotate(var(--spin-from, -6deg));
+  }
+  to {
+    transform: translate3d(var(--dx, 14px), var(--dy, -26px), 0)
+      rotate(var(--spin-to, 8deg));
+  }
+}
+
 /* פולס האנרגיה שרץ לאורך קרן שנבחרה, פנימה אל ליבת השמש (שלב 3). */
 @keyframes ray-pulse {
   from {
-    transform: translateX(100%);
+    transform: translateX(300%);
   }
   to {
-    transform: translateX(-400%);
+    transform: translateX(-100%);
   }
 }
 

@@ -297,7 +297,7 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                   {/* פולס האנרגיה שרץ לאורך הקרן פנימה */}
                   {lit && (
                     <span
-                      className="absolute inset-y-0 w-16"
+                      className="absolute inset-y-0 w-1/3"
                       style={{
                         background:
                           "linear-gradient(90deg, transparent, #ffffff, transparent)",
