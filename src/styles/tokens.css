@@ -188,90 +188,110 @@
  * הזה - בדיוק סוג הכפילות שה-design system אמור למנוע.
  */
 :root[data-theme="light"] {
+  /*
+   * ============================================================
+   *  המצב הבהיר - ברירת המחדל של הסדנה (מ-2026-10-05)
+   * ============================================================
+   *
+   *  נבנה לפי האתר של המפתחת עצמה (ruti-maman.github.io), אחרי שהמצב
+   *  הכהה נפסל כ"מעושן". מה שעושה שם את התחושה:
+   *    - רקע כמעט לבן, אוורירי, עם כתמי פסטל רכים שזזים לאט.
+   *    - **גרדיאנט קשת** כחתימה: טורקיז -> כחול -> סגול -> ורוד -> כתום.
+   *      מופיע בכותרות, בכפתור הראשי ובמסגרות.
+   *    - טקסט נייבי עמוק, לא שחור - רך יותר על לבן.
+   *    - הרבה מרחב, צללים רכים בצבע, לא באפור.
+   *
+   *  הגוונים עצמם נמדדו מהאתר ולא נבחרו בעין.
+   */
   color-scheme: light;
 
-  /*
-   * הרקע הבהיר עמוק יותר ממה שנראה אינטואיטיבי (אקווה ולא לבן), וזה
-   * מכוון: זכוכית לבנבנה על רקע לבן פשוט נעלמת. צריך שיהיה משהו מתחתיה
-   * שהיא שוברת, בדיוק כמו במצב הכהה.
-   */
-  --ds-bg-from: #e8f8f6;
-  --ds-bg-via: #d5efec;
-  --ds-bg-to: #bfe5e1;
-  --ds-bg-solid: #ddf1ef;
+  /* --- רקע --- */
+  --ds-bg-from: #f7f6fd;
+  --ds-bg-via: #f3f6fc;
+  --ds-bg-to: #f1f8f8;
+  --ds-bg-solid: #f5f4fc;
 
-  --ds-blob-a: rgba(132, 199, 193, 0.5);
-  --ds-blob-b: rgba(78, 143, 139, 0.2);
-  --ds-blob-c: rgba(199, 245, 244, 0.6);
+  /* כתמי הפסטל שזזים מאחורי הכל - כל אחד מגוון אחר בקשת */
+  --ds-blob-a: rgba(14, 156, 147, 0.26);
+  --ds-blob-b: rgba(115, 104, 201, 0.24);
+  --ds-blob-c: rgba(229, 127, 160, 0.2);
 
-  /* לבן-מנטה חלבי עם נגיעת טורקיז - לא לבן טהור, אחרת אין לו גוון משלו */
-  --ds-glass: rgba(250, 255, 255, 0.62);
-  --ds-glass-strong: rgba(252, 255, 255, 0.78);
-  --ds-glass-raised: rgba(255, 255, 255, 0.9);
-  --ds-glass-opaque: #eefaf9;
-  --ds-glass-opaque-strong: #f5fcfc;
-  --ds-glass-opaque-raised: #fbffff;
+  /* --- זכוכית: לבן חלבי, כמעט אטום, עם רמז של צבע מהרקע --- */
+  --ds-glass: rgba(255, 255, 255, 0.66);
+  --ds-glass-strong: rgba(255, 255, 255, 0.82);
+  --ds-glass-raised: rgba(255, 255, 255, 0.92);
+  --ds-glass-opaque: #fbfaff;
+  --ds-glass-opaque-strong: #fdfcff;
+  --ds-glass-opaque-raised: #ffffff;
 
   --ds-edge: rgba(255, 255, 255, 0.95);
   --ds-edge-bright: #ffffff;
-  --ds-edge-dim: rgba(49, 103, 104, 0.28);
+  --ds-edge-dim: rgba(18, 20, 48, 0.09);
 
-  /* הברק חלש בהרבה מאשר במצב הכהה: על משטח בהיר ממילא, ברק חזק רק מוחק
-     אותו במקום לתת לו נפח. */
-  --ds-specular: rgba(255, 255, 255, 0.75);
-  --ds-specular-soft: rgba(255, 255, 255, 0.3);
+  --ds-specular: rgba(255, 255, 255, 0.9);
+  --ds-specular-soft: rgba(255, 255, 255, 0.4);
 
-  /* אותו סולם, הפוך: במצב בהיר הצבע הפעיל חייב להיות הקצה **הכהה** של
-     הזכוכית, אחרת אין לו על מה לבלוט מול רקע מנטה-לבן. */
-  --ds-accent: #31706c;
-  --ds-accent-soft: #4e8f8b;
-  --ds-accent-pale: #84c7c1;
-  --ds-accent-deep: #2a6360;
-  --ds-accent-deeper: #174947;
-  --ds-accent-ink: #042220;
+  /* --- הצבע הראשי: הטורקיז של האתר --- */
+  --ds-accent: #0e9c93;
+  --ds-accent-soft: #2bb8ad;
+  --ds-accent-pale: #b3dddc;
+  --ds-accent-deep: #0b7f78;
+  --ds-accent-deeper: #08615c;
+  --ds-accent-ink: #ffffff;
 
-  /* הפוך מהמצב הכהה: כאן המילוי הוא הקצה הכהה של הזכוכית, והכתב לבן. */
-  --ds-active-from: var(--ds-accent);
-  --ds-active-mid: var(--ds-accent-deep);
-  --ds-active-to: var(--ds-accent-deeper);
-  --ds-on-active: var(--ds-text-on-accent);
+  --ds-active-from: #14b3a8;
+  --ds-active-mid: #0e9c93;
+  --ds-active-to: #0b7f78;
+  --ds-on-active: #ffffff;
 
-  --ds-glow: rgba(78, 143, 139, 0.32);
-  --ds-glow-soft: rgba(132, 199, 193, 0.3);
+  --ds-glow: rgba(14, 156, 147, 0.3);
+  --ds-glow-soft: rgba(115, 104, 201, 0.16);
 
-  --ds-text: #062e2c;
-  --ds-text-2: rgba(6, 46, 44, 0.72);
-  --ds-text-3: rgba(6, 46, 44, 0.5);
+  /* --- הקשת --- */
+  --ds-rainbow-1: #0e9c93; /* טורקיז */
+  --ds-rainbow-2: #3b94b6; /* כחול */
+  --ds-rainbow-3: #7368c9; /* סגול */
+  --ds-rainbow-4: #c55f7c; /* ורוד */
+  --ds-rainbow-5: #c4782c; /* כתום */
+
+  /* הבועות במצב הבהיר - אותה קשת, בגוון מעט בהיר יותר */
+  --ds-bubble-1: #2bb8ad;
+  --ds-bubble-2: #4ea9d6;
+  --ds-bubble-3: #8b7fe0;
+  --ds-bubble-4: #e57fa0;
+  --ds-bubble-5: #f0a35c;
+
+  /* --- טקסט: נייבי של האתר --- */
+  --ds-text: #121430;
+  --ds-text-2: rgba(18, 20, 48, 0.68);
+  --ds-text-3: rgba(18, 20, 48, 0.5);
   --ds-text-on-accent: #ffffff;
 
-  --ds-ok: #15705a;
-  --ds-ok-fill: rgba(21, 112, 90, 0.12);
-  --ds-warn: #8a6310;
-  --ds-warn-fill: rgba(138, 99, 16, 0.12);
-  --ds-danger: #9c3a37;
-  --ds-danger-fill: rgba(156, 58, 55, 0.1);
+  --ds-ok: #12996b;
+  --ds-ok-fill: rgba(18, 153, 107, 0.1);
+  --ds-warn: #a8661f;
+  --ds-warn-fill: rgba(196, 120, 44, 0.1);
+  --ds-danger: #b54a68;
+  --ds-danger-fill: rgba(197, 95, 124, 0.1);
+  --ds-record: #c94a44;
+  --ds-record-glow: rgba(201, 74, 68, 0.35);
 
-  --ds-record: #c2483f;
-  --ds-record-glow: rgba(194, 72, 63, 0.45);
-
-  --ds-shadow-sm: 0 4px 14px -6px rgba(12, 62, 60, 0.22);
-  --ds-shadow: 0 18px 40px -18px rgba(12, 62, 60, 0.3);
-  --ds-shadow-lg: 0 34px 80px -28px rgba(12, 62, 60, 0.35);
-  --ds-inset-top: inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
-  --ds-inset-bottom: inset 0 -1px 0 0 rgba(49, 103, 104, 0.18);
+  /* --- צללים: בצבע, לא באפור. על לבן צל אפור נראה מלוכלך. --- */
+  --ds-shadow-sm: 0 2px 8px -3px rgba(70, 62, 140, 0.16), 0 6px 16px -8px rgba(14, 156, 147, 0.14);
+  --ds-shadow: 0 6px 18px -8px rgba(70, 62, 140, 0.2), 0 20px 44px -20px rgba(14, 156, 147, 0.22);
+  --ds-shadow-lg: 0 10px 28px -10px rgba(70, 62, 140, 0.24), 0 40px 80px -30px rgba(14, 156, 147, 0.28);
+  --ds-inset-top: inset 0 1px 0 0 rgba(255, 255, 255, 1);
+  --ds-inset-bottom: inset 0 -1px 0 0 rgba(18, 20, 48, 0.06);
   --ds-inset-deep: inset 0 2px 14px -6px rgba(255, 255, 255, 0.9);
 
-  --ds-focus-ring: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 0 0 6px var(--ds-accent),
-    0 0 26px 2px var(--ds-glow-soft);
+  --ds-focus-ring: 0 0 0 3px #ffffff, 0 0 0 6px var(--ds-accent), 0 0 26px 2px var(--ds-glow);
 
-  --ds-scrim: rgba(8, 44, 42, 0.34);
+  --ds-scrim: rgba(18, 20, 48, 0.32);
+  --ds-vignette: rgba(255, 255, 255, 0.55);
 
-  /* במצב בהיר הקצוות מוארים ולא מוכהים - הכהיה שם נראית כמו לכלוך */
-  --ds-vignette: rgba(255, 255, 255, 0.5);
-
-  --ds-title-from: var(--ds-text);
-  --ds-title-via: var(--ds-accent);
-  --ds-title-to: var(--ds-accent-deep);
+  --ds-title-from: var(--ds-rainbow-1);
+  --ds-title-via: var(--ds-rainbow-3);
+  --ds-title-to: var(--ds-rainbow-5);
 }
 
 /* ==========================================================================

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 /*
  * ============================================================================
@@ -17,19 +17,10 @@ import { useCallback, useEffect, useState } from "react";
 
 export type Theme = "dark" | "light";
 
-const STORAGE_KEY = "fractal-theme";
+const STORAGE_KEY = "fractal-theme-v2";
 
 function currentTheme(): Theme {
-  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-}
-
-function hasExplicitChoice(): boolean {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === "light" || saved === "dark";
-  } catch {
-    return false;
-  }
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
 }
 
 export function useTheme() {
@@ -48,29 +39,6 @@ export function useTheme() {
   const toggleTheme = useCallback(() => {
     setTheme(currentTheme() === "dark" ? "light" : "dark");
   }, [setTheme]);
-
-  // מעקב אחרי העדפת המערכת - רק כל עוד לא נבחר מצב מפורש
-  useEffect(() => {
-    if (hasExplicitChoice()) return;
-    if (!window.matchMedia) return;
-
-    const media = window.matchMedia("(prefers-color-scheme: light)");
-    const handle = (e: MediaQueryListEvent) => {
-      if (hasExplicitChoice()) return;
-      const next: Theme = e.matches ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      setThemeState(next);
-    };
-
-    // addEventListener על MediaQueryList לא קיים בדפדפנים ישנים (Safari < 14,
-    // WebView ישן) - שם עדיין addListener. נופלים אליו במקום לקרוס.
-    if (media.addEventListener) {
-      media.addEventListener("change", handle);
-      return () => media.removeEventListener("change", handle);
-    }
-    media.addListener(handle);
-    return () => media.removeListener(handle);
-  }, []);
 
   return { theme, setTheme, toggleTheme };
 }

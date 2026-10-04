@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="he" dir="rtl" data-theme="dark">
+<html lang="he" dir="rtl" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <meta name="color-scheme" content="dark light" />
     <!-- צבע סרגל הדפדפן באנדרואיד, כדי שלא יבצבץ פס לבן מעל מסך הסדנה -->
-    <meta name="theme-color" content="#081b1c" />
+    <meta name="theme-color" content="#f5f4fc" />
     <title>חדר פרקטל</title>
     <script>
       /*
@@ -17,13 +17,10 @@
        */
       (function () {
         try {
-          var saved = localStorage.getItem("fractal-theme");
-          var theme =
-            saved === "light" || saved === "dark"
-              ? saved
-              : window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches
-                ? "light"
-                : "dark";
+          // מפתח v2: המצב הבהיר הפך לברירת המחדל, ומסך שבחר פעם "כהה"
+          // תחת המפתח הישן לא אמור להיתקע בו.
+          var saved = localStorage.getItem("fractal-theme-v2");
+          var theme = saved === "dark" ? "dark" : "light";
           document.documentElement.setAttribute("data-theme", theme);
           var effects = localStorage.getItem("fractal-effects");
           if (effects === "lite") document.documentElement.setAttribute("data-effects", "lite");

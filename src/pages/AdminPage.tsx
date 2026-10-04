@@ -135,7 +135,7 @@ function AdminPage() {
                 to={`/screen/${n}`}
                 className="glass glass-interactive flex flex-col items-center gap-2 rounded-lg p-5 text-center"
               >
-                <span className="glass glass-active flex h-12 w-12 items-center justify-center rounded-full text-xl font-extrabold">
+                <span className={`bubble bubble--${n} flex h-12 w-12 items-center justify-center text-xl font-extrabold`}>
                   {n}
                 </span>
                 <span className="text-ink text-sm font-bold">מסך {n}</span>
