@@ -77,14 +77,14 @@ const BUBBLES = Array.from({ length: 10 }, (_, i) => ({
  * שהיו פה קודם: שניהם היו "חפצים" על הדף. בועה היא קלילה, היא שייכת
  * לחלל, והיא גם החומר השני של המערכת (ראו .bubble ב-glass.css).
  */
-const ORBS = Array.from({ length: 7 }, (_, i) => {
+const ORBS = Array.from({ length: 12 }, (_, i) => {
   const depth = 0.18 + seeded(i, 51.3) * 0.8;
   return {
     depth,
     // מרוכזות בשוליים הימניים והשמאליים, רחוק ממרכז המסך
     left: i % 2 === 0 ? 2 + seeded(i, 19.1) * 16 : 82 + seeded(i, 23.7) * 15,
     top: 8 + seeded(i, 67.5) * 78,
-    size: Math.round(26 + depth * 76),
+    size: Math.round(30 + depth * 96),
     duration: 14 + Math.round(seeded(i, 88.9) * 14),
     delay: Math.round(seeded(i, 35.2) * 10),
     dx: Math.round(seeded(i, 72.4) * 34 - 17),
