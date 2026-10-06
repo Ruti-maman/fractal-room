@@ -41,7 +41,7 @@ function NotFoundPage() {
               <Link
                 key={n}
                 to={`/screen/${n}`}
-                className="glass glass-interactive flex flex-col items-center gap-1.5 rounded-lg p-4"
+                className="glass glass-interactive glass-3d flex flex-col items-center gap-1.5 rounded-lg p-4"
               >
                 <span className="glass glass-active flex h-10 w-10 items-center justify-center rounded-full font-extrabold">
                   {n}
@@ -53,7 +53,7 @@ function NotFoundPage() {
 
           <Link
             to="/admin"
-            className="glass glass-interactive glass-pill text-ink-2 gap-2 px-5 py-2.5 text-sm font-bold"
+            className="glass glass-interactive glass-3d glass-pill text-ink-2 gap-2 px-5 py-2.5 text-sm font-bold"
           >
             <Icon name="settings" size={16} />
             מסך הניהול

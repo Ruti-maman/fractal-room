@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useParticipants } from "../../hooks/useParticipants";
 import type { Group } from "../../types/group";
 import AutoPlayVideo from "../AutoPlayVideo";
 import StageShell from "../StageShell";
 import Icon from "../ui/Icon";
-import { GlassButton, GlassIconButton } from "../ui/Glass";
+import { GlassButton } from "../ui/Glass";
 import { InlineNotice } from "../ui/Feedback";
 import { useToast } from "../ui/Toast";
 import { cx } from "../../lib/cx";
@@ -33,40 +33,54 @@ interface Props {
 
 /**
  * ----------------------------------------------------------------------------
- * מה השתנה כאן מעבר לעיצוב
+ * הזנת המשתתפות: שדה אחד + תגים
  * ----------------------------------------------------------------------------
- * 1. **אפשר למחוק שורת משתתפת.** קודם אפשר היה רק להוסיף, ושורה שנוספה
- *    בטעות נשארה על המסך עד סוף הסדנה. המחיקה היא במצב המקומי בלבד, לפני
- *    השמירה - לא נוגעת בשום דבר שכבר נשמר.
- * 2. **מונה מפורש** (3/15) במקום שהכפתור פשוט ייעלם בלי הסבר כשמגיעים
- *    לגבול.
- * 3. **אישור שמירה.** קודם לחיצה על "שמרי" לא נתנה שום משוב, וקבוצה
- *    שלחצה פעמיים יצרה משתתפות כפולות.
+ * הגרסה הקודמת הייתה רשימה של שדות, שורה לכל משתתפת. על מסך הסדנה זה
+ * לא עבד: כל משתתפת דרשה לחיצה על "הוסיפי", ואז לחיצה על השדה החדש, והרשימה
+ * גללה בתוך חלון צר שבו רואים שורה וחצי.
+ *
+ * עכשיו יש **שדה הקלדה אחד** שנשאר בפוקוס: מקלידים שם, Enter (או "הוסיפי"),
+ * והשם עובר לתג למטה - והמקלדת הווירטואלית לא נסגרת, כך שאפשר להקליד את
+ * כל הקבוצה ברצף. התגים נעטפים לכמה שורות, ו-15 שמות נכנסים בלי גלילה.
+ * נגיעה בשם בתג מחזירה אותו לשדה לתיקון; × מסיר אותו.
+ *
+ * מה שנשאר מהגרסה הקודמת: מונה מפורש (3/15), אישור שמירה (toast), ומחיקה
+ * במצב המקומי בלבד לפני השמירה. שם שהוקלד ולא נוסף נשמר גם הוא - שלא
+ * יאבד שם רק כי שכחו ללחוץ Enter.
  */
 function IdentificationForm({ myGroup }: { myGroup: Group }) {
   const [name, setName] = useState("");
-  const [participantNames, setParticipantNames] = useState<string[]>([""]);
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  const draftRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
 
-  const filledParticipants = participantNames.filter((p) => p.trim().length > 0).length;
+  const isFull = participants.length >= MAX_PARTICIPANTS;
+  const canAdd = draft.trim().length > 0 && !isFull;
   const canSave = name.trim().length > 0 && !saving;
 
-  function updateParticipant(index: number, value: string) {
-    setParticipantNames((current) =>
-      current.map((p, i) => (i === index ? value : p)),
-    );
-  }
-
   function addParticipant() {
-    if (participantNames.length >= MAX_PARTICIPANTS) return;
-    setParticipantNames((current) => [...current, ""]);
+    if (!canAdd) return;
+    setParticipants((current) => [...current, draft.trim()]);
+    setDraft("");
+    // הפוקוס נשאר בשדה - המקלדת לא נסגרת בין שם לשם
+    draftRef.current?.focus();
   }
 
   function removeParticipant(index: number) {
-    setParticipantNames((current) =>
-      current.length === 1 ? [""] : current.filter((_, i) => i !== index),
-    );
+    setParticipants((current) => current.filter((_, i) => i !== index));
+  }
+
+  /** מחזיר שם מהתג לשדה לתיקון. שם שכבר היה בשדה לא הולך לאיבוד. */
+  function editParticipant(index: number) {
+    const pending = draft.trim();
+    setParticipants((current) => {
+      const next = current.filter((_, i) => i !== index);
+      return pending ? [...next, pending] : next;
+    });
+    setDraft(participants[index]);
+    draftRef.current?.focus();
   }
 
   async function handleSave() {
@@ -75,10 +89,8 @@ function IdentificationForm({ myGroup }: { myGroup: Group }) {
 
     await supabase.from("groups").update({ name: name.trim() }).eq("id", myGroup.id).then();
 
-    const rows = participantNames
-      .map((p) => p.trim())
-      .filter((p) => p.length > 0)
-      .map((p) => ({ group_id: myGroup.id, name: p }));
+    const names = [...participants, draft.trim()].filter((p) => p.length > 0);
+    const rows = names.slice(0, MAX_PARTICIPANTS).map((p) => ({ group_id: myGroup.id, name: p }));
     if (rows.length > 0) {
       await supabase.from("participants").insert(rows).then();
     }
@@ -94,7 +106,7 @@ function IdentificationForm({ myGroup }: { myGroup: Group }) {
       title="מי אתן?"
       subtitle="בחרו שם לקבוצה והוסיפו את שמות המשתתפות. השמות יופיעו אצל כל הקבוצות בחדר."
       background="ripple"
-      width="narrow"
+      width="wide"
       actions={
         <GlassButton
           variant="primary"
@@ -104,80 +116,125 @@ function IdentificationForm({ myGroup }: { myGroup: Group }) {
           disabled={!canSave}
           loading={saving}
         >
-          {saving ? "שומרת..." : "שמרי והמשיכי"}
+          {saving ? "שומר..." : "שמירה והמשך"}
         </GlassButton>
       }
     >
-      <div className="glass glass-brick flex w-full flex-col gap-6 rounded-2xl p-6 sm:p-8">
-        {/* שם הקבוצה - השדה החשוב, ולכן גדול ונפרד משאר הטופס */}
-        <div className="flex flex-col gap-2">
-          <label htmlFor="group-name" className="text-ink-2 flex items-center gap-2 px-2 text-sm font-bold">
-            <Icon name="star" size={15} className="text-accent-soft" />
-            שם הקבוצה
-          </label>
-          <input
-            id="group-name"
-            className="glass-input !min-h-[4.5rem] text-center !text-2xl"
-            placeholder="איך נקרא לכן?"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoComplete="off"
-          />
+      {/*
+        שתי עמודות במסך רחב: בימין מקלידים (שם הקבוצה + שדה ההוספה), בשמאל
+        רואים את כל המשתתפות. בעמודה אחת התגים קיבלו שורה אחת בתחתית
+        הכרטיס ונחתכו; כאן יש להם את כל גובה הכרטיס, ו-15 שמות נכנסים.
+        הכרטיס מתכווץ לגובה הפנוי (`min-h-0`) - המסגרת תמיד שלמה.
+      */}
+      <div className="glass glass-brick glass-raised grid min-h-0 w-full gap-5 rounded-2xl p-5 sm:p-6 lg:grid-cols-[2fr_3fr] lg:gap-8">
+        {/* --- עמודת ההקלדה --- */}
+        <div className="flex min-h-0 flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="group-name" className="text-ink-2 flex items-center gap-2 px-2 text-sm font-bold">
+              <Icon name="star" size={15} className="text-accent-soft" />
+              שם הקבוצה
+            </label>
+            <input
+              id="group-name"
+              className="glass-input !min-h-[3.75rem] !text-xl"
+              placeholder="שם הקבוצה"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                // Enter בשם הקבוצה מעביר ישר להקלדת המשתתפות
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  draftRef.current?.focus();
+                }
+              }}
+              enterKeyHint="next"
+              autoComplete="off"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="participant-draft" className="text-ink-2 flex items-center gap-2 px-2 text-sm font-bold">
+              <Icon name="userPlus" size={15} className="text-accent-soft" />
+              הוספת משתתפת
+              <span className="text-ink-3 font-semibold">- הקלדת שם ו-Enter</span>
+            </label>
+            {isFull ? (
+              <InlineNotice tone="info">
+                הגעתן למספר המשתתפות המרבי בקבוצה ({MAX_PARTICIPANTS}).
+              </InlineNotice>
+            ) : (
+              <input
+                  id="participant-draft"
+                  ref={draftRef}
+                  className="glass-input !min-h-[3.75rem] !text-xl"
+                  placeholder="שם המשתתפת"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addParticipant();
+                    }
+                  }}
+                  enterKeyHint="enter"
+                  autoComplete="off"
+                />
+            )}
+          </div>
         </div>
 
-        <hr className="border-edge-dim border-t" />
-
-        {/* המשתתפות */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between px-2">
+        {/* --- עמודת המשתתפות --- */}
+        <div className="flex min-h-0 flex-col gap-2 lg:border-s lg:border-edge-dim lg:ps-8">
+          <div className="flex flex-none items-center justify-between px-2">
             <span className="text-ink-2 flex items-center gap-2 text-sm font-bold">
               <Icon name="users" size={15} className="text-accent-soft" />
               המשתתפות
             </span>
             <span className="text-ink-3 text-xs font-bold tabular-nums">
-              {filledParticipants} / {MAX_PARTICIPANTS}
+              {participants.length} / {MAX_PARTICIPANTS}
             </span>
           </div>
 
-          <ul className="flex flex-col gap-2.5">
-            {participantNames.map((p, i) => (
-              <li key={i} className="flex items-center gap-2">
-                <span
-                  aria-hidden="true"
-                  className={cx(
-                    "flex h-11 w-11 flex-none items-center justify-center text-sm font-extrabold",
-                    p.trim() ? `bubble bubble--${(i % 5) + 1}` : "bubble bubble-hollow text-ink-3",
-                  )}
+          {/* התגים. נעטפים לשורות; גוללים בתוך העמודה רק אם באמת חסר מקום. */}
+          {participants.length > 0 ? (
+            <ul className="glass-scroll -m-2 grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] content-start gap-x-2 gap-y-1.5 overflow-y-auto p-2">
+              {participants.map((p, i) => (
+                <li
+                  key={`${i}-${p}`}
+                  className="glass glass-raised glass-pill flex min-w-0 items-center justify-between gap-0.5 py-0.5 ps-1 pe-0.5"
+                  style={{ animation: "glass-in var(--ds-dur) var(--ds-ease) both" }}
                 >
-                  {i + 1}
-                </span>
-                <input
-                  className="glass-input !min-h-[3.25rem] !text-lg"
-                  placeholder={`שם משתתפת ${i + 1}`}
-                  aria-label={`שם משתתפת ${i + 1}`}
-                  value={p}
-                  onChange={(e) => updateParticipant(i, e.target.value)}
-                  autoComplete="off"
-                />
-                <GlassIconButton
-                  icon="close"
-                  label={`הסרת משתתפת ${i + 1}`}
-                  size="sm"
-                  onClick={() => removeParticipant(i)}
-                  className="!h-11 !w-11"
-                />
-              </li>
-            ))}
-          </ul>
-
-          {participantNames.length < MAX_PARTICIPANTS ? (
-            <GlassButton icon="userPlus" onClick={addParticipant} block className="!min-h-[3.5rem]">
-              הוסיפי משתתפת
-            </GlassButton>
+                  <button
+                    type="button"
+                    onClick={() => editParticipant(i)}
+                    title="לתיקון השם"
+                    className="flex min-h-10 min-w-0 flex-1 items-center gap-1.5 rounded-full"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`bubble bubble--${(i % 5) + 1} flex h-7 w-7 flex-none items-center justify-center text-[11px] font-extrabold`}
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="text-ink truncate text-base font-bold">{p}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeParticipant(i)}
+                    aria-label={`הסרת ${p}`}
+                    className="text-ink-3 hover:text-ink flex h-9 w-9 flex-none items-center justify-center rounded-full transition-colors"
+                  >
+                    <Icon name="close" size={15} />
+                  </button>
+                </li>
+              ))}
+            </ul>
           ) : (
-            <InlineNotice tone="info">
-              הגעתן למספר המשתתפות המרבי בקבוצה ({MAX_PARTICIPANTS}).
-            </InlineNotice>
+            <p className="text-ink-3 flex flex-1 items-center justify-center px-2 text-center text-base">
+              כל שם שתוסיפו יופיע כאן.
+              <br />
+              נגיעה בשם מאפשרת לתקן אותו.
+            </p>
           )}
         </div>
       </div>
@@ -210,7 +267,7 @@ function RoomStatusNames({
       subtitle={
         allIdentified
           ? "כל הקבוצות הזדהו. אפשר להתחיל."
-          : `${identifiedCount} מתוך ${allGroups.length} קבוצות הזדהו. ממתינות לשאר.`
+          : `${identifiedCount} מתוך ${allGroups.length} קבוצות הזדהו. ממתינים לשאר.`
       }
       background="ripple"
       width="wide"
@@ -222,7 +279,7 @@ function RoomStatusNames({
         ) : (
           <span className="glass glass-pill text-ink-2 gap-2.5 px-6 py-3.5 text-base font-bold">
             <Icon name="hourglass" size={18} className="text-accent-soft" />
-            ממתינות שכל הקבוצות יזדהו
+            ממתינים לשאר הקבוצות
           </span>
         )
       }
@@ -238,7 +295,7 @@ function RoomStatusNames({
             return (
               <li
                 key={g.id}
-                className="glass glass-brick flex flex-col gap-4 rounded-2xl p-6"
+                className="glass glass-brick glass-raised flex flex-col gap-4 rounded-2xl p-6"
                 style={{
                   animation: `glass-in var(--ds-dur-slow) ${i * 110}ms var(--ds-ease) both`,
                 }}
@@ -314,11 +371,13 @@ function DilemmaVideo({
       kicker="הדילמה"
       icon="film"
       title={content?.dilemma_title ?? "הדילמה הפדגוגית"}
-      subtitle={
-        content?.dilemma_text ?? "הצגת הדילמה המרכזית שאיתה נתמודד לאורך הסדנה."
-      }
+      // בלי שורת תיאור ובריווח תחתון מינימלי - כל הגובה הולך לסרטון.
+      // טקסט דילמה מהתוכנית, אם יש, עדיין מוצג.
+      subtitle={content?.dilemma_text}
       background="quiet"
-      width="wide"
+      width="full"
+      compactHeader
+      tightBottom
       actions={
         <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={onAdvance}>
           המשך
@@ -334,14 +393,36 @@ function DilemmaVideo({
           כאן המסגרת **נגזרת מהסרטון**: יחס 16:9 קבוע, ברוחב סביר,
           וממורכזת.
         */
-        <div className="glass glass-brick mx-auto w-full max-w-4xl overflow-hidden rounded-2xl p-2">
-          <AutoPlayVideo
-            src={content.dilemma_video_url}
-            className="aspect-video w-full rounded-xl object-cover"
-          />
+        /*
+          הסרטון ממלא את **כל** הגובה הפנוי (בלי תקרה של 58% - הלקוחה
+          ביקשה סרטון גדול יותר), והמסגרת נגזרת ממנו ולא מהרוחב.
+
+          כשהגודל נקבע לפי הרוחב (`w-full max-w-4xl` + 16:9), הגובה
+          שנגזר ממנו היה גדול מהמקום שנשאר בין הכותרת לכפתור, והסרטון
+          נחתך בתחתית. כאן העוטף ממלא את כל הגובה (`h-full`), המסגרת
+          מקבלת את הגובה הזה, והרוחב נגזר ממנו לפי 16:9 - עד רוחב
+          המסך. אם אין 58% פנויים, הסרטון קטן מעט - אבל אף פעם לא נחתך.
+        */
+        /*
+          המסגרת בדיוק בגודל הסרטון: רוחב = הקטן מבין רוחב האזור, הרוחב
+          שבין הפאנלים שבפינות, וגובה האזור כפול 16/9 (100cqh - העוטף הוא
+          container). כך היחס 16:9 נשמר תמיד, ואין רצועה ריקה מתחת לסרטון.
+          דפדפן ישן בלי cqh מתעלם מה-min ונשאר עם w-full + max-h-full.
+        */
+        <div className="flex h-full min-h-0 w-full items-center justify-center [container-type:size]">
+          <div
+            className="glass glass-brick glass-raised aspect-video max-h-full w-full overflow-hidden rounded-2xl p-2"
+            style={{ width: "min(100cqw, max(20rem, calc(100vw - 46rem)), calc((100cqh - 4px) * 16 / 9))" }}
+          >
+            <AutoPlayVideo
+              src={content.dilemma_video_url}
+              fill
+              className="h-full w-full rounded-xl object-cover"
+            />
+          </div>
         </div>
       ) : (
-        <div className="glass glass-brick mx-auto flex aspect-video w-full max-w-4xl items-center justify-center rounded-2xl">
+        <div className="glass glass-brick mx-auto flex aspect-video h-full max-h-full max-w-full items-center justify-center rounded-2xl">
           <div className="text-ink-3 flex flex-col items-center gap-3">
             <span className="glass glass-dim glass-icon-btn glass-icon-btn-lg">
               <Icon name="film" size={30} />

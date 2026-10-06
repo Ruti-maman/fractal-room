@@ -114,9 +114,23 @@ export function useFunctioningPicture(workshopId: string, groupId: string) {
       .order("created_at", { ascending: true })
       .limit(1);
     const row = data?.[0];
-    if (!row) return;
+    /*
+      אין שורה = ה-Edge Function לא שמר את תמונת התפקוד (למשל: לא פרוס,
+      חסר GEMINI_API_KEY, או שהכתיבה מהשרת נחסמה). קודם יצאנו כאן בשקט,
+      והמסקנה שהקבוצה הקלידה פשוט נעלמה - והרצועה בשלבים הבאים לא הופיעה.
+      עכשיו נוצרת שורה עם מה שיש (המשפטים מהמסך, אם הגיעו, והמסקנה).
+    */
+    if (!row) {
+      const nextData = { ...(result ?? {}), group_conclusion: groupConclusion } as FunctioningPictureResult;
+      await supabase
+        .from("responses")
+        .insert({ workshop_id: workshopId, group_id: groupId, stage_number: 4, type: "functioning_picture", data: nextData })
+        .then();
+      setResult(nextData);
+      return;
+    }
     const nextData = { ...(row.data as FunctioningPictureResult), group_conclusion: groupConclusion };
-    await supabase.from("responses").update({ data: nextData }).eq("id", row.id);
+    await supabase.from("responses").update({ data: nextData }).eq("id", row.id).then();
     setResult(nextData);
   }
 

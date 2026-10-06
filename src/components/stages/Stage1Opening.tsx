@@ -12,25 +12,6 @@ interface Props {
   onAdvance: () => void;
 }
 
-/** צליל מעבר זמני (עד שיגיע קובץ סאונד אמיתי מהלקוחה) - נוצר בקוד, בלי קובץ חיצוני. */
-function playTransitionSound() {
-  try {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = 660;
-    gain.gain.value = 0.25;
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
-  } catch {
-    // אם Web Audio לא נתמך - פשוט בלי צליל, לא עוצרים את הזרימה.
-  }
-}
-
 /**
  * מסגרת זכוכית שמחזיקה את תוכן הפתיחה. הלוגו/הסרטון/הטקסט מונחים **בתוך**
  * לבנה, ולא צפים על הרקע - כך הפריט היחיד שעל המסך כבר מלמד את שפת
@@ -111,9 +92,8 @@ function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
   function handleStart() {
     primeAudio();
     requestKioskPermissions();
-    playTransitionSound();
-    // מסך משפט המעבר הוסר לפי בקשת הלקוחה - עוברים ישר לשלב הבא.
-    // צליל המעבר נשאר, כי הוא גם מה שפותח את הרשאת הקול לכל הסדנה.
+    // בלי צליל בלחיצה - לבקשת הלקוחה. הרשאת הקול לשאר הסדנה נפתחת
+    // ב-primeAudio, שמנגן שקט ולא נשמע.
     onAdvance();
   }
 
@@ -153,6 +133,7 @@ function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
             size="lg"
             iconAfter="arrowNext"
             onClick={handleStart}
+            silent
             className="px-16 text-2xl"
           >
             התחילו

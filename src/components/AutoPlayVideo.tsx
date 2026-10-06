@@ -4,6 +4,8 @@ interface Props {
   src: string;
   className?: string;
   onEnded?: () => void;
+  /** הסרטון ממלא את ההורה (גובה ורוחב) - למסגרת שגודלה נקבע מבחוץ. */
+  fill?: boolean;
 }
 
 /**
@@ -22,7 +24,7 @@ interface Props {
  * הכלל החשוב: **לעולם לא להשאיר את הסרטון עצור**. אם הקול נחסם, ממשיכים
  * מושתק - אחרת המסך נראה תקוע.
  */
-function AutoPlayVideo({ src, className, onEnded }: Props) {
+function AutoPlayVideo({ src, className, onEnded, fill = false }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [soundBlocked, setSoundBlocked] = useState(false);
 
@@ -85,7 +87,7 @@ function AutoPlayVideo({ src, className, onEnded }: Props) {
   }, [src]);
 
   return (
-    <div className="relative flex flex-col items-center gap-2">
+    <div className={`relative flex flex-col items-center gap-2 ${fill ? "h-full w-full" : ""}`}>
       <video
         ref={videoRef}
         src={src}

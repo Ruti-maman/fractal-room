@@ -3,7 +3,7 @@ import type { Stage5Content, SolutionOption } from "../../types/stage5Content";
 import StageShell from "../StageShell";
 import Icon from "../ui/Icon";
 import GlassModal from "../ui/GlassModal";
-import GameTile, { LevelBadge, type TileScene } from "../ui/GameTile";
+import GameTile, { LevelBadge } from "../ui/GameTile";
 import { cx } from "../../lib/cx";
 
 interface Props {
@@ -155,7 +155,6 @@ function AnswerMark({ ok }: { ok: boolean }) {
 const OPTION_LETTERS = ["א", "ב", "ג", "ד", "ה", "ו"];
 
 /** סצנה לכל אפשרות. שונות בצורה בלבד - אף אחת לא "מרמזת" שהיא הנכונה. */
-const OPTION_SCENES: TileScene[] = ["peaks", "horizon", "grid", "arc"];
 
 function Stage5Solutions({ content, onAdvance }: Props) {
   const [chosen, setChosen] = useState<SolutionOption | null>(null);
@@ -168,7 +167,8 @@ function Stage5Solutions({ content, onAdvance }: Props) {
       title="איזו דרך פתרון בוחרות?"
       subtitle="קראו את ארבע האפשרויות, דונו ביניכן, ובחרו את זו שנראית לכן הנכונה."
       background="tide"
-      width="wide"
+      // "normal" ולא "wide": ברוחב מלא מד ההתקדמות והטיימר שבפינות עלו על האריחים
+      width="normal"
       overlay={
         <GlassModal
           open={Boolean(chosen)}
@@ -202,23 +202,27 @@ function Stage5Solutions({ content, onAdvance }: Props) {
         האריח, תג עגול עם אות האפשרות על הגבול, והטקסט בגוף.
 
         הכלל הפדגוגי עדיין חולש על הכל - **הארבעה חייבים להיראות זהים**.
-        לכן כל אחד מקבל סצנה אחרת (כדי שיהיה לו אופי), אבל אף אחת מהן
-        לא "חמה" או "קרה" יותר מהשנייה, ואין שום רמז לאיזו נכונה.
+        לכן האריחים חלקים, בלי סצנות מאוירות: הסצנות נקראו כ"סימנים" על
+        האריח, והן עלולות לרמוז שאפשרות אחת שונה מהאחרות.
       */}
-      <ul className="grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
+      {/* הרשת ממלאת בדיוק את הגובה הפנוי (שתי שורות שוות), כדי שכל
+          ארבעת האריחים ייראו בלי גלילה גם במסך נמוך - האריחים מתכווצים
+          במקום לגלוש. בדיון על ארבע אפשרויות חייבים לראות את כולן יחד. */}
+      <ul className="grid min-h-0 w-full flex-1 grid-cols-1 gap-4 sm:grid-cols-2 sm:grid-rows-2 lg:gap-5 pb-4">
         {content.options.map((opt, i) => (
-          <li key={i} className="flex">
+          <li key={i} className="flex min-h-0">
             <GameTile
               title={`אפשרות ${OPTION_LETTERS[i] ?? i + 1}`}
-              scene={OPTION_SCENES[i % OPTION_SCENES.length]}
+              plain
               /*
                 כל ארבעת התגים **באותו צבע**, בכוונה. ניסיון לתת לכל אפשרות
                 בועה בצבע אחר יצר בדיוק את הבעיה שהשלב הזה חייב להימנע
                 ממנה: אלמוג נקרא כ"שגוי" וענבר כ"אזהרה", כלומר הצבע עצמו
                 רמז לתשובה. הצבעוניות של המסך מגיעה מהרקע ומהסצנות.
               */
-              badge={<LevelBadge value={OPTION_LETTERS[i] ?? i + 1} label="" size={84} />}
+              badge={<LevelBadge value={OPTION_LETTERS[i] ?? i + 1} label="" size={60} />}
               onClick={() => setChosen(opt)}
+              className="h-full"
               footer={
                 <span className="flex items-center gap-2">
                   לבחירה

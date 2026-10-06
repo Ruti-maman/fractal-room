@@ -74,7 +74,7 @@ export function ConnectionBadge({ className }: { className?: string }) {
   if (online) {
     return (
       <span
-        className={cx("glass glass-dim glass-icon-btn glass-icon-btn-sm text-ok", className)}
+        className={cx("glass glass-dim glass-raised glass-icon-btn glass-icon-btn-sm text-ok", className)}
         title="מחוברת לרשת"
       >
         <span className="sr-only">מחוברת לרשת</span>
@@ -86,7 +86,7 @@ export function ConnectionBadge({ className }: { className?: string }) {
   return (
     <span
       role="alert"
-      className={cx("glass glass-pill text-warn gap-2 px-4 py-2 text-sm font-bold", className)}
+      className={cx("glass glass-raised glass-pill text-warn gap-2 px-4 py-2 text-sm font-bold", className)}
       style={{ animation: "toast-in var(--ds-dur) var(--ds-ease-spring) both" }}
     >
       <Icon name="wifiOff" size={18} />

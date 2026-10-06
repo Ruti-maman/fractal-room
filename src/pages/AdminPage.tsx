@@ -87,7 +87,7 @@ function AdminPage() {
             </div>
             <h2 className="text-ink text-2xl font-extrabold">סדנה חדשה</h2>
             <p className="text-ink-2 leading-relaxed">
-              מאפסת את שלושת המסכים לשלב 1 ויוצרת שלוש קבוצות חדשות.
+              איפוס שלושת המסכים לשלב 1 ויצירת שלוש קבוצות חדשות.
             </p>
 
             <InlineNotice tone="warn" title="שימו לב" className="text-start">
@@ -133,7 +133,7 @@ function AdminPage() {
               <Link
                 key={n}
                 to={`/screen/${n}`}
-                className="glass glass-interactive flex flex-col items-center gap-2 rounded-lg p-5 text-center"
+                className="glass glass-interactive glass-3d flex flex-col items-center gap-2 rounded-lg p-5 text-center"
               >
                 <span className={`bubble bubble--${n} flex h-12 w-12 items-center justify-center text-xl font-extrabold`}>
                   {n}

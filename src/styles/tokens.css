@@ -46,37 +46,37 @@
    * ולכתמי האור. זה מה שנותן את התחושה הנקייה והקלילה - הטורקיז בוהק
    * דווקא כי מה שמסביבו כמעט נטול צבע.
    */
-  --ds-bg-from: #04090a;
-  --ds-bg-via: #071416;
-  --ds-bg-to: #0b2124;
-  --ds-bg-solid: #050e10;
+  --ds-bg-from: #0b0d1e;
+  --ds-bg-via: #12142e;
+  --ds-bg-to: #1a1838;
+  --ds-bg-solid: #0e1024;
 
   /* כתמי האור המטושטשים מאחורי הזכוכית - בלעדיהם אין לזכוכית מה לשבור */
   /* על שחור אפשר להרשות לעצמנו כתמים בהירים באמת - הם שנושאים עכשיו
      את הצבע, במקום הרקע. */
   /* כתמי האור לוקחים מפלטת הבועות, כך שהרקע עצמו כבר צבעוני */
-  --ds-blob-a: rgba(46, 230, 207, 0.32);
-  --ds-blob-b: rgba(56, 189, 248, 0.26);
-  --ds-blob-c: rgba(91, 228, 155, 0.18);
+  --ds-blob-a: rgba(95, 212, 200, 0.16);
+  --ds-blob-b: rgba(150, 132, 240, 0.2);
+  --ds-blob-c: rgba(240, 143, 176, 0.14);
 
   /* --- משטחי הזכוכית --- */
   /* שלוש רמות עומק: tile (עמום) < surface (רגיל) < raised (בולט/מודאל) */
-  --ds-glass: rgba(208, 239, 238, 0.1);
-  --ds-glass-strong: rgba(208, 239, 238, 0.17);
-  --ds-glass-raised: rgba(208, 239, 238, 0.24);
+  --ds-glass: rgba(226, 228, 255, 0.08);
+  --ds-glass-strong: rgba(226, 228, 255, 0.13);
+  --ds-glass-raised: rgba(226, 228, 255, 0.19);
   /* מה שממלא את המשטח כשאין תמיכה ב-backdrop-filter (ראו glass.css) */
-  --ds-glass-opaque: #11292b;
-  --ds-glass-opaque-strong: #173538;
-  --ds-glass-opaque-raised: #1e4346;
+  --ds-glass-opaque: #1a1c3a;
+  --ds-glass-opaque-strong: #212446;
+  --ds-glass-opaque-raised: #2a2d54;
 
   /* --- שוליים: זהו "עובי הזכוכית". בהיר למעלה, נעלם למטה --- */
-  --ds-edge: rgba(208, 239, 238, 0.34);
+  --ds-edge: rgba(226, 228, 255, 0.26);
   --ds-edge-bright: rgba(255, 255, 255, 0.82);
   --ds-edge-dim: rgba(0, 0, 0, 0.55);
 
   /* --- ברק ספקולרי (השתקפות מקור האור בקצה העליון) --- */
   --ds-specular: rgba(255, 255, 255, 0.52);
-  --ds-specular-soft: rgba(205, 246, 245, 0.2);
+  --ds-specular-soft: rgba(226, 228, 255, 0.16);
 
   /*
    * --- טורקיז ---
@@ -89,10 +89,10 @@
    * עייף, והלקוחה ביקשה במפורש "צבעים יותר חיים" ותחושת משחק. אותו
    * גוון בדיוק, רק עם רוויה: מה שעל הלבנה היה זכוכית עבה, כאן הוא אור.
    */
-  --ds-accent: #2ee6cf;
-  --ds-accent-soft: #7cfff0;
-  --ds-accent-pale: #c8fff8;
-  --ds-accent-deep: #10a896;
+  --ds-accent: #5fd4c8;
+  --ds-accent-soft: #9fe6de;
+  --ds-accent-pale: #d6f5f1;
+  --ds-accent-deep: #2f9e94;
   --ds-accent-deeper: #0a6e63;
   --ds-accent-ink: #032420; /* טקסט/אייקון כהה על מילוי טורקיז בהיר */
 
@@ -108,8 +108,8 @@
   --ds-active-mid: var(--ds-accent);
   --ds-active-to: var(--ds-accent-deep);
   --ds-on-active: var(--ds-accent-ink);
-  --ds-glow: rgba(46, 230, 207, 0.6);
-  --ds-glow-soft: rgba(46, 230, 207, 0.24);
+  --ds-glow: rgba(150, 132, 240, 0.4);
+  --ds-glow-soft: rgba(150, 132, 240, 0.18);
 
   /*
    * --- פלטת הבועות ---
@@ -119,16 +119,26 @@
    * **אין סגול** - לפי ההנחיה המקורית של הלקוחה (סעיף 3 ב-CLAUDE.md).
    * חמשת הגוונים נבחרו כך שכולם מחזיקים דיו כהה על גבם.
    */
-  --ds-bubble-1: #2ee6cf; /* טורקיז */
-  --ds-bubble-2: #38bdf8; /* תכלת */
-  --ds-bubble-3: #5be49b; /* מנטה */
-  --ds-bubble-4: #ffc247; /* ענבר */
-  --ds-bubble-5: #ff7a6b; /* אלמוג */
+  /*
+   * עדכון 2026-10-05: גם המצב הכהה בצבעי קשת, כמו הבהיר - הלקוחה ביקשה
+   * שהטורקיז לא ישלוט. רקע נייבי-סגלגל (לא שחור-ירקרק), זכוכית ניטרלית,
+   * והקשת בגוונים בהירים יותר שנקראים על כהה.
+   */
+  --ds-rainbow-1: #5fd4c8;
+  --ds-rainbow-2: #6cb6ea;
+  --ds-rainbow-3: #a99cf5;
+  --ds-rainbow-4: #f08fb0;
+  --ds-rainbow-5: #f2a75c;
+  --ds-bubble-1: #5fd4c8; /* טורקיז */
+  --ds-bubble-2: #6cb6ea; /* כחול */
+  --ds-bubble-3: #a99cf5; /* סגול */
+  --ds-bubble-4: #f08fb0; /* ורוד */
+  --ds-bubble-5: #f2a75c; /* כתום */
 
   /* --- טקסט --- */
-  --ds-text: #f0fdfb;
-  --ds-text-2: rgba(240, 253, 251, 0.68);
-  --ds-text-3: rgba(240, 253, 251, 0.45);
+  --ds-text: #f2f2ff;
+  --ds-text-2: rgba(242, 242, 255, 0.72);
+  --ds-text-3: rgba(242, 242, 255, 0.5);
   --ds-text-on-accent: #f4feff;
 
   /* --- סטטוס: רך וזכוכיתי, לא רווי, כדי לא לשבור את ההרמוניה --- */
@@ -155,7 +165,21 @@
   --ds-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.65), 0 22px 48px -18px rgba(0, 0, 0, 0.7);
   --ds-shadow-lg: 0 10px 24px -8px rgba(0, 0, 0, 0.7), 0 44px 90px -28px rgba(0, 0, 0, 0.8);
   /* הצללים הפנימיים שיוצרים את עובי הזכוכית והקעירות */
-  --ds-inset-top: inset 0 1px 0 0 rgba(242, 255, 252, 0.35);
+  --ds-inset-top: inset 0 1px 0 0 rgba(242, 242, 255, 0.3);
+  /*
+   * --- נפח (.glass-3d / .glass-raised) ---
+   * אותה שפה כמו הבועות: הנפח מגיע מהצללה **על פני החפץ** - נצנוץ, פס
+   * ברק, גוף שמחשיך כלפי מטה - ולא מדופן או מצל צבעוני מתחתיו.
+   * `gloss` הוא הברק, `shade` ההחשכה בתחתית הגוף, `rim` קו האור בשפה,
+   * ו-`shadow-*` צל ניטרלי שמניח את החפץ על המשטח.
+   */
+  --ds-3d-gloss: rgba(242, 242, 255, 0.18);
+  --ds-3d-gloss-soft: rgba(242, 242, 255, 0.04);
+  --ds-3d-shade: rgba(0, 0, 0, 0.45);
+  --ds-3d-rim: rgba(242, 242, 255, 0.26);
+  --ds-3d-shadow-near: rgba(0, 0, 0, 0.55);
+  --ds-3d-shadow-far: rgba(0, 0, 0, 0.6);
+  --ds-3d-halo: transparent;
   --ds-inset-bottom: inset 0 -1px 0 0 rgba(0, 0, 0, 0.55);
   --ds-inset-deep: inset 0 2px 14px -6px rgba(242, 255, 252, 0.3);
 
@@ -172,9 +196,9 @@
   /* קצות הגרדיאנט של כותרת ראשית. במצב הכהה הכותרת מבהירה לכיוון
      הטורקיז החלבי; במצב הבהיר היא חייבת ללכת לכיוון ההפוך - לטורקיז
      עמוק - אחרת חצי מהכותרת יוצא בהיר על רקע בהיר ונופל בניגודיות. */
-  --ds-title-from: #ffffff;
-  --ds-title-via: var(--ds-accent-soft);
-  --ds-title-to: var(--ds-accent);
+  --ds-title-from: var(--ds-rainbow-1);
+  --ds-title-via: var(--ds-rainbow-3);
+  --ds-title-to: var(--ds-rainbow-5);
 }
 
 /* ==========================================================================
@@ -281,6 +305,16 @@
   --ds-shadow: 0 6px 18px -8px rgba(70, 62, 140, 0.2), 0 20px 44px -20px rgba(14, 156, 147, 0.22);
   --ds-shadow-lg: 0 10px 28px -10px rgba(70, 62, 140, 0.24), 0 40px 80px -30px rgba(14, 156, 147, 0.28);
   --ds-inset-top: inset 0 1px 0 0 rgba(255, 255, 255, 1);
+  /* נפח: צל ניטרלי (לא כחול ולא לבנדר - על חפץ מוצק צל צבעוני נקרא
+     כהילה ולא כנפח), וברק לבן מלא. */
+  --ds-3d-gloss: rgba(255, 255, 255, 0.95);
+  --ds-3d-gloss-soft: rgba(255, 255, 255, 0.25);
+  --ds-3d-shade: rgba(18, 20, 48, 0.24);
+  --ds-3d-rim: rgba(255, 255, 255, 0.9);
+  --ds-3d-shadow-near: rgba(18, 20, 48, 0.14);
+  --ds-3d-shadow-far: rgba(18, 20, 48, 0.2);
+  /* הילה בהירה לכיוון האור - על רקע בהיר היא חצי מהנפח (במצב הכהה כבויה) */
+  --ds-3d-halo: rgba(255, 255, 255, 0.95);
   --ds-inset-bottom: inset 0 -1px 0 0 rgba(18, 20, 48, 0.06);
   --ds-inset-deep: inset 0 2px 14px -6px rgba(255, 255, 255, 0.9);
 

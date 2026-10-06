@@ -30,7 +30,7 @@ function ProgressBar({ allGroups, myScreenNumber, totalStages }: Props) {
       aria-label="התקדמות הקבוצות"
       // על מסך צר המד מתכווץ לגרסה מינימלית (מספר מסך + פס בלבד): בפריסה
       // המלאה הוא תפס כרבע ממסך טלפון וכיסה את התוכן שמתחתיו.
-      className="glass glass-brick fixed bottom-4 left-4 z-30 flex w-[9.5rem] flex-col gap-2.5 rounded-xl p-3 sm:bottom-6 sm:left-6 sm:w-[17rem] sm:p-4"
+      className="glass glass-brick glass-raised fixed bottom-4 left-4 z-30 flex w-[9.5rem] flex-col gap-2.5 rounded-xl p-3 sm:bottom-6 sm:left-6 sm:w-[17rem] sm:p-4"
     >
       <div className="text-ink-3 hidden items-center gap-2 text-[11px] font-bold tracking-wide sm:flex">
         <Icon name="users" size={14} />
@@ -57,8 +57,8 @@ function ProgressBar({ allGroups, myScreenNumber, totalStages }: Props) {
                 {isMine && (
                   <span
                     aria-hidden="true"
-                    className="bg-accent h-1.5 w-1.5 flex-none rounded-full"
-                    style={{ boxShadow: "0 0 8px 1px var(--ds-glow)" }}
+                    // בועה קטנה ולא נקודה שטוחה - אותו חומר כמו שאר הכדורים
+                    className="bubble bubble--1 h-3 w-3 flex-none"
                   />
                 )}
                 <span className="hidden truncate sm:inline">
@@ -75,7 +75,7 @@ function ProgressBar({ allGroups, myScreenNumber, totalStages }: Props) {
             </div>
 
             <div
-              className={cx("glass-slider glass-slider--x h-2.5", !isMine && "opacity-70")}
+              className={cx("glass-slider glass-slider--x h-3.5", !isMine && "opacity-70")}
               role="progressbar"
               aria-valuenow={shownStage}
               aria-valuemin={0}

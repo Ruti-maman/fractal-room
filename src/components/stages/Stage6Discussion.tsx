@@ -1,7 +1,6 @@
 import AnimatedHourglass from "../AnimatedHourglass";
 import type { Stage6Content } from "../../types/stage6Content";
-import { BackgroundLayers } from "../ui/AppBackground";
-import Icon from "../ui/Icon";
+import StageShell from "../StageShell";
 
 /*
  * ============================================================================
@@ -36,41 +35,40 @@ interface Props {
 
 function Stage6Discussion({ content }: Props) {
   return (
-    <main className="relative flex h-dvh flex-col items-center justify-between overflow-hidden px-4 pt-24 pb-40 text-center sm:px-8">
-      <BackgroundLayers variant="tide" />
+    /*
+      אותה מעטפת כמו שאר השלבים (תג השלב העגול, התגית מתחתיו) - קודם
+      השלב בנה <main> משלו, ו"שלב 6" נכתב בתוך התגית במקום בתג העגול.
 
-      {/* המשפט למעלה - הוא מה שהקבוצה אמורה לדבר עליו */}
-      <div
-        className="relative flex w-full max-w-3xl flex-col items-center gap-5"
-        style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
-      >
-        <span className="glass glass-chip text-accent-soft gap-2">
-          <Icon name="users" size={15} />
-          שלב 6 · זמן דיון קבוצתי מונחה
-        </span>
+      `clipContent={false}`: שעון החול מותאם לגובה בעצמו (ראו הגודל שלו
+      למטה), ולכן אזור התוכן לא צריך לגלול - ובלי חיתוך גם ההילה שמאחורי
+      השעון לא נגזרת בקו ישר.
+    */
+    <StageShell
+      stage={6}
+      kicker="זמן דיון קבוצתי מונחה"
+      icon="users"
+      background="tide"
+      compactHeader
+      clipContent={false}
+      width="normal"
+    >
+      {/* המשפט - הוא מה שהקבוצה אמורה לדבר עליו */}
+      <blockquote className="glass glass-brick glass-raised relative flex-none rounded-2xl px-8 py-6 text-center">
+        <p className="text-ink text-2xl leading-relaxed font-bold sm:text-3xl">
+          {content.quote}
+        </p>
+      </blockquote>
 
-        <blockquote className="glass glass-brick rounded-2xl px-8 py-7">
-          <p className="text-ink text-2xl leading-relaxed font-bold sm:text-3xl">
-            {content.quote}
-          </p>
-        </blockquote>
+      {/* שעון החול. הגובה שלו הוא הגובה שנשאר אחרי הכותרת, המשפט והשוליים
+          (`100dvh - 32rem`), עד 34rem - כך הוא אף פעם לא גולש מתחת למסך. */}
+      <div className="relative flex min-h-0 flex-1 items-center justify-center py-4">
+        <AnimatedHourglass className="h-[min(34rem,calc(100dvh-32rem))] min-h-40 w-auto" />
       </div>
 
-      {/* שעון החול - הלב של השקף */}
-      <div
-        className="relative flex flex-1 items-center justify-center py-6"
-        style={{ animation: "fade-up var(--ds-dur-slow) 150ms var(--ds-ease) both" }}
-      >
-        <AnimatedHourglass />
-      </div>
-
-      <p
-        className="text-ink-3 relative text-sm"
-        style={{ animation: "fade-up var(--ds-dur-slow) 300ms var(--ds-ease) both" }}
-      >
+      <p className="text-ink-3 relative flex-none text-center text-sm">
         הדיון מהווה את הבסיס המקדים לשלב הסימולציות הבא.
       </p>
-    </main>
+    </StageShell>
   );
 }
 

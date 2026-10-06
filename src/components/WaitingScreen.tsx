@@ -33,13 +33,13 @@ function WaitingScreen({ stageNumber, allGroups }: Props) {
       stage={stageNumber}
       kicker="שלב משותף"
       icon="users"
-      title="ממתינות לשאר הקבוצות"
+      title="ממתינים לשאר הקבוצות"
       subtitle="השלב הזה מתחיל כשכל הקבוצות מגיעות אליו. אפשר לנצל את הרגע לנשום."
       background="ripple"
       width="normal"
     >
       {/* מד ההגעה - כמה קבוצות כבר כאן */}
-      <div className="glass glass-brick mb-8 flex w-full max-w-md flex-col gap-3 rounded-xl p-5">
+      <div className="glass glass-brick glass-raised mb-8 flex w-full max-w-md flex-col gap-3 rounded-xl p-5">
         <div className="flex items-baseline justify-between">
           <span className="text-ink-2 text-sm font-bold">קבוצות שהגיעו</span>
           <span className="text-accent text-2xl font-extrabold tabular-nums">
@@ -66,7 +66,7 @@ function WaitingScreen({ stageNumber, allGroups }: Props) {
             <li
               key={g.id}
               className={cx(
-                "glass glass-brick flex w-56 flex-col items-center gap-3 rounded-xl p-5 text-center",
+                "glass glass-brick glass-raised flex w-56 flex-col items-center gap-3 rounded-xl p-5 text-center",
                 arrived && "!bg-ok-fill",
               )}
               style={{

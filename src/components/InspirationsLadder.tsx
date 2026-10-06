@@ -34,7 +34,7 @@ function InspirationsLadder({ workshopId }: Props) {
   return (
     <aside
       aria-label="סולם ההשראות שנבחרו"
-      className="glass glass-brick pointer-events-none fixed top-24 left-4 z-20 hidden w-[10.5rem] flex-col gap-2 rounded-xl p-3 lg:flex"
+      className="glass glass-brick glass-raised pointer-events-none fixed top-24 left-4 z-20 hidden w-[10.5rem] flex-col gap-2 rounded-xl p-3 lg:flex"
       style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
     >
       <div className="text-ink-3 flex items-center gap-1.5 px-1 text-[11px] font-bold tracking-wide">
@@ -46,11 +46,10 @@ function InspirationsLadder({ workshopId }: Props) {
         {items.map((item, i) => (
           <li
             key={item.text}
-            className={
-              i === 0
-                ? "glass glass-active flex items-center gap-2 rounded-sm px-2.5 py-2"
-                : "glass glass-dim flex items-center gap-2 rounded-sm px-2.5 py-2"
-            }
+            // כל השורות באותו חומר: המקום הראשון היה "דלוק" (glass-active),
+            // וזה נקרא כאילו הוא נבחר או מסומן. הסדר עצמו - המספר והעמעום
+            // ההדרגתי - כבר אומר מי ראשונה.
+            className="glass glass-dim glass-raised flex items-center gap-2 rounded-sm px-2.5 py-2"
             style={{
               // כל שלב נמוך יותר מעט יותר עמום - הסדר עצמו הוא המידע
               opacity: i === 0 ? 1 : Math.max(0.5, 1 - i * 0.14),
@@ -59,11 +58,7 @@ function InspirationsLadder({ workshopId }: Props) {
           >
             <span
               aria-hidden="true"
-              className={
-                i === 0
-                  ? "text-[10px] font-extrabold opacity-80"
-                  : "text-ink-3 text-[10px] font-extrabold"
-              }
+              className={`bubble bubble--${(i % 5) + 1} flex h-5 w-5 flex-none items-center justify-center text-[10px] font-extrabold`}
             >
               {i + 1}
             </span>

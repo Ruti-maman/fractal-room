@@ -18,7 +18,27 @@ const FLY_DURATION_MS = 550;
  * זה במקור, לא טעות. **אסור לשנות** - זה המיקום המדויק מהמצגת של הלקוחה.
  */
 const RAY_ANGLES = [42, 4, -32, -90, -148, 176, 143];
-const RADIUS = 230;
+/*
+  השמש היא **אליפסה** ולא עיגול: על מסך רחב ונמוך (פלזמה, או מחשב עם
+  הגדלה של 125%) הגובה הוא מה שמגביל אותה, ועיגול מלא בזבז גובה על
+  משבצות שאפשר לפרוש לרוחב. רדיוס אנכי קטן = שמש גדולה יותר בפועל.
+*/
+// מרחק המשבצות מהליבה: לרוחב 360 (חצי משבצת 112 + ליבה עם טבעת ~190 +
+// מרווח), לגובה 260 - כדי שאף משבצת לא תיגע בעיגול המרכזי.
+const RADIUS = 360;
+const RADIUS_Y = 260;
+/* המידות הטבעיות של השמש (לפני הקטנה) - ממנן נגזר יחס ההקטנה. */
+const SUN_W = RADIUS * 2 + 240;
+const SUN_H = RADIUS_Y * 2 + 90;
+/*
+  הקרניים לא סימטריות: המשבצת התחתונה (-90°) יורדת עד הרדיוס המלא, אבל
+  העליונות (42°) עולות רק לכ-2/3 ממנו. החלק העליון של הקופסה היה רצועה
+  ריקה שהקטינה את השמש סתם - כאן היא נחתכת מהמסגרת הנראית.
+*/
+const SUN_TOP_CROP = 75;
+const SUN_VISIBLE_H = SUN_H - SUN_TOP_CROP;
+/** השמש גדלה מעבר לגודל הטבעי כשיש מקום - עד 25%. */
+const SUN_MAX_SCALE = 1.25;
 
 /** טבעת הטעינה סביב הליבה - רדיוס והיקף, לחישוב ה-strokeDasharray. */
 const CORE_RING = 128;
@@ -94,6 +114,30 @@ function FlyingChipEl({ chip }: { chip: FlyingChip }) {
  * כך המיקום היחסי של כל קרן נשמר מדויק בכל רוחב מסך.
  */
 function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) {
+  /*
+    השמש מוקטנת לפי **השטח הפנוי בפועל** - רוחב וגם גובה - ולא לפי
+    breakpoint של רוחב. בגרסה הקודמת (scale קבוע לכל רוחב) מסך רחב ונמוך
+    קיבל שמש מלאה, והחצי התחתון שלה נחתך. גם ה-scale לבד לא הספיק:
+    transform לא מקטין את המקום שהאלמנט תופס, ולכן העוטף מקבל במפורש את
+    המידות המוקטנות.
+  */
+  // ref כ-state ולא useRef: השמש לא קיימת בזמן הטעינה, ו-effect שתלוי
+  // באלמנט עצמו רץ שוב ברגע שהוא נוצר.
+  const [sunArea, setSunArea] = useState<HTMLDivElement | null>(null);
+  const [sunScale, setSunScale] = useState(1);
+  useEffect(() => {
+    const area = sunArea;
+    if (!area) return;
+    const fit = () => {
+      const scale = Math.min(area.clientWidth / SUN_W, area.clientHeight / SUN_VISIBLE_H, SUN_MAX_SCALE);
+      setSunScale(Math.max(0.3, scale));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(area);
+    return () => ro.disconnect();
+  }, [sunArea]);
+
   const { items, loading: loadingText, mutate: mutateText } = useInspirations(workshopId);
   const { selected, loading: loadingSelection, mutate } = useInspirationSelection(workshopId, myGroup.id);
   const [showPopup, setShowPopup] = useState(false);
@@ -111,10 +155,17 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
     // קוראים מחדש את המצב העדכני של הטקסט המשותף ממש לפני הכתיבה - כדי לא לדרוס מסך אחר שכתב כמעט באותו רגע.
     mutateText(myGroup.id, (current) => {
       const fresh = fillSlots(current);
-      fresh[index] = { ...fresh[index], text };
+      const prev = fresh[index];
+      // השראה של קבוצה אחרת לא נדרסת, גם אם נשלחה עריכה (מרוץ בין מסכים)
+      if (prev.text.trim() && prev.author && prev.author !== myGroup.id) return fresh;
+      fresh[index] = { ...prev, text, author: prev.author ?? myGroup.id };
       return fresh;
     });
   }
+
+  /** עריכה - רק לקבוצה שכתבה (או השראה ישנה בלי כותבת ידועה). */
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const canEdit = (item: InspirationItem) => !item.author || item.author === myGroup.id;
 
   function toggleSelected(index: number, e: MouseEvent<HTMLButtonElement>) {
     const localItem = slots[index];
@@ -154,7 +205,7 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
 
   if (loading) {
     return (
-      <StageShell stage={3} kicker="שמש אסוציאציות" icon="sun" title="טוענת את ההשראות">
+      <StageShell stage={3} kicker="שמש אסוציאציות" icon="sun" title="טוען...">
         <Spinner size={56} />
       </StageShell>
     );
@@ -167,6 +218,8 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
 
   return (
     <StageShell
+      compactHeader
+      clipContent={false}
       stage={3}
       kicker="שמש אסוציאציות"
       icon="sun"
@@ -174,7 +227,9 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
       subtitle="השלימו את ההשראות סביב השמש, ובחרו את הארבע החזקות ביותר."
       background="radiant"
       width="full"
-      className="!pb-56"
+      // בלי ריווח תחתון מיוחד: היה כאן !pb-56 (224px) שהשאיר רצועה ריקה
+      // מתחת לשמש והקטין אותה. רצועת "נבחרו" צריכה רק את lg:pb-24 הרגיל.
+      className="max-lg:!pb-56"
       overlay={
         <>
           {/*
@@ -188,10 +243,10 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
           */}
           <div
             ref={stripRef}
-            // bottom משתנה לפי רוחב: על מסך רחב הרצועה יושבת נמוך, בין מד
-            // ההתקדמות לטיימר שנמצאים בקצוות. על מסך צר אין ביניהם מקום,
-            // ולכן היא עולה מעליהם במקום להתנגש בהם.
-            className="glass glass-brick fixed bottom-[12rem] left-1/2 z-30 flex min-h-[4.25rem] w-[min(92vw,44rem)] -translate-x-1/2 items-center gap-3 rounded-xl px-5 py-3 lg:bottom-24"
+            // bottom משתנה לפי רוחב: על מסך רחב הרצועה יושבת בשורה התחתונה,
+            // בין מד ההתקדמות לטיימר שבקצוות - שם היא לא לוקחת גובה מהשמש.
+            // על מסך צר אין ביניהם מקום, ולכן היא עולה מעליהם.
+            className="glass glass-brick glass-raised fixed bottom-[12rem] left-1/2 z-30 flex min-h-[4.25rem] w-[min(92vw,44rem)] -translate-x-1/2 items-center gap-3 rounded-xl px-5 py-3 lg:bottom-6 lg:w-[min(44rem,calc(100vw-40rem))]"
           >
             <span className="text-ink-3 flex flex-none items-center gap-1.5 text-[11px] font-bold">
               <Icon name="star" size={14} className="text-accent-soft" />
@@ -242,20 +297,34 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
         </>
       }
     >
-      {/* --- השמש --- */}
-      <div className="flex w-full justify-center">
-        <div className="origin-center scale-[0.52] sm:scale-[0.72] lg:scale-90 xl:scale-100">
+      {/* --- השמש ---
+          העוטף ממלא את הגובה הפנוי; הריווח התחתון שומר מקום לרצועת
+          "נבחרו" במסך צר; במסך רחב היא יושבת בשורה התחתונה ולא צריך. */}
+      <div
+        ref={setSunArea}
+        className="flex min-h-0 w-full flex-1 items-center justify-center pb-24 lg:pb-14"
+      >
+        {/* העוטף בגודל המוקטן, והשמש בתוכו ממוקמת absolute משמאל-למעלה:
+            בכיוון RTL ילד רחב מההורה נדחף שמאלה, והשמש יצאה מהמרכז. */}
+        <div
+          className="relative flex-none"
+          style={{ width: SUN_W * sunScale, height: SUN_VISIBLE_H * sunScale }}
+        >
           <div
-            className="relative"
-            style={{ width: RADIUS * 2 + 200, height: RADIUS * 2 + 120 }}
+            className="absolute top-0 left-0 origin-top-left"
+            style={{
+              width: SUN_W,
+              height: SUN_H,
+              transform: `scale(${sunScale}) translateY(-${SUN_TOP_CROP}px)`,
+            }}
           >
             {/* ההילה גדלה ומתחזקת ככל שהליבה נטענת */}
             <div
               aria-hidden="true"
               className="bg-glow-soft absolute top-1/2 left-1/2 rounded-full blur-[90px] transition-all duration-700"
               style={{
-                width: 360 + charge * 140,
-                height: 360 + charge * 140,
+                width: 460 + charge * 160,
+                height: 460 + charge * 160,
                 transform: "translate(-50%, -50%)",
                 opacity: 0.45 + charge * 0.45,
                 animation: "soft-pulse 6s ease-in-out infinite",
@@ -267,10 +336,12 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                 לכפתור שמשנה צבע. */}
             {RAY_ANGLES.map((deg, i) => {
               const rad = (deg * Math.PI) / 180;
-              const x1 = 92 * Math.cos(rad);
-              const y1 = -92 * Math.sin(rad);
-              const x2 = (RADIUS - 44) * Math.cos(rad);
-              const y2 = -(RADIUS - 44) * Math.sin(rad);
+              // מתחילות בשפת הליבה (רדיוס 160) ונעצרות לפני המשבצת
+              const x1 = 178 * Math.cos(rad);
+              const y1 = -178 * Math.sin(rad);
+              // נעצרות בשפת המשבצת: חצי רוחב (112) לרוחב, חצי גובה (40) לגובה
+              const x2 = (RADIUS - 112) * Math.cos(rad);
+              const y2 = -(RADIUS_Y - 40) * Math.sin(rad);
               const length = Math.hypot(x2 - x1, y2 - y1);
               const lineAngle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
               const lit = selected.includes(i);
@@ -311,14 +382,26 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
             })}
 
             {/* --- הליבה --- */}
+            {/* ה-scale של הטעינה יושב על העוטף ולא על העיגול: כשרק העיגול
+                גדל, הוא כיסה חלקים מהטבעת והיא נראתה עקומה. */}
             <div
-              className="absolute"
-              style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
+              className="absolute transition-transform duration-500"
+              style={{
+                left: "50%",
+                top: "50%",
+                transform: `translate(-50%, -50%) scale(${1 + charge * 0.06})`,
+              }}
             >
-              {/* טבעת הטעינה סביב הליבה - מד ההתקדמות של השלב */}
+              {/* טבעת הטעינה סביב הליבה - מד ההתקדמות של השלב. מעל העיגול
+                  (z-10) ובמרווח ממנו, כדי שהצל שלו לא יבלע אותה. */}
               <svg
                 viewBox="0 0 280 280"
-                className="pointer-events-none absolute -inset-4 -rotate-90"
+                // מידות מפורשות ולא רק inset: ל-svg יש גודל טבעי, ועם inset
+                // לבד הדפדפן לא מותח אותו - הטבעת יצאה קטנה ומוזזת הצידה.
+                className="pointer-events-none absolute z-10 -rotate-90"
+                // maxWidth: ה-preflight של Tailwind מגביל svg ל-100% רוחב - זה מה
+                // שמעך את הטבעת לאליפסה והזיז אותה מהמרכז.
+                style={{ top: -28, left: -28, width: "calc(100% + 56px)", height: "calc(100% + 56px)", maxWidth: "none" }}
                 aria-hidden="true"
               >
                 <circle
@@ -347,16 +430,15 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
               </svg>
 
               <div
-                className="glass glass-brick relative flex h-60 w-60 items-center justify-center rounded-full p-7 text-center transition-all duration-500"
+                className="glass glass-brick relative flex h-80 w-80 items-center justify-center rounded-full p-9 text-center transition-all duration-500"
                 style={{
-                  transform: `scale(${1 + charge * 0.06})`,
                   boxShadow: `var(--ds-shadow-lg), 0 0 ${40 + charge * 70}px -6px var(--ds-glow), var(--ds-inset-top)`,
                 }}
               >
                 <span
                   className={cx(
                     "font-extrabold leading-snug",
-                    content.dilemma_text ? "text-base" : "text-xl",
+                    content.dilemma_text ? "text-2xl" : "text-3xl",
                   )}
                 >
                   {content.dilemma_text || "הדילמה שלנו"}
@@ -368,46 +450,83 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
             {RAY_ANGLES.map((deg, i) => {
               const rad = (deg * Math.PI) / 180;
               const x = RADIUS * Math.cos(rad);
-              const y = -RADIUS * Math.sin(rad);
+              const y = -RADIUS_Y * Math.sin(rad);
               const item = slots[i];
               const style = { left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)` };
               const isSelected = selected.includes(i);
 
-              if (!item.text.trim()) {
+              const isEditing = editingIndex === i;
+              if (!item.text.trim() || isEditing) {
                 return (
-                  <input
+                  /*
+                    textarea ולא input: טקסט ארוך יורד שורה תוך כדי הקלדה
+                    ונראה כולו, במקום להיגלל הצידה בתוך שורה אחת. הגובה גדל
+                    עם הטקסט (field-sizing, ובדפדפן ישן - onInput למטה).
+                    `slot-input` במקום glass-input: בלי המילוי הלבן שנראה
+                    כמו שכבה מעל השדה - רק מסגרת דקה, כמו המשבצות המלאות.
+                  */
+                  <textarea
                     key={i}
-                    className="glass-input absolute w-40 -translate-x-1/2 -translate-y-1/2 !min-h-[3.5rem] !px-3 text-center !text-base"
+                    rows={1}
+                    className="slot-input absolute w-56 -translate-x-1/2 -translate-y-1/2 px-4 py-4 text-center text-lg leading-snug font-bold"
                     style={style}
                     placeholder="כתבו כאן"
+                    defaultValue={isEditing ? item.text : undefined}
+                    autoFocus={isEditing}
                     aria-label={`השראה ${i + 1}`}
-                    onBlur={(e) => updateSlotText(i, e.target.value)}
+                    onInput={(e) => {
+                      const el = e.currentTarget;
+                      el.style.height = "auto";
+                      el.style.height = `${el.scrollHeight}px`;
+                    }}
+                    onBlur={(e) => {
+                      updateSlotText(i, e.target.value);
+                      setEditingIndex(null);
+                    }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        (e.target as HTMLTextAreaElement).blur();
+                      }
                     }}
                   />
                 );
               }
 
               return (
-                <button
+                <div
                   key={i}
+                  className="absolute w-56 -translate-x-1/2 -translate-y-1/2"
+                  style={style}
+                >
+                <button
                   type="button"
                   aria-pressed={isSelected}
                   className={cx(
-                    "glass glass-interactive absolute w-40 -translate-x-1/2 -translate-y-1/2 rounded-full px-3 py-4 text-center text-base font-bold",
+                    "glass glass-interactive glass-3d w-full rounded-[2rem] px-4 py-4 text-center leading-snug font-bold",
+                    // עד 4 שורות במשבצת; הטקסט המלא נראה בעריכה
+                    "line-clamp-4",
+                    // טקסט ארוך קטן מעט, כדי שהמשבצת לא תתארך לגובה ותעלה על השכנות
+                    // בלי הגבלת אורך (לבקשת הלקוחה) - טקסט ארוך פשוט קטן בהדרגה
+                    item.text.length > 90 ? "text-sm" : item.text.length > 40 ? "text-base" : "text-lg",
                     isSelected && "glass-active",
                   )}
-                  style={{
-                    ...style,
-                    ...(isSelected
-                      ? { boxShadow: "var(--ds-shadow), 0 0 30px -2px var(--ds-glow)" }
-                      : null),
-                  }}
                   onClick={(e) => toggleSelected(i, e)}
                 >
                   {item.text}
                 </button>
+                {canEdit(item) && (
+                  <button
+                    type="button"
+                    aria-label="עריכת ההשראה"
+                    title="עריכה"
+                    onClick={() => setEditingIndex(i)}
+                    className="glass glass-raised text-ink-2 hover:text-ink absolute -top-2 -left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full"
+                  >
+                    <Icon name="edit" size={15} />
+                  </button>
+                )}
+                </div>
               );
             })}
           </div>

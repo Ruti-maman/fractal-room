@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { Group } from "../../types/group";
 import type { Stage4Content } from "../../types/stage4Content";
 import StageShell from "../StageShell";
@@ -95,169 +95,53 @@ const DRAG_SAMPLE_STEP_PX = 6;
  *  שהכלי ביד "מבטיח" את התוצאה ולא יוכל להיפרד ממנה בטעות.
  */
 
-/** מרקר מצויר. `ink` הוא הצבע שייצבע בפועל על הדף. */
-function MarkerBody({ ink }: { ink: string }) {
-  const dark = `color-mix(in srgb, ${ink} 55%, #06201f)`;
-  const darker = `color-mix(in srgb, ${ink} 32%, #06201f)`;
-  // מזהה ייחודי לגרדיאנטים, נגזר מהצבע - בלעדיו שני המרקרים בדף חולקים
-  // אותו id, ואחד מהם מקבל את הצבע של השני.
-  const id = ink.replace(/[^a-z0-9]/gi, "");
-
-  return (
-    <svg viewBox="0 0 64 190" className="h-[8.5rem] w-auto sm:h-40" aria-hidden="true">
-      <defs>
-        {/* גוף הפלסטיק - כהה בקצוות ובהיר במרכז, כדי שייקרא כגליל ולא כמלבן */}
-        <linearGradient id={`barrel-${id}`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={darker} />
-          <stop offset="28%" stopColor={ink} />
-          <stop offset="58%" stopColor={ink} />
-          <stop offset="100%" stopColor={dark} />
-        </linearGradient>
-        <linearGradient id={`cap-${id}`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={dark} />
-          <stop offset="35%" stopColor={ink} />
-          <stop offset="100%" stopColor={darker} />
-        </linearGradient>
-        {/* הברק על הפלסטיק - חזק למעלה ונמוג כלפי מטה */}
-        <linearGradient id={`gloss-${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity={0.78} />
-          <stop offset="55%" stopColor="#ffffff" stopOpacity={0.26} />
-          <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
-        </linearGradient>
-      </defs>
-
-      {/* --- פקק --- */}
-      <rect x="9" y="4" width="46" height="44" rx="10" fill={`url(#cap-${id})`} />
-      <rect x="45" y="11" width="7" height="25" rx="3.5" fill={darker} />
-      <rect x="7" y="46" width="50" height="9" rx="4" fill={darker} />
-
-      {/* --- גוף --- */}
-      <path d="M11 55h42l-3 82a6 6 0 0 1-6 5.4H20a6 6 0 0 1-6-5.4z" fill={`url(#barrel-${id})`} />
-
-      {/* חלונית הדיו - "חלון" בגוף שמראה את הצבע האמיתי */}
-      <rect x="20" y="64" width="24" height="13" rx="4" fill={ink} />
-      <rect
-        x="20"
-        y="64"
-        width="24"
-        height="13"
-        rx="4"
-        fill="none"
-        stroke="#ffffff"
-        strokeOpacity={0.4}
-      />
-
-      {/* ברק אנכי לאורך הפלסטיק */}
-      <path d="M18 58h7l-2.4 78h-6.2z" fill={`url(#gloss-${id})`} />
-
-      {/* פסי אחיזה על הגוף - במקום הכיתוב, שירד מכאן (ראו ToolButton) */}
-      {[96, 106, 116].map((y) => (
-        <rect key={y} x="17" y={y} width="30" height="3" rx="1.5" fill="#06201f" opacity={0.14} />
-      ))}
-
-      {/* --- שרוול מתכת --- */}
-      <rect x="17" y="142" width="30" height="8" rx="3" fill="#cfe6e3" />
-      <rect x="17" y="142" width="30" height="3.5" rx="1.75" fill="#ffffff" opacity={0.7} />
-
-      {/* --- חוד אלכסוני (chisel) - הצורה שמזהים כמרקר --- */}
-      <path d="M20 150h24l4 22-6 10H23l-7-10z" fill={ink} />
-      <path d="M20 150h24l4 22-32 0z" fill="#ffffff" opacity={0.18} />
-    </svg>
-  );
-}
-
-/** מחק - גוש עם פאה עליונה מוארת, שרוול נייר, וקצה תחתון שחוק. */
-function EraserBody() {
-  const c = ERASER_CURSOR_COLOR;
-  return (
-    <svg viewBox="0 0 64 190" className="h-[8.5rem] w-auto sm:h-40" aria-hidden="true">
-      <defs>
-        <linearGradient id="eraser-body" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={`color-mix(in srgb, ${c} 60%, #06201f)`} />
-          <stop offset="32%" stopColor={c} />
-          <stop offset="100%" stopColor={`color-mix(in srgb, ${c} 72%, #06201f)`} />
-        </linearGradient>
-      </defs>
-
-      {/* הגוש מתחיל נמוך מהמרקרים, כך שכל שלושת הכלים יושבים על אותו בסיס */}
-      <rect x="9" y="42" width="46" height="114" rx="10" fill="url(#eraser-body)" />
-      {/* פאה עליונה מוארת - זה מה שנותן לגוש נפח */}
-      <path d="M9 52a10 10 0 0 1 10-10h26a10 10 0 0 1 10 10z" fill="#ffffff" opacity={0.42} />
-      {/* שרוול הנייר */}
-      <rect x="9" y="86" width="46" height="26" fill="#e8f5f2" opacity={0.92} />
-      <rect x="9" y="86" width="46" height="5" fill="#ffffff" opacity={0.65} />
-      <rect x="9" y="107" width="46" height="5" fill="#06201f" opacity={0.1} />
-      {/* הקצה השחוק */}
-      <path d="M9 156v-5l10-3 9 3 9-3 10 3v5z" fill="#06201f" opacity={0.16} />
-    </svg>
-  );
-}
-
-/** המעטפת המשותפת לשלושת הכלים - ההרמה, ההטיה והזוהר של המצב הפעיל. */
+/**
+ * כלי סימון - בשפה של כל הפרויקט ולא ציור של טוש: גלולת זכוכית תלת-ממדית,
+ * ובתוכה בועה בצבע הדיו עם סמל (מרקר / מחק) ושם הכלי. הכלי הפעיל
+ * "נדלק": מסגרת בצבע הדיו, זוהר רך, ורקע בגוון הדיו. כך רואים במבט
+ * אחד באיזה צבע מסמנים עכשיו.
+ */
 function ToolButton({
   active,
   onClick,
-  glow,
+  color,
+  icon,
   label,
-  children,
 }: {
   active: boolean;
   onClick: () => void;
-  /** צבע הזוהר במצב פעיל - צבע הדיו של הכלי. */
-  glow: string;
-  /** שם הכלי. מוצג כשלט אופקי מתחתיו, לא כתוב על הגוף. */
+  /** צבע הדיו - אותו STROKE_COLOR שצובע בפועל על הדף. */
+  color: string;
+  icon: "marker" | "eraser";
   label: string;
-  children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       aria-pressed={active}
-      // padding מסביב לצורה - מגדיל את שטח הנגיעה בלי לנפח חזותית את הציור
-      className="group relative flex flex-col items-center rounded-xl px-2 pt-2 pb-3 transition-transform duration-300 hover:-translate-y-1.5"
-      style={{
-        // הטיה קלה כשהכלי "נשלף" - זה מה שהופך אותו לחפץ שהורם ביד
-        transform: active ? "translateY(-1rem) rotate(-6deg)" : undefined,
-        transitionTimingFunction: "var(--ds-ease-spring)",
-      }}
       onClick={onClick}
+      className="glass glass-interactive glass-3d glass-pill flex w-full min-w-[9.5rem] items-center gap-3 py-2 ps-2 pe-5 transition-all duration-300"
+      style={
+        active
+          ? {
+              background: `linear-gradient(180deg, color-mix(in srgb, ${color} 14%, white), color-mix(in srgb, ${color} 26%, white))`,
+              outline: `2.5px solid ${color}`,
+              outlineOffset: "2px",
+            }
+          : undefined
+      }
     >
-      {/* הילת הדיו מאחורי הכלי הפעיל */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-1 top-8 bottom-6 rounded-full blur-2xl transition-opacity duration-300"
-        style={{ background: glow, opacity: active ? 0.5 : 0 }}
-      />
-
-      <span
-        className="relative block transition-[filter] duration-300"
+        className="flex h-11 w-11 flex-none items-center justify-center rounded-full text-white"
         style={{
-          filter: active
-            ? `drop-shadow(0 14px 18px rgba(4,20,21,0.55)) drop-shadow(0 0 14px ${glow})`
-            : "drop-shadow(0 8px 10px rgba(4,20,21,0.45))",
+          background: `radial-gradient(circle at 32% 26%, color-mix(in srgb, ${color} 45%, white) 0%, ${color} 50%, color-mix(in srgb, ${color} 65%, #0b2a2a) 100%)`,
+          boxShadow: `inset 0 -3px 6px -2px rgba(0,0,0,0.25), inset 0 2px 3px rgba(255,255,255,0.6), 0 4px 10px -3px color-mix(in srgb, ${color} 70%, transparent)`,
         }}
       >
-        {children}
+        <Icon name={icon} size={20} />
       </span>
-
-      {/*
-        השלט.
-
-        השם היה כתוב על גוף הטוש עצמו, מסובב ב-90 מעלות - וזה אולי נאמן
-        לטוש אמיתי, אבל בעברית זה יצא כיתוב שצריך להטות אליו את הראש.
-        על מסך מגע של 65" קוראים את הכלים במבט חטוף, ולכן השם ירד מהגוף
-        (ובמקומו פסי אחיזה) ועלה לכאן, אופקי וקריא.
-      */}
-      <span
-        className={cx(
-          "mt-1 rounded-full px-3 py-1 text-sm font-extrabold transition-all duration-300",
-          active ? "text-ink" : "text-ink-3",
-        )}
-        style={{
-          background: active ? `color-mix(in srgb, ${glow} 26%, transparent)` : "transparent",
-          boxShadow: active ? `0 0 18px -4px ${glow}` : "none",
-        }}
-      >
+      <span className={cx("text-lg font-extrabold", active ? "text-ink" : "text-ink-2")}>
         {label}
       </span>
     </button>
@@ -275,19 +159,14 @@ function MarkerTool({
   active: boolean;
   onClick: () => void;
 }) {
-  const ink = STROKE_COLOR[tool];
   return (
-    <ToolButton active={active} onClick={onClick} glow={ink} label={label}>
-      <MarkerBody ink={ink} />
-    </ToolButton>
+    <ToolButton active={active} onClick={onClick} color={STROKE_COLOR[tool]} icon="marker" label={label} />
   );
 }
 
 function EraserTool({ active, onClick }: { active: boolean; onClick: () => void }) {
   return (
-    <ToolButton active={active} onClick={onClick} glow={ERASER_CURSOR_COLOR} label="מחק">
-      <EraserBody />
-    </ToolButton>
+    <ToolButton active={active} onClick={onClick} color="#8fa3ab" icon="eraser" label="מחק" />
   );
 }
 
@@ -422,20 +301,9 @@ const PHRASE_COLUMN_STYLES: Record<
  * תיבה מלבנית מסביבה. text-stroke מצייר קו מתאר לאורך הצורה הגרפית
  * האמיתית של הגליף, בדיוק כמו מסגרת סביב צורה ב-SVG, לא מלבן גנרי.
  */
-function FramedCategoryLabel({ text, color }: { text: string; color: "green" | "red" }) {
-  const styles = PHRASE_COLUMN_STYLES[color];
-  return (
-    <span
-      className="text-lg font-extrabold"
-      style={{
-        color: styles.fillColor,
-        WebkitTextStroke: `0.6px ${styles.strokeColor}`,
-        paintOrder: "stroke fill",
-      }}
-    >
-      {text}
-    </span>
-  );
+function FramedCategoryLabel({ text }: { text: string; color: "green" | "red" }) {
+  // טקסט מודגש בלבד, בלי רקע צבעוני - לבקשת הלקוחה
+  return <span className="text-ink text-lg font-extrabold">{text}</span>;
 }
 
 /** טור אחד בטבלת הסנכרון (שקף 7) - חוזקות או חסמים, כל שורה מחולקת לקטגוריה (מימין, כתגית מודגשת) ולמשפט עצמו (משמאל). */
@@ -450,10 +318,11 @@ function PhraseColumn({
 }) {
   const styles = PHRASE_COLUMN_STYLES[color];
   return (
-    <div className="glass glass-brick flex-1 overflow-hidden rounded-2xl">
+    <div className="glass glass-brick glass-raised flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
+      {/* כותרת הטור: נקייה, על הלבן של הכרטיס, עם קו דק מתחתיה */}
       <div
         className={cx(
-          "border-edge-dim flex items-center gap-2.5 border-b px-5 py-4 text-xl font-extrabold",
+          "border-edge-dim flex flex-none items-center gap-2.5 border-b px-5 py-4 text-xl font-extrabold",
           styles.header,
         )}
       >
@@ -467,6 +336,7 @@ function PhraseColumn({
       {phrases.length === 0 ? (
         <p className="text-ink-3 px-5 py-8 text-center text-sm">עדיין לא סומן כאן כלום</p>
       ) : (
+        <div className="glass-scroll min-h-0 flex-1 overflow-y-auto">
         <table className="w-full border-collapse text-right">
           <thead>
             <tr className="text-ink-3 text-sm">
@@ -476,17 +346,18 @@ function PhraseColumn({
           </thead>
           <tbody>
             {phrases.map((p) => (
-              <tr key={p.id} className="align-top odd:bg-glass">
-                <td className="border-edge-dim border-b px-4 py-3 whitespace-nowrap">
+              <tr key={p.id} className="border-edge-dim border-b last:border-b-0">
+                <td className="px-4 py-3.5 whitespace-nowrap align-middle">
                   <FramedCategoryLabel text={p.category} color={color} />
                 </td>
-                <td className="border-edge-dim text-ink border-b px-4 py-3 text-base">
+                <td className="text-ink px-4 py-3.5 align-middle text-lg leading-snug">
                   {p.text}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
@@ -537,6 +408,23 @@ function FunctioningPictureStep({
     if (result?.group_conclusion) setGroupConclusion(result.group_conclusion);
   }, [result?.group_conclusion]);
 
+  /*
+    שמירה תוך כדי הקלדה (כשנעצרים לרגע), ולא רק בלחיצה על "המשך": כשהטיימר
+    נגמר הוא מעביר לשלב הבא בלי לעבור דרך handleAdvance, והמסקנה שהוקלדה
+    אבדה - והרצועה בשלבים הבאים לא הופיעה.
+  */
+  const lastSavedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const text = groupConclusion.trim();
+    if (!text || text === lastSavedRef.current || text === result?.group_conclusion) return;
+    const t = window.setTimeout(() => {
+      lastSavedRef.current = text;
+      saveGroupConclusion(text);
+    }, 800);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupConclusion]);
+
   async function handleAdvance() {
     setAdvancing(true);
     await saveGroupConclusion(groupConclusion);
@@ -546,11 +434,12 @@ function FunctioningPictureStep({
   return (
     <StageShell
       stage={4}
-      kicker="שקף 8 · תמונת תפקוד"
+      kicker="תמונת תפקוד"
       icon="sparkles"
       title="תמונת תפקוד כוללת ומסקנה מעשית"
       background="quiet"
-      width="normal"
+      width="wide"
+      compactHeader
       actions={
         result && !generating ? (
           <GlassButton
@@ -574,7 +463,7 @@ function FunctioningPictureStep({
             />
             <Spinner size={52} className="relative" />
           </div>
-          <p className="text-ink-2 text-xl">מנסחת...</p>
+          <p className="text-ink-2 text-xl">מנסח...</p>
         </div>
       )}
 
@@ -590,14 +479,19 @@ function FunctioningPictureStep({
       )}
 
       {result && !generating && (
-        <div className="flex w-full flex-col gap-6">
+        /*
+          בלי גלילה ובלי להקטין את הטקסט: במסך רחב שני המשפטים יושבים זה
+          לצד זה (ולא זה מעל זה), וזה מפנה את כל הגובה שהיה חסר לתיבת
+          המסקנה. התיבה עצמה נמוכה יותר (2 שורות) - היא מתרחבת לרוחב.
+        */
+        <div className="flex w-full flex-col gap-5">
           {/* שני המשפטים שה-AI ניסח - ממוספרים כלבנים נפרדות, כדי שיהיה
               ברור שאלו שתי אמירות ולא פסקה אחת ארוכה. */}
-          <ol className="flex flex-col gap-3">
+          <ol className="grid gap-4 lg:grid-cols-2">
             {[result.sentence1, result.sentence2].map((sentence, i) => (
               <li
                 key={i}
-                className="glass glass-brick flex items-start gap-4 rounded-2xl p-6"
+                className="glass glass-brick glass-raised flex items-start gap-4 rounded-2xl p-6"
                 style={{
                   animation: `glass-in var(--ds-dur-slow) ${i * 120}ms var(--ds-ease) both`,
                 }}
@@ -616,7 +510,7 @@ function FunctioningPictureStep({
           {/* לפי בקשת הלקוחה: לא הצעת AI מוצגת כאן - תיבה ריקה שהקבוצה
               עצמה מקלידה לתוכה את המסקנה המעשית שלה. הלבנה הזו מודגשת
               (glass-strong) כי היא הפעולה היחידה במסך. */}
-          <div className="glass glass-strong glass-brick rounded-2xl p-6">
+          <div className="glass glass-strong glass-brick glass-raised rounded-2xl p-5">
             <label
               htmlFor="group-conclusion"
               className="text-accent-soft mb-3 flex items-center justify-center gap-2 text-center text-sm font-bold"
@@ -626,8 +520,8 @@ function FunctioningPictureStep({
             </label>
             <textarea
               id="group-conclusion"
-              className="glass-input h-28 w-full resize-none !rounded-xl py-4 !text-lg"
-              rows={3}
+              className="glass-input h-24 w-full resize-none !rounded-xl py-4 !text-xl"
+              rows={2}
               value={groupConclusion}
               onChange={(e) => setGroupConclusion(e.target.value)}
               placeholder="הקלידו כאן..."
@@ -693,6 +587,14 @@ function FunctioningPictureStep({
  * ביניים במרווח קבוע (DRAG_SAMPLE_STEP_PX) ומסמנת את האות הקרובה לכל אחת
  * מהן - לא רק את נקודת הקצה של התזוזה.
  */
+/*
+  גבולות הגופן של הדף. הגודל בפועל נקבע אוטומטית (ראו fitPaper): הגדול
+  ביותר שבו כל הטקסט נכנס בגובה הפנוי. 15px הוא הרצפה - מתחתיה הטקסט כבר
+  לא קריא מרחוק, ועדיף גלילה פנימית מאשר טקסט שאי אפשר לקרוא.
+*/
+const PAPER_FONT_MAX = 30;
+const PAPER_FONT_MIN = 15;
+
 function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
   const { marks, phrases, loading: loadingMarks, mutate } = useTextMarking(workshopId, myGroup.id);
   const [activeTool, setActiveTool] = useState<Tool>("green");
@@ -708,6 +610,11 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
   const lastCharIndexRef = useRef<number | null>(null);
   const paperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  /** האזור הפנוי לדף (בין הכותרת לכפתור) - לפיו נקבע גודל הגופן. */
+  const paperAreaRef = useRef<HTMLDivElement>(null);
+  const paperFrameRef = useRef<HTMLDivElement>(null);
+  const paperTextRef = useRef<HTMLParagraphElement>(null);
+  const [paperFontPx, setPaperFontPx] = useState(PAPER_FONT_MAX);
   const charRectsRef = useRef<{ index: number; rect: DOMRect }[]>([]);
 
   const wordGroups = useMemo<CharCell[][]>(() => {
@@ -824,6 +731,51 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marks]);
+
+  /*
+    התאמת הדף לגובה המסך: **המסגרת עוטפת את הטקסט בדיוק, ואין גלילה.**
+
+    קודם המסגרת מילאה את כל הגובה והטקסט גלל בתוכה - השורה האחרונה
+    נחתכה, והמסגרת לא "ישבה" על הטקסט. כאן מחפשים את הגופן הגדול ביותר
+    שבו המסגרת כולה נכנסת לאזור הפנוי. המדידה נעשית ישירות על ה-DOM
+    (סינכרונית, לפני ציור), ורק התוצאה נכתבת ל-state.
+  */
+  useLayoutEffect(() => {
+    if (loading) return;
+    const area = paperAreaRef.current;
+    const frame = paperFrameRef.current;
+    const text = paperTextRef.current;
+    if (!area || !frame || !text) return;
+
+    function fitPaper() {
+      if (!area || !frame || !text) return;
+      const available = area.clientHeight;
+      let size = PAPER_FONT_MAX;
+      text.style.fontSize = `${size}px`;
+      // המסגרת מוגבלת ב-max-h-full, ולכן גובהה לבדו לא יעבור את הפנוי -
+      // גלישה נמדדת גם לפי scrollHeight מול clientHeight.
+      const overflows = () =>
+        frame.offsetHeight > available || frame.scrollHeight > frame.clientHeight + 1;
+      while (size > PAPER_FONT_MIN && overflows()) {
+        size -= 1;
+        text.style.fontSize = `${size}px`;
+      }
+      setPaperFontPx(size);
+    }
+
+    fitPaper();
+    const ro = new ResizeObserver(() => fitPaper());
+    ro.observe(area);
+    return () => ro.disconnect();
+  }, [loading, wordGroups]);
+
+  // אחרי שינוי גופן האותיות זזו - ה-canvas נמדד מחדש והסימונים מצוירים שוב.
+  useEffect(() => {
+    if (loading) return;
+    setupCanvas();
+    redrawFromMarks(marksRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paperFontPx, loading]);
 
   // תלוי ב-loading בכוונה, לא ב-[]: בזמן הטעינה עדיין אין canvas/paper ב-DOM
   // בכלל (התצוגה שם היא "טוענת..."), אז effect עם [] היה נתפס לרגע ההוא -
@@ -1129,7 +1081,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
   }
 
   if (loading) {
-    return <LoadingState title="רגע אחד" description="טוענת את הטקסט ואת הסימונים..." />;
+    return <LoadingState title="רגע אחד" description="טוען..." />;
   }
 
   // שקף 7 - טבלת הסנכרון האוטומטית: נבנית מהקטעים המתויגים שכבר נאספו
@@ -1142,7 +1094,8 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     return (
       <StageShell
         stage={4}
-        kicker="שקף 7 · חוזקות וחסמים"
+        kicker="חוזקות וחסמים"
+        compactHeader
         icon="ladder"
         title="טבלת סנכרון אוטומטית"
         subtitle="הטבלה נבנתה לבד ממה שסימנתן. אם משהו חסר, אפשר לחזור ולסמן."
@@ -1159,7 +1112,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
           </GlassButton>
         }
       >
-        <div className="flex w-full flex-col gap-6 lg:flex-row">
+        <div className="flex min-h-0 w-full flex-col gap-6 lg:flex-row lg:items-start">
           <PhraseColumn title="חוזקות שזוהו" color="green" phrases={strengths} />
           <PhraseColumn title="חסמים שזוהו" color="red" phrases={blockers} />
         </div>
@@ -1176,12 +1129,12 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
   return (
     <StageShell
       stage={4}
-      kicker="שקף 6 · זיהוי חוזקות וחסמים"
+      kicker="זיהוי חוזקות וחסמים"
       icon="marker"
       title="ניתוח דילמה"
       subtitle="סמנו את הטקסט בגרירה, כמו במרקר אמיתי על דף."
       background="quiet"
-      width="normal"
+      width="wide"
       actions={
         <GlassButton
           variant="primary"
@@ -1205,9 +1158,23 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
     >
       {/* קופסת הכלים - שלושת המרקרים יושבים בתוך לבנה אחת, כמו מודול
           הכפתורים בלוח הבקרה, ולא מרחפים בנפרד על הדף. */}
+      {/*
+        המגש **בצד** הדף ולא מעליו (במסך רחב).
+
+        כשהמרקרים ישבו מעל הדף, הם לקחו כ-200 פיקסלים מהגובה, והדף
+        עצמו - שהוא כל העבודה בשלב הזה - נשאר עם חלון של שלוש שורות.
+        בצד הם לא גוזלים גובה בכלל, וזה גם המקום הטבעי של מגש עטים:
+        ליד הדף, לא מעליו. במסך צר אין מקום בצד, ושם הם חוזרים למעלה.
+        הכלים שוכבים (ראו MarkerBody), ולכן שלושתם יחד נמוכים מהדף גם
+        במסך נמוך, והמגש ממורכז לצידו.
+      */}
+      {/* `lg:pt-5`: המרקר הפעיל מורם מעל המגש, ובלי מרווח הוא נחתך בקצה העליון של אזור התוכן. */}
+      <div
+        className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col gap-5 lg:translate-x-8 lg:flex-row lg:items-start lg:pt-5"
+      >
       {/* המגש. שטוח ונמוך בכוונה (glass-dim) - הכלים הם הגיבורים כאן,
           והמגש רק מחזיק אותם; לבנה עבה מסביבם הייתה מתחרה בהם. */}
-      <div className="glass glass-dim mb-8 flex items-end gap-3 rounded-2xl px-5 pt-3 pb-2 sm:gap-8 sm:px-9">
+      <div className="glass glass-dim glass-raised flex flex-none flex-wrap items-center justify-center gap-3 rounded-2xl p-3 lg:flex-col lg:flex-nowrap lg:items-stretch lg:self-center lg:p-4">
         <MarkerTool
           tool="green"
           label="חוזקות"
@@ -1223,6 +1190,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         <EraserTool active={activeTool === "eraser"} onClick={() => setActiveTool("eraser")} />
       </div>
 
+        <div ref={paperAreaRef} className="flex h-full min-h-0 flex-1 flex-col pb-4">
       {/*
         הדף.
 
@@ -1233,10 +1201,15 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         כך שהוא יושב בתוך שפת הזכוכית במקום להיראות כמו גזיר מפרויקט אחר,
         והוא ממוסגר בלבנת זכוכית שמחזיקה אותו.
       */}
-      <div className="glass glass-brick w-full rounded-2xl p-3">
+      {/* בגובה הטקסט (לא flex-1): המסגרת נגזרת מהדף. `max-h-full` + גלילה
+          הם רק רשת ביטחון למקרה שגם ברצפת הגופן הטקסט לא נכנס. */}
+      <div
+        ref={paperFrameRef}
+        className="glass glass-brick glass-raised glass-scroll max-h-full w-full flex-none overflow-y-auto rounded-2xl p-3"
+      >
         <div
           ref={paperRef}
-          className="relative w-full rounded-xl p-8 sm:p-10"
+          className="relative w-full rounded-xl p-6 lg:p-8"
           style={{
             background: "linear-gradient(180deg, #f8fffd 0%, #e9f7f4 100%)",
             boxShadow: "inset 0 2px 20px -8px rgba(8, 48, 45, 0.35)",
@@ -1253,7 +1226,11 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
           {/* z-10 מעל ה-canvas בכוונה: הטקסט מצויר מעל שכבת הצביעה, לא מתחתיה -
               כמו רקע-הדגשה אמיתי (mark/highlight), כדי שהאותיות תמיד יישארו
               חדות וקריאות במלואן, גם כשהרקע הצבוע מתחתן מלא/חזק ולא שקוף. */}
-          <p className="relative z-10 text-2xl leading-loose text-[#08302d] select-none">
+          <p
+            ref={paperTextRef}
+            className="relative z-10 leading-loose text-[#08302d] select-none"
+            style={{ fontSize: `${paperFontPx}px` }}
+          >
             {wordGroups.map((chars, wi) => (
               <span key={wi}>
                 {/* עטיפת nowrap סביב אותיות המילה - כל אות היא span נפרד לצביעה
@@ -1275,6 +1252,8 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
             className="absolute inset-0 z-0 h-full w-full"
             style={{ pointerEvents: "none" }}
           />
+        </div>
+      </div>
         </div>
       </div>
     </StageShell>

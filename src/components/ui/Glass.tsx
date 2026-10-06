@@ -182,6 +182,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   /** מתיחה לרוחב מלא של ההורה. */
   block?: boolean;
+  /** בלי צליל הלחיצה (האדווה והרטט נשארים). */
+  silent?: boolean;
   ref?: Ref<HTMLButtonElement>;
 }
 
@@ -192,6 +194,7 @@ export function GlassButton({
   iconAfter,
   loading = false,
   block = false,
+  silent = false,
   disabled,
   className,
   children,
@@ -209,7 +212,7 @@ export function GlassButton({
       onPointerDown={(e) => {
         if (!disabled && !loading) {
           spawn(e);
-          playTap(variant === "primary" ? "primary" : "soft");
+          if (!silent) playTap(variant === "primary" ? "primary" : "soft");
           buzz();
         }
         onPointerDown?.(e);
@@ -361,7 +364,7 @@ export function Spinner({ size = 24, className }: { size?: number; className?: s
   return (
     <span
       role="status"
-      aria-label="טוענת"
+      aria-label="טוען"
       className={cx("inline-block flex-none rounded-full", className)}
       style={{
         width: size,

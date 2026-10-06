@@ -21,6 +21,7 @@ import { cx } from "../lib/cx";
 import { BackgroundLayers, type BackgroundVariant } from "./ui/AppBackground";
 import Icon, { type IconName } from "./ui/Icon";
 import { LevelBadge } from "./ui/GameTile";
+import { ConclusionInHeader } from "./PracticalConclusionBanner";
 
 interface Props {
   /** מספר השלב - מוצג בתגית העליונה. */
@@ -44,6 +45,24 @@ interface Props {
   className?: string;
   /** תוכן שיוצא מהזרימה הרגילה - שכבות, פופ-אפים, קנבס. */
   overlay?: ReactNode;
+  /**
+   * כותרת מוקטנת (עד 4xl במקום 5xl) - לשלבים שהתוכן שלהם צריך כל פיקסל
+   * של גובה: הסרטון בשלב 2 והשמש בשלב 3. תג השלב נשאר 88 בכל הדפים -
+   * הלקוחה ביקשה שהוא ייראה זהה בכל שלב.
+   */
+  compactHeader?: boolean;
+  /**
+   * false = אזור התוכן לא חותך ולא גולל. לשלב שהתוכן שלו כבר מותאם בעצמו
+   * לגובה הפנוי (השמש בשלב 3): שם החיתוך רק גזר את הזוהר שמסביב לשמש
+   * ויצר "פס" אור ישר בתחתית האזור.
+   */
+  clipContent?: boolean;
+  /**
+   * ריווח תחתון מינימלי במסך רחב. לשלב שהתוכן שלו ממורכז וצר מהרווח שבין
+   * מד ההתקדמות לטיימר (הסרטון בשלב 2) - הרצועה התחתונה שנשמרת להם
+   * סתם גוזלת ממנו גובה.
+   */
+  tightBottom?: boolean;
 }
 
 const WIDTH: Record<NonNullable<Props["width"]>, string> = {
@@ -67,6 +86,9 @@ function StageShell({
   center = true,
   className,
   overlay,
+  compactHeader = false,
+  clipContent = true,
+  tightBottom = false,
 }: Props) {
   const hasHeader = Boolean(stage || kicker || title || subtitle);
 
@@ -88,7 +110,11 @@ function StageShell({
       className={cx(
         "relative flex h-dvh flex-col items-center overflow-hidden",
         // ריווח שמפנה מקום לסרגל העליון ולכרום התחתון
-        "px-4 pt-20 pb-40 sm:px-8 sm:pt-24 sm:pb-44",
+        // הריווח התחתון קטן במסך רחב בכוונה: הטיימר ומד ההתקדמות יושבים
+        // בפינות, ולא מתחת לעמודת התוכן, ולכן אין סיבה לשמור להם רצועה
+        // שלמה לרוחב כל המסך. במסך צר הם כן חוסמים את המרכז, ושם הריווח נשאר.
+        "px-4 pt-20 pb-40 sm:px-8",
+        tightBottom ? "lg:pb-6" : "lg:pb-24",
         className,
       )}
     >
@@ -101,49 +127,77 @@ function StageShell({
         )}
       >
         {hasHeader && (
+          /*
+            סדר הכותרת, מלמעלה למטה (לפי בקשת הלקוחה): תג השלב, התגית
+            הקטנה ("הזדהות"), הכותרת, והתיאור.
+
+            הגדלים נשארים קומפקטיים (תג 88, כותרת עד 5xl, ריווח 2): גרסה
+            מוקדמת עם תג 96 וכותרת 6xl אכלה כמעט חצי מגובה המסך.
+          */
           <header
-            className="mb-6 flex flex-none flex-col items-center gap-3 text-center sm:mb-8"
+            className="mb-4 flex flex-none flex-col items-center gap-2 text-center lg:mb-5"
             style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
           >
-            {/*
-              תג השלב, בסגנון לוח בחירת שלבים של משחק: מספר גדול בתוך
-              עיגול עם טבעת שמתמלאת לפי ההתקדמות בסדנה. החליף צ'יפ טקסט
-              קטן - שם "שלב 5" היה מידע, וכאן הוא **מיקום**: רואים במבט
-              אחד כמה כבר עברנו וכמה נשאר.
-            */}
+            {/* תג השלב **מעל** הכותרת ולא לצידה, ובגודל בולט - לפי בקשת
+                הלקוחה. */}
             {stage && (
               <LevelBadge
                 value={stage}
                 progress={totalStages ? stage / totalStages : 1}
-                size={96}
+                size={88}
               />
             )}
 
-            {kicker && (
-              <span className="glass glass-chip text-accent-soft gap-2">
-                {icon && <Icon name={icon} size={15} />}
-                {kicker}
-              </span>
-            )}
+            {/* התגית והמסקנה המעשית באותה שורה, מעל הכותרת */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {kicker && (
+                <span className="glass glass-chip text-accent-soft gap-2">
+                  {icon && <Icon name={icon} size={15} />}
+                  {kicker}
+                </span>
+              )}
+              <ConclusionInHeader />
+            </div>
 
             {title && (
-              <h1 className="glass-title text-4xl sm:text-5xl lg:text-6xl">{title}</h1>
+              <h1
+                className={cx(
+                  "glass-title text-3xl sm:text-4xl",
+                  compactHeader ? "lg:text-4xl" : "lg:text-5xl",
+                )}
+              >
+                {title}
+              </h1>
             )}
 
             {subtitle && (
-              <p className="text-ink-2 max-w-2xl text-lg leading-relaxed sm:text-xl">
+              <p
+                // שורת ההסבר מוצגת תמיד - היא אומרת לקבוצה מה עושים בשלב
+                className="text-ink-2 max-w-3xl text-base leading-relaxed sm:text-lg"
+              >
                 {subtitle}
               </p>
             )}
           </header>
         )}
 
-        {/* אזור התוכן. `min-h-0` הוא מה שמאפשר ל-flex child לגלול בכלל
-            במקום לדחוף את ההורה - בלעדיו הגלילה הפנימית לא קורה. */}
+        {/*
+          אזור התוכן. `min-h-0` הוא מה שמאפשר ל-flex child לגלול בכלל
+          במקום לדחוף את ההורה - בלעדיו הגלילה הפנימית לא קורה.
+
+          **אף מסגרת לא נחתכת:**
+          - `center-safe` ולא `justify-center`: מרכוז רגיל של תוכן גבוה
+            מהאזור דוחף אותו החוצה **גם מלמעלה**, לשטח שאי אפשר לגלול
+            אליו - והשפה העליונה של הכרטיס נעלמה (שלב 2). `safe` ממרכז רק
+            כשיש מקום, ואחרת מצמיד למעלה.
+          - `p-3` (מול `-m-3` שמחזיר את הרוחב): overflow חותך כל מה שמחוץ
+            לתיבה, כולל השפה הצבעונית והצל התלת-ממדי של כרטיס שנוגע בקצה.
+        */}
         <div
           className={cx(
-            "glass-scroll flex w-full min-h-0 flex-1 flex-col items-center overflow-y-auto overflow-x-hidden",
-            center && "justify-center",
+            "-m-3 flex w-[calc(100%+1.5rem)] min-h-0 flex-1 flex-col items-center p-3",
+            clipContent ? "glass-scroll overflow-y-auto overflow-x-hidden" : "overflow-visible",
+            center && "center-safe",
           )}
           style={{ animation: "fade-up var(--ds-dur-slow) 120ms var(--ds-ease) both" }}
         >
@@ -152,7 +206,7 @@ function StageShell({
 
         {actions && (
           <div
-            className="mt-6 flex flex-none flex-col items-center gap-4 sm:mt-8 sm:flex-row sm:justify-center"
+            className="mt-4 flex flex-none flex-col items-center gap-4 sm:flex-row sm:justify-center lg:mt-5"
             style={{ animation: "fade-up var(--ds-dur-slow) 240ms var(--ds-ease) both" }}
           >
             {actions}

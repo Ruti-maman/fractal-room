@@ -85,10 +85,13 @@ const ORBS = Array.from({ length: 12 }, (_, i) => {
     left: i % 2 === 0 ? 2 + seeded(i, 19.1) * 16 : 82 + seeded(i, 23.7) * 15,
     top: 8 + seeded(i, 67.5) * 78,
     size: Math.round(30 + depth * 96),
-    duration: 14 + Math.round(seeded(i, 88.9) * 14),
-    delay: Math.round(seeded(i, 35.2) * 10),
-    dx: Math.round(seeded(i, 72.4) * 34 - 17),
-    dy: -(18 + Math.round(seeded(i, 44.8) * 30)),
+    // תנועה מורגשת שנותנת למסך "חיים" של משחק, אבל רכה (ease-in-out,
+    // הלוך-ושוב): 10-18 שניות לכיוון, עד כ-140px לרוחב ו-160px לגובה.
+    duration: 10 + Math.round(seeded(i, 88.9) * 8),
+    // delay שלילי: כל בועה מתחילה באמצע המסלול שלה, ולא כולן יחד מאפס
+    delay: -Math.round(seeded(i, 35.2) * 12),
+    dx: Math.round(seeded(i, 72.4) * 280 - 140),
+    dy: Math.round(seeded(i, 44.8) * 320 - 160),
     spinFrom: Math.round(seeded(i, 15.6) * 16 - 8),
     spinTo: Math.round(seeded(i, 91.2) * 18 - 6),
   };
@@ -190,10 +193,8 @@ export function BackgroundLayers({ variant = "deep" }: Pick<Props, "variant">) {
           />
         ))}
 
-      {/* לבנים מרחפות - העומק של החלל. לא במסך השקט, שבו התוכן
-          צריך את כל תשומת הלב. */}
-      {!quiet &&
-        ORBS.map((orb, i) => (
+      {/* הכדורים מופיעים בכל המסכים, כולל השקטים (שלב 4) - לבקשת הלקוחה */}
+      {ORBS.map((orb, i) => (
           <span
             key={i}
             className={`bubble bubble--${(i % 5) + 1} absolute`}
@@ -209,8 +210,9 @@ export function BackgroundLayers({ variant = "deep" }: Pick<Props, "variant">) {
               ["--dy" as string]: `${orb.dy}px`,
               ["--spin-from" as string]: `${orb.spinFrom}deg`,
               ["--spin-to" as string]: `${orb.spinTo}deg`,
-              animationDuration: `${orb.duration}s`,
-              animationDelay: `${orb.delay}s`,
+              // השם והחזרה הלוך-ושוב: קודם היו כאן רק duration ו-delay, בלי
+              // animation-name - והבועות עמדו במקום.
+              animation: `orb-drift ${orb.duration}s ease-in-out ${orb.delay}s infinite alternate`,
             }}
           />
         ))}

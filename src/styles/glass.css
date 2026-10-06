@@ -443,16 +443,16 @@
     background-image:
       linear-gradient(
         90deg,
-        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.1) 0%,
         transparent 4%,
         transparent 96%,
-        rgba(255, 255, 255, 0.22) 100%
+        rgba(255, 255, 255, 0.1) 100%
       ),
       linear-gradient(
         160deg,
-        rgba(46, 230, 207, 0.16) 0%,
-        rgba(56, 189, 248, 0.08) 45%,
-        rgba(8, 30, 34, 0.1) 100%
+        rgba(95, 212, 200, 0.07) 0%,
+        rgba(150, 132, 240, 0.07) 50%,
+        rgba(240, 143, 176, 0.05) 100%
       );
   }
 
@@ -472,10 +472,6 @@
     letter-spacing: 0.01em;
   }
 
-  .glass-btn-primary.glass-3d {
-    --side: #064650;
-  }
-
   @media (hover: hover) {
     .glass-btn-primary.glass-3d:hover:not(:disabled) {
       filter: brightness(1.08) saturate(1.1);
@@ -490,7 +486,9 @@
      ובמסגרות הכרטיסים, וזה מה שקושר את כל המסך לשפה אחת במקום אוסף
      של צבעים אקראיים.
      ====================================================================== */
-  :root[data-theme="light"] .glass-title {
+  /* html:root - ספציפיות גבוהה מכלל הבסיס שמופיע מאוחר יותר בקובץ
+     (בלי זה הפסים חזרו לטורקיז בלבד) */
+  html:root .glass-title {
     background-image: linear-gradient(
       100deg,
       var(--ds-rainbow-1),
@@ -505,7 +503,9 @@
   }
 
   /* הכפתור הראשי: הגרדיאנט של האתר, טורקיז אל סגול, עם פס ברק */
-  :root[data-theme="light"] .glass-btn-primary {
+  /* html:root - ספציפיות גבוהה מכלל הבסיס שמופיע מאוחר יותר בקובץ
+     (בלי זה הפסים חזרו לטורקיז בלבד) */
+  html:root .glass-btn-primary {
     background-image:
       linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, transparent 52%),
       linear-gradient(100deg, var(--ds-rainbow-1) 0%, var(--ds-rainbow-2) 50%, var(--ds-rainbow-3) 100%);
@@ -515,17 +515,10 @@
     animation: rainbow-shift-btn 9s ease-in-out infinite alternate;
   }
 
-  :root[data-theme="light"] .glass-btn-primary.glass-3d {
-    --side: #4a4396;
-  }
-
-  /* דפנות תלת-ממד רכות - דופן שחורה על לבן נראית כמו קו שבור */
-  :root[data-theme="light"] .glass-3d {
-    --side: rgba(70, 62, 140, 0.18);
-  }
-
   /* מסגרת הכרטיסים: קשת מלאה, דקה */
-  :root[data-theme="light"] .glass-brick::after {
+  /* html:root - ספציפיות גבוהה מכלל הבסיס שמופיע מאוחר יותר בקובץ
+     (בלי זה הפסים חזרו לטורקיז בלבד) */
+  html:root .glass-brick::after {
     background: linear-gradient(
       135deg,
       var(--ds-rainbow-1),
@@ -548,7 +541,9 @@
   }
 
   /* פסי ההתקדמות מתמלאים בקשת - ככל שמתקדמים, רואים יותר צבעים */
-  :root[data-theme="light"] .glass-slider__fill {
+  /* html:root - ספציפיות גבוהה מכלל הבסיס שמופיע מאוחר יותר בקובץ
+     (בלי זה הפסים חזרו לטורקיז בלבד) */
+  html:root .glass-slider__fill {
     background-image: linear-gradient(
       90deg,
       var(--ds-rainbow-1),
@@ -751,9 +746,16 @@
       background-color var(--ds-dur) var(--ds-ease);
   }
 
+  /* טקסט עזר חלש, שנעלם ברגע שנוגעים בשדה (ולא רק כשמתחילים להקליד) */
   .glass-input::placeholder {
     color: var(--ds-text-3);
-    font-weight: 500;
+    font-weight: 400;
+    opacity: 0.6;
+    transition: opacity var(--ds-dur) var(--ds-ease);
+  }
+
+  .glass-input:focus::placeholder {
+    opacity: 0;
   }
 
   .glass-input:focus {
@@ -900,7 +902,7 @@
   /* במצב כהה הכותרת מקבלת "עובי" של כותרת משחק: צל מוצק מתחת וזוהר
      מסביב. לא במצב בהיר - שם צל כהה נראה כמו לכלוך. */
   :root:not([data-theme="light"]) .glass-title {
-    filter: drop-shadow(0 3px 0 rgba(2, 40, 40, 0.7)) drop-shadow(0 0 22px var(--ds-glow-soft));
+    filter: drop-shadow(0 2px 0 rgba(8, 9, 30, 0.6)) drop-shadow(0 0 18px var(--ds-glow-soft));
   }
 
   /* נפילה רכה: דפדפן בלי background-clip:text היה מציג טקסט שקוף = בלתי
@@ -937,5 +939,261 @@
   /* טקסט על גבי וידאו/תמונה, בלי קופסה מסביב */
   .text-on-media {
     text-shadow: 0 2px 8px rgba(3, 18, 18, 0.9), 0 0 3px rgba(3, 18, 18, 0.8);
+  }
+
+  /* ----------------------------------------------------------------------
+     נפח: אותה רמת תלת-ממד כמו הבועות
+     ----------------------------------------------------------------------
+     שתי מחלקות, אותו חומר:
+     - `.glass-3d`     - כפתור: עולה מעט ב-hover ונלחץ פנימה במגע.
+     - `.glass-raised` - פאנל (טיימר, מד התקדמות, סולם, כרטיסי המתנה):
+       אותו נפח **בלי תנועה** - פאנל ששוקע במגע היה משקר שהוא לחיץ.
+
+     הנפח נבנה בדיוק כמו בבועה (`.bubble`) ולא בדופן שמתחת לחפץ. גרסה
+     קודמת נתנה לכל דבר "דופן" לבנדר עבה מתחתיו, וזה נקרא כצל כחול ולא
+     כחפץ מוצק. כאן כל הנפח נמצא **על פני החפץ**:
+       1. נצנוץ קטן וחד בפינה העליונה (::before), כמו על הכדור.
+       2. פס ברק מעוקל בחצי העליון (::before) - השתקפות על משטח קמור.
+       3. גוף שמתבהר למעלה ומחשיך למטה (background-image), עם אור חוזר
+          עדין בתחתית - זה מה שהופך משטח שטוח לכרית.
+       4. הצללה פנימית: בהירה למעלה, כהה למטה, וקו אור דק בשפה.
+       5. צל **ניטרלי** רך, צמוד ורחוק, שמניח את החפץ על המשטח.
+
+     יושב **בסוף הקובץ** ועם קידומת `:root .glass`, כי כללים מוקדמים
+     (`.glass-brick`, `.glass-active`, הכפתור הראשי) מגדירים box-shadow
+     ורקע משלהם. ההחשכה של הגוף לא מוחלת על `.glass-active` ועל הכפתור
+     הראשי - הגרדיאנט הצבעוני שלהם כבר עושה את העבודה הזו, וכאן הם
+     מקבלים רק את הברק וההצללה.
+     ---------------------------------------------------------------------- */
+
+  /* 1+2. הברק - פס מעוקל למעלה ונצנוץ בפינה */
+  :root .glass.glass-3d::before,
+  :root .glass.glass-raised::before {
+    inset: 2px 3px 46% 3px;
+    background:
+      radial-gradient(
+        ellipse 18% 46% at 10% 30%,
+        var(--ds-3d-gloss) 0%,
+        transparent 100%
+      ),
+      linear-gradient(
+        180deg,
+        var(--ds-3d-gloss) 0%,
+        var(--ds-3d-gloss-soft) 55%,
+        transparent 100%
+      );
+    opacity: 0.85;
+  }
+
+  /* 3. הגוף: בהיר למעלה, כהה למטה, אור חוזר בתחתית */
+  :root .glass.glass-3d:not(.glass-active):not(.glass-btn-primary),
+  :root .glass.glass-raised:not(.glass-active) {
+    background-image:
+      radial-gradient(
+        ellipse 55% 22% at 62% 100%,
+        var(--ds-3d-gloss-soft) 0%,
+        transparent 100%
+      ),
+      /* מקור האור למעלה-שמאל, כמו בבועה: הגוף מחשיך לכיוון הפינה הנגדית */
+      radial-gradient(
+        140% 130% at 28% 8%,
+        transparent 38%,
+        var(--ds-3d-shade) 100%
+      );
+  }
+
+  /* 4+5. הצללה פנימית וצל ניטרלי */
+  :root .glass.glass-3d,
+  :root .glass.glass-raised {
+    box-shadow:
+      inset 0 1.5px 0 0 var(--ds-3d-rim),
+      inset 0 10px 18px -10px var(--ds-3d-rim),
+      inset 0 -12px 22px -12px var(--ds-3d-shade),
+      0 2px 4px -1px var(--ds-3d-shadow-near),
+      0 14px 28px -12px var(--ds-3d-shadow-far);
+  }
+
+  /* מילוי צבעוני (דלוק / ראשי): ההצללה הפנימית חזקה יותר, כמו בבועה */
+  :root .glass-active.glass-3d,
+  :root .glass-active.glass-raised,
+  :root .glass-btn-primary.glass-3d {
+    box-shadow:
+      inset 0 1.5px 0 0 rgba(255, 255, 255, 0.7),
+      inset 0 10px 18px -10px rgba(255, 255, 255, 0.55),
+      inset 0 -14px 22px -10px rgba(0, 0, 0, 0.35),
+      0 2px 4px -1px var(--ds-3d-shadow-near),
+      0 14px 28px -12px var(--ds-3d-shadow-far),
+      0 0 30px -8px var(--ds-glow);
+  }
+
+  :root .glass-active.glass-3d::before,
+  :root .glass-active.glass-raised::before,
+  :root .glass-btn-primary.glass-3d::before {
+    opacity: 0.55;
+  }
+
+  /* תנועה - רק לכפתורים */
+  :root .glass.glass-3d {
+    transition:
+      transform 120ms var(--ds-ease),
+      box-shadow 120ms var(--ds-ease),
+      background-color var(--ds-dur) var(--ds-ease);
+  }
+
+  @media (hover: hover) {
+    :root .glass.glass-3d:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+  }
+
+  /* בלחיצה החפץ נלחץ פנימה: הברק נחלש וההצללה מתהפכת - כהה למעלה */
+  :root .glass.glass-3d:active:not(:disabled) {
+    transform: translateY(1px) scale(0.975);
+    box-shadow:
+      inset 0 8px 16px -8px var(--ds-3d-shade),
+      inset 0 -6px 12px -8px var(--ds-3d-rim),
+      0 1px 2px 0 var(--ds-3d-shadow-near);
+  }
+
+  :root .glass.glass-3d:active:not(:disabled)::before {
+    opacity: 0.4;
+  }
+
+  :root .glass.glass-3d:disabled,
+  :root .glass.glass-3d[aria-disabled="true"] {
+    transform: none;
+    box-shadow: var(--ds-shadow-sm);
+  }
+
+  /* ----------------------------------------------------------------------
+     פסי התקדמות בנפח: חריץ שקוע וצינור מבריק
+     ----------------------------------------------------------------------
+     על פאנל עם נפח, פס שטוח מחזיר את כל המסך להיראות כמו טופס. לכן:
+     - המסילה היא **חריץ** שנחרט בתוך הפאנל: כהה למעלה (הצל של השפה
+       העליונה נופל פנימה), ושפת אור דקה מתחתיה - כמו חריץ אמיתי שמואר
+       מלמעלה.
+     - המילוי הוא **צינור** עגול: פס ברק לבן בחלק העליון, וגוף שמחשיך
+       בתחתית (::after, מעל הצבע - כך הקשת במצב הבהיר והטורקיז במצב
+       הכהה מקבלים אותו נפח בלי לגעת בגרדיאנט שלהם).
+     ---------------------------------------------------------------------- */
+  :root .glass-slider {
+    background-color: transparent;
+    background-image: linear-gradient(
+      180deg,
+      var(--ds-3d-shade) 0%,
+      transparent 100%
+    );
+    box-shadow:
+      inset 0 2px 3px 0 var(--ds-3d-shade),
+      inset 0 1px 1px 0 var(--ds-3d-shade),
+      0 1px 0 0 var(--ds-3d-rim);
+  }
+
+  :root .glass-slider__fill {
+    box-shadow:
+      0 1px 2px 0 var(--ds-3d-shadow-near),
+      0 0 12px -3px var(--ds-glow);
+  }
+
+  :root .glass-slider__fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(255, 255, 255, 0.9) 22%,
+        rgba(255, 255, 255, 0.25) 42%,
+        transparent 55%,
+        rgba(0, 0, 0, 0.28) 100%
+      );
+    box-shadow: inset 0 -1px 1px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  /* מרכוז "בטוח": ממרכז רק כשיש מקום, ואחרת מצמיד להתחלה - כך תוכן גבוה
+     לא נדחף אל מעבר לקצה העליון. השורה הראשונה היא fallback לדפדפן ישן
+     שלא מכיר `safe` (WebView של אנדרואיד) - הוא פשוט יתעלם מהשנייה. */
+  .center-safe {
+    justify-content: center;
+    justify-content: safe center;
+  }
+
+  /* ----------------------------------------------------------------------
+     המסגרת עצמה בתלת-ממד: שפה משופעת (bevel)
+     ----------------------------------------------------------------------
+     ההצללה על פני הגוף לבדה נבלעת על פאנל לבן. מה שגורם למסגרת להיראות
+     כמו לוח עבה הוא **שיפוע בשפה**: קצה חד ובהיר למעלה-שמאל (שם האור
+     פוגע), קצה כהה למטה-ימין (צד בצל), ומעבר רך פנימה משניהם - ומבחוץ
+     צל כבד לכיוון למטה-ימין, והילה בהירה לכיוון האור. אותו מקור אור כמו
+     בבועות (למעלה-שמאל), כך שהכדורים והלוחות נראים מאותו עולם.
+     ---------------------------------------------------------------------- */
+  :root .glass.glass-raised:not(.glass-active),
+  :root .glass.glass-3d:not(.glass-active):not(.glass-btn-primary):not(:active) {
+    box-shadow:
+      inset 2px 2px 0 0 var(--ds-3d-rim),
+      inset 6px 7px 12px -6px var(--ds-3d-rim),
+      /* הצד המוצל רך בלבד - קו כהה חד נקרא ככתם על הכרטיס */
+      inset -6px -8px 18px -10px var(--ds-3d-shade),
+      3px 4px 6px -2px var(--ds-3d-shadow-near),
+      10px 16px 30px -10px var(--ds-3d-shadow-far),
+      -6px -6px 16px -6px var(--ds-3d-halo);
+  }
+
+  /* החוגה של הטיימר: דיסק מורם, מואר למעלה-שמאל, כמו כפתור עגול */
+  .timer-dial {
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 32% 26%, var(--ds-3d-gloss) 0%, transparent 38%),
+      radial-gradient(circle at 40% 35%, transparent 45%, var(--ds-3d-shade) 100%);
+    box-shadow:
+      inset 1.5px 1.5px 0 0 var(--ds-3d-rim),
+      inset -2px -2px 4px 0 var(--ds-3d-shade),
+      2px 3px 6px -1px var(--ds-3d-shadow-near);
+  }
+
+  /* משבצת השראה ריקה בשלב 3: מסגרת דקה בלי מילוי (מילוי לבן נראה כמו
+     שכבה מעל השדה), יורדת שורה וגדלה עם הטקסט. */
+  .slot-input {
+    resize: none;
+    overflow: hidden;
+    field-sizing: content;
+    min-height: 4.25rem;
+    border-radius: 2rem;
+    color: var(--ds-text);
+    /* מסגרת דקה שרואים כבר לפני ההקלדה - בגוון הטורקיז, לא אפור שנבלע ברקע */
+    border: 1.5px solid color-mix(in srgb, var(--ds-accent) 40%, transparent);
+    background: color-mix(in srgb, white 25%, transparent);
+    box-shadow:
+      inset 0 1px 0 0 var(--ds-3d-rim),
+      0 4px 12px -6px color-mix(in srgb, var(--ds-accent) 30%, transparent);
+    transition:
+      border-color var(--ds-dur) var(--ds-ease),
+      box-shadow var(--ds-dur) var(--ds-ease);
+  }
+
+  .slot-input::placeholder {
+    color: var(--ds-text-3);
+    font-weight: 400;
+    opacity: 0.6;
+  }
+
+  .slot-input:focus {
+    outline: none;
+    border-color: var(--ds-accent);
+    box-shadow: 0 0 0 3px var(--ds-glow-soft);
+  }
+
+  .slot-input:focus::placeholder {
+    opacity: 0;
+  }
+
+  /* המצב הכהה: תגיות ניטרליות-סגלגלות ולא טורקיז מלא */
+  :root:not([data-theme="light"]) .glass-chip {
+    background-color: rgba(169, 156, 245, 0.12);
+    color: var(--ds-text);
+    box-shadow: inset 0 0 0 1px rgba(169, 156, 245, 0.3);
   }
 }

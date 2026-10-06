@@ -3,6 +3,9 @@ import { normalizeVotes, useRatings } from "../../hooks/useRatings";
 import type { Group } from "../../types/group";
 import { BackgroundLayers } from "../ui/AppBackground";
 import Icon from "../ui/Icon";
+// תג השלב העגול - אותו תג כמו בכותרת של StageShell בכל שאר השלבים
+import { LevelBadge } from "../ui/GameTile";
+import { ConclusionInHeader } from "../PracticalConclusionBanner";
 import { cx } from "../../lib/cx";
 
 interface Props {
@@ -215,8 +218,20 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
 
   // סדר התצוגה בפודיום: שנייה, ראשונה במרכז, שלישית - כמו פודיום אמיתי
   const podium = [ranking[1], ranking[0], ranking[2]].filter(Boolean);
-  const heights = [112, 158, 88];
-  const places = [2, 1, 3];
+  /*
+    גובה העמוד **יחסי למספר הכוכבים**: מספר כוכבים זהה = גובה זהה, ומנצחת
+    עם פי 4 כוכבים - עמוד גבוה בהרבה. קודם הגבהים היו קבועים לפי מקום
+    (158/112/88), ושתי קבוצות עם 3 כוכבים כל אחת קיבלו עמודים שונים.
+    MIN שומר שגם קבוצה בלי כוכבים תקבל בסיס שרואים.
+  */
+  const PODIUM_MIN = 40;
+  const PODIUM_MAX = 220;
+  const maxLikes = Math.max(1, ...ranking.map((e) => e.likes));
+  const heightFor = (likes: number) =>
+    Math.round(PODIUM_MIN + (likes / maxLikes) * (PODIUM_MAX - PODIUM_MIN));
+  // מקום עם שוויון: מספר הקבוצות שקיבלו יותר כוכבים, ועוד 1 - כך שתי
+  // קבוצות עם אותו מספר כוכבים חולקות את אותו מקום.
+  const placeFor = (likes: number) => ranking.filter((e) => e.likes > likes).length + 1;
 
   return (
     <main className="relative flex h-dvh flex-col items-center justify-center gap-4 overflow-hidden px-6 pt-20 pb-40 text-center">
@@ -246,13 +261,17 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
         </div>
       )}
 
-      <span
-        className="glass glass-chip text-accent-soft relative gap-2"
+      <div
+        className="relative flex flex-col items-center gap-2"
         style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
       >
-        <Icon name="trophy" size={15} />
-        שלב 8 · הכרזת המנצחת
-      </span>
+        <LevelBadge value={8} progress={0.8} size={88} />
+        <span className="glass glass-chip text-accent-soft gap-2">
+          <Icon name="trophy" size={15} />
+          הכרזת המנצחת
+        </span>
+        <ConclusionInHeader />
+      </div>
 
       {/* הגביע, עם קרני אור מסתובבות מאחוריו וניצוצות */}
       <div className="relative flex h-44 w-44 items-center justify-center">
@@ -335,13 +354,13 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
       {hasVotes && (
         <div className="relative flex items-end justify-center gap-3 pb-1 sm:gap-4">
           {podium.map((entry, i) => {
-            const isWinner = entry.group.id === winner?.group.id;
+            const isWinner = entry.likes === winner?.likes;
             return (
               <div
                 key={entry.group.id}
                 className="flex w-28 flex-col items-center gap-2 sm:w-40"
               >
-                <PlaceDisc place={places[i]} />
+                <PlaceDisc place={placeFor(entry.likes)} />
                 <span className="text-ink truncate text-sm font-bold sm:text-base">
                   {entry.group.name ?? `מסך ${entry.group.screen_number}`}
                 </span>
@@ -355,7 +374,7 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
                     isWinner && "glass-active",
                   )}
                   style={{
-                    height: heights[i],
+                    height: heightFor(entry.likes),
                     animation: `podium-rise 0.7s ${0.5 + i * 0.15}s var(--ds-ease-spring) both`,
                   }}
                 />

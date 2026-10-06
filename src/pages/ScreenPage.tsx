@@ -30,7 +30,7 @@ function ScreenPage() {
   }
 
   if (loading || stagesLoading) {
-    return <LoadingState title="מתחברות לחדר" description="טוענות את הסדנה הפעילה..." />;
+    return <LoadingState title="מתחבר..." description="טוען..." />;
   }
 
   // אין הפעלה פעילה במסד - זה המצב הרגיל לפני שנפתחה סדנה, לא תקלה.

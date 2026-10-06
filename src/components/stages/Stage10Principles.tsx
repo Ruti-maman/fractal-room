@@ -49,7 +49,7 @@ function Stage10Principles({ workshopId, myGroup }: Props) {
             <Spinner size={60} className="relative" />
           </div>
           <p className="text-ink-2 text-lg">
-            מנסחת את משפט הסיום מתוך כל מה שיצרתן...
+            מנסח את משפט הסיום...
           </p>
         </div>
       )}

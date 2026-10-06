@@ -16,7 +16,7 @@ import Stage10Principles from "./stages/Stage10Principles";
 import Timer from "./Timer";
 import ProgressBar from "./ProgressBar";
 import InspirationsLadder from "./InspirationsLadder";
-import PracticalConclusionBanner from "./PracticalConclusionBanner";
+import { ConclusionContext } from "./PracticalConclusionBanner";
 import TopBar from "./TopBar";
 import StageTransition from "./StageTransition";
 import { ErrorState } from "./ui";
@@ -48,7 +48,7 @@ function StageRouter({
   workshopCreatedAt,
   sharedStageStartedAt,
   sharedStageNumber,
-  onAdvance,
+  onAdvance: rawAdvance,
   onGoBack,
 }: Props) {
   const stage = stages.find((s) => s.stage_number === myGroup.current_stage);
@@ -82,6 +82,13 @@ function StageRouter({
   // "מתוך" לפי מספר השלב האחרון בתוכנית ולא לפי כמות השורות - מספרי השלבים
   // לא בהכרח רציפים (שלב 9 הוסר), ואז "שלב 10 מתוך 9" היה נראה שבור.
   const lastStageNumber = stages.reduce((max, st) => Math.max(max, st.stage_number), 0);
+
+  /*
+    אין המשך אחרי השלב האחרון (דרישת הלקוחה): לא בכפתור ולא בטיימר. קודם
+    הטיימר של שלב 10 קידם ל"שלב 11", ונפתח מסך "אין הגדרה לשלב 11".
+  */
+  const isLastStage = !!stage && lastStageNumber > 0 && stage.stage_number >= lastStageNumber;
+  const onAdvance = isLastStage ? () => {} : rawAdvance;
   const progressBar = (
     <ProgressBar
       allGroups={allGroups}
@@ -234,7 +241,11 @@ function StageRouter({
 
   return (
     <>
-      <StageTransition stageKey={stage.stage_number}>{stageContent}</StageTransition>
+      <ConclusionContext.Provider
+        value={{ workshopId, groupId: myGroup.id, show: showPracticalConclusion }}
+      >
+        <StageTransition stageKey={stage.stage_number}>{stageContent}</StageTransition>
+      </ConclusionContext.Provider>
       {showInspirationsLadder && <InspirationsLadder workshopId={workshopId} />}
       {/* הסרגל העליון מושהה במסך הפתיחה (שלב 1) יחד עם המד והטיימר: לפני
           ההזדהות לקבוצה עוד אין שם להציג, ואין לאן לחזור. */}
@@ -243,11 +254,6 @@ function StageRouter({
           myGroup={myGroup}
           screenNumber={screenNumber}
           onGoBack={canGoBack ? onGoBack : undefined}
-          center={
-            showPracticalConclusion ? (
-              <PracticalConclusionBanner workshopId={workshopId} groupId={myGroup.id} />
-            ) : null
-          }
         />
       )}
       {isOpeningScreen ? null : progressBar}

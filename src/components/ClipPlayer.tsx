@@ -190,7 +190,7 @@ function ClipPlayer({ src, caption, title }: { src: string; caption?: string; ti
       {!playing && (
         <button
           type="button"
-          aria-label={ended ? "לצפייה מהתחלה" : "נגני"}
+          aria-label={ended ? "לצפייה מהתחלה" : "ניגון"}
           onClick={ended ? restart : togglePlay}
           className="absolute inset-0 flex flex-col items-center justify-center gap-3"
         >
@@ -242,7 +242,7 @@ function ClipPlayer({ src, caption, title }: { src: string; caption?: string; ti
 
         <div className="mt-2 flex items-center gap-1">
           <PlayerButton
-            label={playing ? "השהיה" : "נגני"}
+            label={playing ? "השהיה" : "ניגון"}
             icon={playing ? "pause" : "play"}
             onClick={togglePlay}
           />

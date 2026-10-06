@@ -128,8 +128,8 @@ function Scene({ scene }: { scene: TileScene }) {
     >
       <defs>
         <linearGradient id={`sky-${scene}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#16484c" />
-          <stop offset="100%" stopColor="#23706e" />
+          <stop offset="0%" stopColor="#e8f7f6" />
+          <stop offset="100%" stopColor="#f4f1fd" />
         </linearGradient>
       </defs>
 
@@ -137,17 +137,17 @@ function Scene({ scene }: { scene: TileScene }) {
 
       {scene === "peaks" && (
         <>
-          <path d="M0 150 L70 62 L132 150Z" fill="#3c8481" opacity="0.9" />
-          <path d="M96 150 L178 44 L262 150Z" fill="#59a8a2" opacity="0.95" />
-          <path d="M214 150 L286 76 L320 116 L320 150Z" fill="#7cc5c0" opacity="0.9" />
-          <circle cx="248" cy="40" r="17" fill="#e8fffd" opacity="0.95" />
+          <path d="M0 150 L70 62 L132 150Z" fill="#bfe8e4" opacity="0.9" />
+          <path d="M96 150 L178 44 L262 150Z" fill="#c9d8f6" opacity="0.95" />
+          <path d="M214 150 L286 76 L320 116 L320 150Z" fill="#f3cfdc" opacity="0.9" />
+          <circle cx="248" cy="40" r="17" fill="#ffffff" opacity="0.95" />
         </>
       )}
 
       {scene === "horizon" && (
         <>
-          <circle cx="160" cy="104" r="46" fill="#d0efee" opacity="0.95" />
-          <rect y="104" width="320" height="46" fill="#0d3134" />
+          <circle cx="160" cy="104" r="46" fill="#ffe2c8" opacity="0.95" />
+          <rect y="104" width="320" height="46" fill="#dcefff" />
           {[0, 1, 2, 3].map((i) => (
             <rect
               key={i}
@@ -155,7 +155,7 @@ function Scene({ scene }: { scene: TileScene }) {
               y={112 + i * 10}
               width="320"
               height="3"
-              fill="#a7e9e5"
+              fill="#b9b2ea"
               opacity={0.65 - i * 0.12}
             />
           ))}
@@ -171,12 +171,12 @@ function Scene({ scene }: { scene: TileScene }) {
               cy="168"
               r={46 + i * 30}
               fill="none"
-              stroke="#a7e9e5"
+              stroke="#b9b2ea"
               strokeWidth="3"
               opacity={0.7 - i * 0.14}
             />
           ))}
-          <circle cx="160" cy="168" r="30" fill="#eafffe" opacity="0.95" />
+          <circle cx="160" cy="168" r="30" fill="#ffffff" opacity="0.95" />
         </>
       )}
 
@@ -189,7 +189,7 @@ function Scene({ scene }: { scene: TileScene }) {
               y1="0"
               x2={-40 + i * 90}
               y2="150"
-              stroke="#7cc5c0"
+              stroke="#f3cfdc"
               strokeWidth="2"
               opacity="0.65"
             />
@@ -201,7 +201,7 @@ function Scene({ scene }: { scene: TileScene }) {
               y1={58 + i * 26}
               x2="320"
               y2={58 + i * 26}
-              stroke="#7cc5c0"
+              stroke="#f3cfdc"
               strokeWidth="2"
               opacity={0.6 - i * 0.1}
             />
@@ -211,7 +211,7 @@ function Scene({ scene }: { scene: TileScene }) {
 
       {scene === "bloom" && (
         <>
-          <circle cx="160" cy="78" r="58" fill="#3c8481" opacity="0.8" />
+          <circle cx="160" cy="78" r="58" fill="#bfe8e4" opacity="0.8" />
           {Array.from({ length: 8 }, (_, i) => {
             const a = (i * Math.PI) / 4;
             return (
@@ -221,14 +221,14 @@ function Scene({ scene }: { scene: TileScene }) {
                 y1={78 + Math.sin(a) * 30}
                 x2={160 + Math.cos(a) * 74}
                 y2={78 + Math.sin(a) * 74}
-                stroke="#c7f5f4"
+                stroke="#9fdcd6"
                 strokeWidth="4"
                 strokeLinecap="round"
                 opacity="0.75"
               />
             );
           })}
-          <circle cx="160" cy="78" r="26" fill="#f0fffe" opacity="0.96" />
+          <circle cx="160" cy="78" r="26" fill="#ffffff" opacity="0.96" />
         </>
       )}
 
@@ -236,8 +236,10 @@ function Scene({ scene }: { scene: TileScene }) {
       <rect y="96" width="320" height="54" fill="url(#fade)" />
       <defs>
         <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#05100f" stopOpacity="0" />
-          <stop offset="100%" stopColor="#05100f" stopOpacity="0.88" />
+          {/* הסצנה נמוגה אל הלבן של האריח - פסטל בהיר ולא טורקיז כהה, לפי
+              בקשת הלקוחה (הכחול הכהה נראה כבד על המצב הבהיר) */}
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0.9" />
         </linearGradient>
       </defs>
     </svg>
@@ -256,6 +258,11 @@ interface TileProps {
   badge?: ReactNode;
   children?: ReactNode;
   onClick?: () => void;
+  /**
+   * אריח חלק, בלי סצנה מאוירת: התג והכותרת בראש, והטקסט מתחת. לבקשת
+   * הלקוחה בשלב 5 - הסצנות (הרים, קווים, קשתות) נקראו כ"סימנים" על האריח.
+   */
+  plain?: boolean;
   /** כיתוב קטן בתחתית, כמו "לבחירה". */
   footer?: ReactNode;
   className?: string;
@@ -272,6 +279,7 @@ function GameTile({
   footer,
   className,
   style,
+  plain = false,
 }: TileProps) {
   const Tag = onClick ? "button" : "div";
 
@@ -286,41 +294,63 @@ function GameTile({
       )}
       style={style}
     >
+      {/* אריח חלק: התג, הכותרת והטקסט כגוש אחד ממורכז באמצע האריח */}
+      {plain && (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-5 py-4">
+          {badge}
+          <span className="text-ink-2 text-base font-extrabold tracking-tight sm:text-lg">{title}</span>
+          {children}
+        </div>
+      )}
+
       {/* --- הסצנה --- */}
-      <div className="relative h-[8.5rem] w-full flex-none overflow-hidden">
+      {/* הסצנה היא החלק היחיד שמתכווץ (בסיס 8.5rem, מינימום 3rem): כשהאריח
+          נדחס לגובה נתון - כמו ברשת של שלב 5 במסך נמוך - האיור מוותר על
+          גובה, והכותרת, התג והטקסט נשארים שלמים. המינימום (5.75rem) הוא
+          גובה הכותרת ועוד החלק של התג שנכנס לסצנה (`-mt-11`), כדי שהתג
+          לא יעלה על הכותרת. */}
+      {!plain && (
+      <div className="relative min-h-[5.75rem] w-full flex-[0_1_8.5rem] overflow-hidden">
         <Scene scene={scene} />
 
         {/* הכותרת יושבת על הסצנה, כמו ברפרנס */}
-        <div className="absolute inset-x-0 top-0 flex items-center justify-center gap-2 p-4">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-center gap-2 p-3">
           {icon && <Icon name={icon} size={20} className="text-accent-pale flex-none" />}
           <span
-            className="text-xl font-extrabold tracking-tight text-white sm:text-2xl"
-            style={{ textShadow: "0 2px 10px rgba(0,0,0,0.75)" }}
+            className="text-ink text-xl font-extrabold tracking-tight sm:text-2xl"
+            style={{ textShadow: "0 1px 0 rgba(255,255,255,0.9)" }}
           >
             {title}
           </span>
         </div>
       </div>
 
+      )}
+
       {/* --- התג, יושב בדיוק על הגבול --- */}
-      {badge && (
+      {badge && !plain && (
         <div className="relative z-10 -mt-11 flex justify-center">{badge}</div>
       )}
 
       {/* --- הגוף --- */}
+      {!plain && (
       <div
         className={cx(
+          // במסך נמוך הריווח מתהדק, ומתחת ל-900px גם "לבחירה" יורד -
+          // האריח כולו לחיץ, והכיתוב הוא רמז ולא הכרח.
           "flex flex-1 flex-col items-center justify-center gap-3 px-5 pb-5",
-          badge ? "pt-3" : "pt-5",
+          "[@media(max-height:900px)]:gap-1 [@media(max-height:900px)]:pb-3",
+          plain ? "pt-2" : badge ? "pt-3" : "pt-5",
         )}
       >
         {children}
         {footer && (
-          <span className="text-ink-3 group-hover:text-ink-2 mt-1 text-sm font-bold transition-colors">
+          <span className="text-ink-3 group-hover:text-ink-2 mt-1 text-sm font-bold transition-colors [@media(max-height:900px)]:hidden">
             {footer}
           </span>
         )}
       </div>
+      )}
     </Tag>
   );
 }

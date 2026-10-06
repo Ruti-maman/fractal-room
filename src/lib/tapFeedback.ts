@@ -131,6 +131,61 @@ export function playWhoosh() {
 }
 
 /**
+ * הצליל של הדקה האחרונה - לבקשת הלקוחה: חזק ומלחיץ.
+ * כל שנייה: "דופק" נמוך (כמו לב פועם) + תקתוק חד מעליו. ב-10 השניות
+ * האחרונות מתווסף ביפ אזעקה כפול שעולה בגובה ככל שמתקרבים לאפס.
+ * `secondsLeft` קובע את העוצמה והגובה - הלחץ גדל עם הזמן.
+ */
+export function playClockTick({ secondsLeft = 60 } = {}) {
+  if (!tapSoundEnabled()) return;
+  const ctx = getContext();
+  if (!ctx) return;
+  if (ctx.state === "suspended") ctx.resume().catch(() => {});
+
+  // 0 בתחילת הדקה, 1 בסופה
+  const urgency = Math.min(1, Math.max(0, (60 - secondsLeft) / 60));
+
+  const tone = (
+    type: OscillatorType,
+    from: number,
+    to: number,
+    at: number,
+    length: number,
+    volume: number,
+  ) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(from, at);
+    osc.frequency.exponentialRampToValueAtTime(to, at + length);
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(volume, at + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(at);
+    osc.stop(at + length + 0.02);
+  };
+
+  try {
+    const now = ctx.currentTime;
+    // דופק כפול (לאב-דאב) - נמוך ועמוק
+    tone("sine", 95, 50, now, 0.14, 0.45 + urgency * 0.25);
+    tone("sine", 85, 45, now + 0.18, 0.12, 0.3 + urgency * 0.2);
+    // תקתוק חד
+    tone("square", 1800, 900, now, 0.035, 0.12 + urgency * 0.1);
+
+    if (secondsLeft <= 10) {
+      // אזעקה: שני ביפים, גבוהים יותר ככל שמתקרבים לאפס
+      const pitch = 880 + (10 - secondsLeft) * 70;
+      tone("sawtooth", pitch, pitch, now + 0.3, 0.12, 0.16);
+      tone("sawtooth", pitch * 1.06, pitch * 1.06, now + 0.48, 0.12, 0.16);
+    }
+  } catch {
+    // בלי צליל - לא עוצרים שום זרימה בגללו
+  }
+}
+
+/**
  * רטט קצר, איפה שהמכשיר תומך. על פלזמת אנדרואיד זה בדרך כלל לא יעשה
  * כלום, ועל טאבלט/טלפון זה מוסיף הרבה - ולכן זה נקרא בלי תנאי ובלי
  * להיכשל כשאין תמיכה.

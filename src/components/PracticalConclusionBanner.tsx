@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
+import { createPortal } from "react-dom";
 import { useFunctioningPicture } from "../hooks/useFunctioningPicture";
 import Icon from "./ui/Icon";
 import GlassModal from "./ui/GlassModal";
@@ -37,16 +38,19 @@ function PracticalConclusionBanner({ workshopId, groupId }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label={`המסקנה המעשית שלנו: ${conclusion}. לחצו להצגה מלאה`}
-        className="glass glass-interactive glass-pill max-w-[min(58vw,40rem)] gap-2.5 py-2 ps-4 pe-3"
+        className="glass glass-interactive glass-3d glass-pill max-w-[min(80vw,46rem)] gap-2.5 py-2 ps-4 pe-3"
       >
         <Icon name="lightbulb" size={17} className="text-accent-soft flex-none" />
-        <span className="text-ink-3 flex-none text-[10px] font-bold tracking-wide">
-          המסקנה שלנו
+        <span className="text-ink-3 flex-none text-xs font-bold tracking-wide">
+          המסקנה שלנו:
         </span>
-        <span className="text-ink min-w-0 truncate text-sm font-bold">{conclusion}</span>
+        <span className="text-ink min-w-0 truncate text-base font-bold">{conclusion}</span>
         <Icon name="chevronDown" size={15} className="text-ink-3 flex-none" />
       </button>
 
+      {/* portal ל-body: הכפתור יושב בכותרת המונפשת (transform), ומודאל fixed
+          בתוכה נמדד ביחס אליה ולא לחלון - הוא נמעך לעמודה צרה (באג 6). */}
+      {createPortal(
       <GlassModal
         open={open}
         onClose={() => setOpen(false)}
@@ -58,9 +62,31 @@ function PracticalConclusionBanner({ workshopId, groupId }: Props) {
         <p className="text-ink-3 mt-5 text-sm">
           ניסחתן אותה בשלב 4, והיא מלווה אתכן עד סוף הסדנה.
         </p>
-      </GlassModal>
+      </GlassModal>,
+        document.body,
+      )}
     </>
   );
+}
+
+/*
+  המסקנה מוצגת **בכותרת של כל שלב**, מתחת לכותרת (לבקשת הלקוחה), ולא
+  בסרגל העליון. StageRouter מספק דרך ה-context את הקבוצה ואם להציג;
+  כל כותרת (StageShell, ושלבים עם כותרת משלהם כמו 7 ו-8) מציבה את
+  <ConclusionInHeader /> - ומקבלת אותה בלי לדעת על workshop או group.
+*/
+interface ConclusionContextValue {
+  workshopId: string;
+  groupId: string;
+  show: boolean;
+}
+
+export const ConclusionContext = createContext<ConclusionContextValue | null>(null);
+
+export function ConclusionInHeader() {
+  const ctx = useContext(ConclusionContext);
+  if (!ctx?.show) return null;
+  return <PracticalConclusionBanner workshopId={ctx.workshopId} groupId={ctx.groupId} />;
 }
 
 export default PracticalConclusionBanner;
