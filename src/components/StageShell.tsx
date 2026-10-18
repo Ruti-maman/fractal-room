@@ -16,7 +16,7 @@
  *  ב-CLAUDE.md) - משתתפת עומדת מול פלזמה של 65", והחלק העליון רחוק מהיד.
  */
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { cx } from "../lib/cx";
 import { BackgroundLayers, type BackgroundVariant } from "./ui/AppBackground";
 import Icon, { type IconName } from "./ui/Icon";
@@ -63,6 +63,8 @@ interface Props {
    * סתם גוזלת ממנו גובה.
    */
   tightBottom?: boolean;
+  /** style ל-<main> - להזזת המסך כולו בגרירה (ראו SwipeToAdvance). */
+  style?: CSSProperties;
 }
 
 const WIDTH: Record<NonNullable<Props["width"]>, string> = {
@@ -89,6 +91,7 @@ function StageShell({
   compactHeader = false,
   clipContent = true,
   tightBottom = false,
+  style,
 }: Props) {
   const hasHeader = Boolean(stage || kicker || title || subtitle);
 
@@ -117,6 +120,7 @@ function StageShell({
         tightBottom ? "lg:pb-6" : "lg:pb-24",
         className,
       )}
+      style={style}
     >
       <BackgroundLayers variant={background} />
 

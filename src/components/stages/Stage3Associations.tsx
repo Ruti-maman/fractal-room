@@ -5,7 +5,7 @@ import { useInspirations } from "../../hooks/useInspirations";
 import { useInspirationSelection } from "../../hooks/useInspirationSelection";
 import StageShell from "../StageShell";
 import Icon from "../ui/Icon";
-import GlassModal from "../ui/GlassModal";
+import { SwipeToAdvanceLayer, useSwipeToAdvance } from "../SwipeToAdvance";
 import { GlassButton, Spinner } from "../ui/Glass";
 import { cx } from "../../lib/cx";
 
@@ -29,6 +29,7 @@ const INTRO_DEFAULTS: Stage3IntroTexts = {
   step1: "השלימו את כיווני המחשבה סביב השמש,",
   step2: "לאחר מכן לחצו על ארבעה כיוונים נבחרים שיוכלו לסייע לכן בהמשך המחקר",
   strip_hint: "לחצו על כיוון מחשבה כדי שתיבחר",
+  swipe_hint: "גררו את המסך ימינה או שמאלה כדי להמשיך",
 };
 const FLY_DURATION_MS = 550;
 
@@ -160,7 +161,6 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
 
   const { items, loading: loadingText, mutate: mutateText } = useInspirations(workshopId);
   const { selected, loading: loadingSelection, mutate } = useInspirationSelection(workshopId, myGroup.id);
-  const [showPopup, setShowPopup] = useState(false);
   const [flyingChips, setFlyingChips] = useState<FlyingChip[]>([]);
   const stripRef = useRef<HTMLDivElement>(null);
   const flyKeyRef = useRef(0);
@@ -216,13 +216,10 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
     });
   }
 
-  // ברגע שהקבוצה שלנו בחרה את ההשראה הרביעית - קופץ פופ-אפ עם משפט חזק,
-  // ומחכים ללחיצה על הכפתור לפני שעוברים הלאה (לפי המצגת, שקף 5).
-  useEffect(() => {
-    if (selectedCount === MAX_SELECTED && !showPopup) {
-      setShowPopup(true);
-    }
-  }, [selectedCount, showPopup]);
+  // ברגע שהקבוצה שלנו בחרה את ההשראה הרביעית - מופיע משפט חזק, והקבוצה
+  // גוררת את המסך ימינה או שמאלה כדי לעבור הלאה (במקום פופ-אפ עם כפתור -
+  // בקשת הלקוחה, שקף 6 במצגת האפליקציה). לפני ההחזרות המוקדמות, כי זה hook.
+  const swipe = useSwipeToAdvance(selectedCount === MAX_SELECTED, onAdvance);
 
   if (loading) {
     return (
@@ -286,6 +283,7 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
 
   return (
     <StageShell
+      style={swipe.shellStyle}
       compactHeader
       clipContent={false}
       stage={3}
@@ -377,14 +375,10 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
             <FlyingChipEl key={chip.key} chip={chip} />
           ))}
 
-          <GlassModal
-            open={showPopup}
+          <SwipeToAdvanceLayer
+            swipe={swipe}
             title={content.transition_text ?? "בחרתן את ההשראות שלכן"}
-            icon="sparkles"
-            tone="ok"
-            confirmLabel="לשלב הבא"
-            onConfirm={onAdvance}
-            dismissable={false}
+            hint={intro.swipe_hint}
           />
         </>
       }

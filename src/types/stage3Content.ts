@@ -12,6 +12,8 @@ export interface Stage3IntroTexts {
   step1: string;
   step2: string;
   strip_hint: string;
+  /** ההסבר בכרטיס שמופיע אחרי הבחירה הרביעית: גוררים את המסך לשלב הבא. */
+  swipe_hint: string;
 }
 
 export interface InspirationItem {
