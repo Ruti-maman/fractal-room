@@ -1,15 +1,35 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import type { Group } from "../../types/group";
-import type { Stage3Content, InspirationItem } from "../../types/stage3Content";
+import type { Stage3Content, InspirationItem, Stage3IntroTexts } from "../../types/stage3Content";
 import { useInspirations } from "../../hooks/useInspirations";
 import { useInspirationSelection } from "../../hooks/useInspirationSelection";
 import StageShell from "../StageShell";
 import Icon from "../ui/Icon";
 import GlassModal from "../ui/GlassModal";
-import { Spinner } from "../ui/Glass";
+import { GlassButton, Spinner } from "../ui/Glass";
 import { cx } from "../../lib/cx";
 
 const MAX_SELECTED = 4;
+
+/* ברירות מחדל - הנוסח של הלקוחה מהאפיון (נדרס מ-content.intro ב-DB). */
+const INTRO_DEFAULTS: Stage3IntroTexts = {
+  lines: [
+    { text: "מצאנו את הצורה." },
+    { text: "עכשיו — איפה היא נשברת? יש דילמה?" },
+    { text: "מצוין." },
+    { text: "כי לפני שמשנים צורה," },
+    { text: "צריך להבין איפה היא לא עובדת.", bold: true },
+    { text: "כתבו כל מה שעולה לכן עכשיו בראש," },
+    { text: "אחת שתיים שלוש ו -", bold: true },
+    { text: "רעיון / שאלה / תחושה / כיוון." },
+    { text: "בשלב הזה לא מסדרים את המחשבות," },
+    { text: "כאן נותנים להן לצאת." },
+  ],
+  start_label: "התחלנו",
+  step1: "השלימו את כיווני המחשבה סביב השמש,",
+  step2: "לאחר מכן לחצו על ארבעה כיוונים נבחרים שיוכלו לסייע לכן בהמשך המחקר",
+  strip_hint: "לחצו על כיוון מחשבה כדי שתיבחר",
+};
 const FLY_DURATION_MS = 550;
 
 /**
@@ -147,6 +167,7 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
 
   // 7 משבצות קבועות (כמו במצגת) - items[i] קיים רק אחרי שנכתב בו משהו.
   const slots = fillSlots(items);
+  const [introDone, setIntroDone] = useState(false);
   const selectedCount = selected.length;
   const loading = loadingText || loadingSelection;
 
@@ -211,6 +232,53 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
     );
   }
 
+  const intro = { ...INTRO_DEFAULTS, ...(content.intro ?? {}) };
+  // צעד I עד שכל המשבצות סביב השמש מלאות, ואז צעד II (בחירת ארבעה)
+  const allFilled = slots.every((s) => s.text.trim().length > 0);
+
+  /*
+    מסך הפתיחה (לפי האפיון): הטקסט המלא, ובסופו "התחלנו". מקומי לכל
+    מסך - קבוצה שכבר בחרה השראות (למשל אחרי רענון) לא רואה אותו שוב.
+  */
+  if (!introDone && selectedCount === 0) {
+    return (
+      <StageShell
+        stage={3}
+        kicker="שמש אסוציאציות"
+        icon="sun"
+        background="radiant"
+        width="normal"
+        compactHeader
+        // הכרטיס צר מהרווח שבין המד לטיימר - אין צורך לשמור להם רצועה
+        tightBottom
+        actions={
+          <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={() => setIntroDone(true)}>
+            {intro.start_label}
+          </GlassButton>
+        }
+      >
+        {/* גודל הכתב נגזר מגובה המסך (vh) - כך כל עשר השורות נכנסות בלי
+            גלילה גם במסך נמוך או עם זום בדפדפן, ובפלזמה הן גדולות */}
+        <div className="glass glass-brick glass-raised flex max-w-4xl flex-col items-center gap-[0.5vh] rounded-2xl px-14 py-[2.6vh] text-center">
+          {intro.lines.map((line, i) => (
+            <p
+              key={i}
+              className={cx(
+                "leading-snug",
+                line.bold
+                  ? "text-ink text-[clamp(1.15rem,3.75vh,2.6rem)] font-extrabold"
+                  : "text-ink-2 text-[clamp(1rem,3.15vh,2.1rem)]",
+              )}
+              style={{ animation: `fade-up 0.6s ${0.15 + i * 0.12}s var(--ds-ease) both` }}
+            >
+              {line.text}
+            </p>
+          ))}
+        </div>
+      </StageShell>
+    );
+  }
+
   const remaining = MAX_SELECTED - selectedCount;
   // 0 עד 1. זה מה שמניע את טבעת הטעינה, גודל ההילה ועוצמת הזוהר של
   // הליבה - כך שהשלב מרגיש כמו טעינת מקור אור ולא כמו מילוי טופס.
@@ -224,7 +292,33 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
       kicker="שמש אסוציאציות"
       icon="sun"
       title="מה עולה לכן מהדילמה?"
-      subtitle="השלימו את ההשראות סביב השמש, ובחרו את הארבע החזקות ביותר."
+      // שני הצעדים מהאפיון; הצעד הנוכחי מודגש
+      subtitle={
+        <span className="flex flex-col items-center gap-1">
+          {[intro.step1, intro.step2].map((text, i) => {
+            const active = (i === 0 && !allFilled) || (i === 1 && allFilled);
+            return (
+              <span
+                key={i}
+                className={cx(
+                  "flex items-center gap-2 transition-all duration-300",
+                  active ? "text-ink text-xl font-extrabold" : "text-ink-3 text-lg",
+                )}
+              >
+                <span
+                  className={cx(
+                    "flex h-7 w-7 flex-none items-center justify-center text-[11px] font-extrabold",
+                    active ? `bubble bubble--${i + 1}` : "bubble bubble-hollow",
+                  )}
+                >
+                  {i === 0 ? "I" : "II"}
+                </span>
+                {text}
+              </span>
+            );
+          })}
+        </span>
+      }
       background="radiant"
       width="full"
       // בלי ריווח תחתון מיוחד: היה כאן !pb-56 (224px) שהשאיר רצועה ריקה
@@ -258,9 +352,7 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
 
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
               {selected.length === 0 ? (
-                <span className="text-ink-3 text-xs">
-                  לחצו על השראה בשמש כדי לבחור אותה
-                </span>
+                <span className="text-ink-2 text-sm font-bold">{intro.strip_hint}</span>
               ) : (
                 selected.map((index) => (
                   <span
@@ -276,7 +368,7 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
 
             {remaining > 0 && remaining <= 2 && (
               <span className="text-accent-soft flex-none text-xs font-bold">
-                {remaining === 1 ? "עוד אחת ועוברים!" : `עוד ${remaining}`}
+                {remaining === 1 ? "עוד בחירה אחת, ונמשיך!" : `עוד ${remaining}`}
               </span>
             )}
           </div>

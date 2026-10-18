@@ -49,6 +49,35 @@
   }
 }
 
+/* כניסת הזום של שלב 2 (ZoomIntro): הפרקטל גדל פי 14 - "צוללים לתוכו" -
+   ושכבת הרקע שמאחוריו נמוגה, וחושפת את השלב. */
+@keyframes zoom-dive {
+  0% {
+    transform: scale(0.55) rotate(-8deg);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(0.8) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(14) rotate(12deg);
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-veil {
+  0%,
+  55% {
+    opacity: 1;
+    background-color: var(--ds-bg-solid);
+  }
+  100% {
+    opacity: 0;
+    background-color: transparent;
+  }
+}
+
 /* כניסה רכה מלמטה - לשימוש עם animation-delay מדורג, כדי שהדף "יתרכב" בעדינות. */
 @keyframes fade-up {
   from {

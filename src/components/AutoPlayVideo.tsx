@@ -6,6 +6,13 @@ interface Props {
   onEnded?: () => void;
   /** הסרטון ממלא את ההורה (גובה ורוחב) - למסגרת שגודלה נקבע מבחוץ. */
   fill?: boolean;
+  /** false = מתנגן פעם אחת ו-onEnded נקרא בסופו (ברירת מחדל: לופ). */
+  loop?: boolean;
+  /** פס הפקדים של הדפדפן (ברירת מחדל: מוצג). */
+  controls?: boolean;
+  /** false = בלי שורת "געו במסך כדי להפעיל את הקול" (נגיעה עדיין מחזירה קול). */
+  soundHint?: boolean;
+  onError?: () => void;
 }
 
 /**
@@ -24,7 +31,16 @@ interface Props {
  * הכלל החשוב: **לעולם לא להשאיר את הסרטון עצור**. אם הקול נחסם, ממשיכים
  * מושתק - אחרת המסך נראה תקוע.
  */
-function AutoPlayVideo({ src, className, onEnded, fill = false }: Props) {
+function AutoPlayVideo({
+  src,
+  className,
+  onEnded,
+  fill = false,
+  loop = true,
+  controls = true,
+  soundHint = true,
+  onError,
+}: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [soundBlocked, setSoundBlocked] = useState(false);
 
@@ -94,14 +110,15 @@ function AutoPlayVideo({ src, className, onEnded, fill = false }: Props) {
         autoPlay
         playsInline
         // רץ בלופ: המסך לא נשאר על פריים קפוא בזמן שהקבוצה עדיין צופה/מדברת
-        loop
+        loop={loop}
         // פס הפקדים של הדפדפן - עצירה, עוצמת קול ומסך מלא, לפי בקשת הלקוחה
-        controls
+        controls={controls}
         onEnded={onEnded}
+        onError={onError}
         className={className}
         data-audio-blocked={soundBlocked ? "true" : undefined}
       />
-      {soundBlocked && (
+      {soundBlocked && soundHint && (
         <p className="text-sm font-bold text-white/50">געו במסך כדי להפעיל את הקול</p>
       )}
     </div>
