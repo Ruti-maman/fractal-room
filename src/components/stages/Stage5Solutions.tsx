@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Stage5Content, SolutionOption } from "../../types/stage5Content";
+import type { ExplanationLine, Stage5Content, SolutionOption } from "../../types/stage5Content";
 import StageShell from "../StageShell";
 import Icon from "../ui/Icon";
 import GlassModal from "../ui/GlassModal";
@@ -156,16 +156,31 @@ const OPTION_LETTERS = ["א", "ב", "ג", "ד", "ה", "ו"];
 
 /** סצנה לכל אפשרות. שונות בצורה בלבד - אף אחת לא "מרמזת" שהיא הנכונה. */
 
+/** ברירות מחדל לפי התסריט של הלקוחה - אם content עוד לא עודכן ב-DB. */
+const DEFAULT_INTRO_LINES = ["יש בעיה.", "יש תמונת מצב.", "עכשיו צריך שינוי."];
+const DEFAULT_TITLE = "אבל רגע, איזה שינוי?";
+
+/** הטקסט שבפופ-אפ: שורות מהתוכן אם יש, אחרת ההסבר הקצר הישן. */
+function explanationLines(opt: SolutionOption): ExplanationLine[] {
+  if (opt.explanation_lines?.length) return opt.explanation_lines;
+  return [{ text: opt.explanation, bold: true }];
+}
+
 function Stage5Solutions({ content, onAdvance }: Props) {
   const [chosen, setChosen] = useState<SolutionOption | null>(null);
+  const introLines = content.intro_lines?.length ? content.intro_lines : DEFAULT_INTRO_LINES;
+  const lines = chosen ? explanationLines(chosen) : [];
+  // ההסבר של התשובה הנכונה ארוך (כ-13 שורות) - כתב קטן יותר כדי שהפופ-אפ
+  // ייכנס למסך בלי גלילה
+  const longText = lines.length > 5;
 
   return (
     <StageShell
       stage={5}
       kicker="גיבוש פתרונות"
       icon="lightbulb"
-      title="איזו דרך פתרון בוחרות?"
-      subtitle="קראו את ארבע האפשרויות, דונו ביניכן, ובחרו את זו שנראית לכן הנכונה."
+      title={content.title || DEFAULT_TITLE}
+      subtitle={introLines.join(" ")}
       background="tide"
       // "normal" ולא "wide": ברוחב מלא מד ההתקדמות והטיימר שבפינות עלו על האריחים
       width="normal"
@@ -188,12 +203,25 @@ function Stage5Solutions({ content, onAdvance }: Props) {
           cancelLabel="סגירה"
           dismissable={!chosen?.correct}
         >
-          <p
-            className="text-ink text-2xl leading-relaxed font-bold"
+          {/* הכותרת כתובה על כפתור הבחירה, וכאן - הטקסט הרץ (לבקשת הלקוחה) */}
+          <p className="text-accent-soft mb-3 text-xl font-extrabold">{chosen?.label}</p>
+          <div
+            className={cx("text-ink flex flex-col", longText ? "gap-0.5" : "gap-2")}
             style={{ animation: "fade-up 0.5s 0.35s var(--ds-ease) both" }}
           >
-            {chosen?.explanation}
-          </p>
+            {lines.map((line, i) => (
+              <p
+                key={i}
+                className={cx(
+                  "leading-snug",
+                  longText ? "text-lg" : "text-2xl",
+                  line.bold ? "font-extrabold" : "text-ink-2",
+                )}
+              >
+                {line.text}
+              </p>
+            ))}
+          </div>
         </GlassModal>
       }
     >

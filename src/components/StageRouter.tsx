@@ -10,7 +10,7 @@ import Stage3Associations from "./stages/Stage3Associations";
 import Stage4Analysis from "./stages/Stage4Analysis";
 import Stage5Solutions from "./stages/Stage5Solutions";
 import Stage6Discussion from "./stages/Stage6Discussion";
-import Stage7Simulation from "./stages/Stage7Simulation";
+import Stage7Simulation, { type Stage7Content } from "./stages/Stage7Simulation";
 import Stage8Winner from "./stages/Stage8Winner";
 import Stage10Principles from "./stages/Stage10Principles";
 import Timer from "./Timer";
@@ -196,6 +196,8 @@ function StageRouter({
       />
     ) : stage.stage_number === 6 ? (
       <Stage6Discussion
+        workshopId={workshopId}
+        myGroup={myGroup}
         content={stage.content as unknown as Stage6Content}
         onAdvance={onAdvance}
       />
@@ -204,6 +206,7 @@ function StageRouter({
         workshopId={workshopId}
         myGroup={myGroup}
         allGroups={allGroups}
+        content={stage.content as unknown as Stage7Content}
         onAdvance={onAdvance}
       />
     ) : stage.stage_number === 8 ? (

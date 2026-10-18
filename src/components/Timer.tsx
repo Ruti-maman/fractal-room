@@ -14,6 +14,14 @@ interface Props {
    * מתקדם לבד בתום הזמן. לפי בקשת הלקוחה.
    */
   hidden?: boolean;
+  /**
+   * `corner` (ברירת מחדל) - טיימר השלב, ימין-למטה.
+   * `center` - אותה טבעת, גדולה ובתוך זרימת הדף. למשל טיימר הדיון בשלב 6,
+   * שרץ בנוסף לטיימר השלב.
+   */
+  placement?: "corner" | "center";
+  /** הכיתוב הקטן ליד הטבעת. ברירת מחדל: "זמן לשלב". */
+  label?: string;
 }
 
 /**
@@ -38,7 +46,15 @@ const WARN_SECONDS = 60;
 const RING = 34; // רדיוס הטבעת ב-SVG
 const CIRCUMFERENCE = 2 * Math.PI * RING;
 
-function Timer({ startedAt, durationMinutes, onTimeUp, hidden = false }: Props) {
+function Timer({
+  startedAt,
+  durationMinutes,
+  onTimeUp,
+  hidden = false,
+  placement = "corner",
+  label = "זמן לשלב",
+}: Props) {
+  const center = placement === "center";
   const [now, setNow] = useState(() => Date.now());
   // כדי שהמעבר האוטומטי יקרה פעם אחת בלבד לכל שלב, גם אם הרכיב מתרנדר שוב
   const firedForRef = useRef<string | null>(null);
@@ -91,14 +107,23 @@ function Timer({ startedAt, durationMinutes, onTimeUp, hidden = false }: Props) 
   return (
     <div
       className={cx(
-        "glass glass-brick glass-raised fixed right-4 bottom-4 z-30 flex items-center gap-3 rounded-xl p-3 sm:right-6 sm:bottom-6 sm:gap-4 sm:p-4",
+        "glass glass-brick glass-raised flex",
+        center
+          ? "flex-none flex-col items-center gap-3 rounded-3xl px-10 py-6"
+          : "fixed right-4 bottom-4 z-30 items-center gap-3 rounded-xl p-3 sm:right-6 sm:bottom-6 sm:gap-4 sm:p-4",
         tone.text,
       )}
       style={
         isWarning ? { animation: "raised-glow 1.6s ease-in-out infinite" } : undefined
       }
     >
-      <div className="relative h-[84px] w-[84px] flex-none sm:h-24 sm:w-24">
+      <div
+        className={cx(
+          "relative flex-none",
+          // במרכז הטבעת נגזרת מגובה המסך, כדי שלא תגלוש במסך נמוך
+          center ? "h-[min(15rem,30dvh)] w-[min(15rem,30dvh)]" : "h-[84px] w-[84px] sm:h-24 sm:w-24",
+        )}
+      >
         <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
           {/* המסלול - חריץ שקוע: שפת אור דקה מבחוץ, וחריץ כהה בתוכה */}
           <circle cx="40" cy="40" r={RING + 3.6} fill="none" stroke="var(--ds-3d-rim)" strokeWidth="1.2" />
@@ -140,21 +165,31 @@ function Timer({ startedAt, durationMinutes, onTimeUp, hidden = false }: Props) 
         <div className="timer-dial absolute inset-[15%] rounded-full" aria-hidden="true" />
         <div className="absolute inset-0 flex items-center justify-center">
           {isTimeUp ? (
-            <Icon name="check" size={30} />
+            <Icon name="check" size={center ? 64 : 30} />
           ) : (
-            <span className="text-2xl font-extrabold tabular-nums sm:text-[1.7rem]">
+            <span
+              className={cx(
+                "font-extrabold tabular-nums",
+                center ? "text-[min(3.6rem,7dvh)]" : "text-2xl sm:text-[1.7rem]",
+              )}
+            >
               {mm}:{ss}
             </span>
           )}
         </div>
       </div>
 
-      <div className="hidden pe-1 text-start sm:block">
-        <div className="text-ink-3 flex items-center gap-1.5 text-[11px] font-bold tracking-wide">
-          <Icon name="clock" size={13} />
-          זמן לשלב
+      <div className={cx(center ? "text-center" : "hidden pe-1 text-start sm:block")}>
+        <div
+          className={cx(
+            "text-ink-3 flex items-center gap-1.5 font-bold tracking-wide",
+            center ? "justify-center text-base" : "text-[11px]",
+          )}
+        >
+          <Icon name="clock" size={center ? 18 : 13} />
+          {label}
         </div>
-        <div className="text-base font-bold">
+        <div className={cx("font-bold", center ? "text-xl" : "text-base")}>
           {isTimeUp ? "הזמן נגמר" : isWarning ? "דקה אחרונה" : `${durationMinutes} דקות`}
         </div>
       </div>

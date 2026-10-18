@@ -6,7 +6,8 @@ import { useInspirationSelection } from "../../hooks/useInspirationSelection";
 import StageShell from "../StageShell";
 import Icon from "../ui/Icon";
 import { SwipeToAdvanceLayer, useSwipeToAdvance } from "../SwipeToAdvance";
-import { GlassButton, Spinner } from "../ui/Glass";
+import StageIntro from "../StageIntro";
+import { Spinner } from "../ui/Glass";
 import { cx } from "../../lib/cx";
 
 const MAX_SELECTED = 4;
@@ -239,40 +240,15 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
   */
   if (!introDone && selectedCount === 0) {
     return (
-      <StageShell
+      <StageIntro
         stage={3}
         kicker="שמש אסוציאציות"
         icon="sun"
         background="radiant"
-        width="normal"
-        compactHeader
-        // הכרטיס צר מהרווח שבין המד לטיימר - אין צורך לשמור להם רצועה
-        tightBottom
-        actions={
-          <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={() => setIntroDone(true)}>
-            {intro.start_label}
-          </GlassButton>
-        }
-      >
-        {/* גודל הכתב נגזר מגובה המסך (vh) - כך כל עשר השורות נכנסות בלי
-            גלילה גם במסך נמוך או עם זום בדפדפן, ובפלזמה הן גדולות */}
-        <div className="glass glass-brick glass-raised flex max-w-4xl flex-col items-center gap-[0.5vh] rounded-2xl px-14 py-[2.6vh] text-center">
-          {intro.lines.map((line, i) => (
-            <p
-              key={i}
-              className={cx(
-                "leading-snug",
-                line.bold
-                  ? "text-ink text-[clamp(1.15rem,3.75vh,2.6rem)] font-extrabold"
-                  : "text-ink-2 text-[clamp(1rem,3.15vh,2.1rem)]",
-              )}
-              style={{ animation: `fade-up 0.6s ${0.15 + i * 0.12}s var(--ds-ease) both` }}
-            >
-              {line.text}
-            </p>
-          ))}
-        </div>
-      </StageShell>
+        lines={intro.lines}
+        startLabel={intro.start_label}
+        onStart={() => setIntroDone(true)}
+      />
     );
   }
 

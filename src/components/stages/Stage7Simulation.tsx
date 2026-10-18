@@ -25,8 +25,12 @@ import { ConclusionInHeader } from "../PracticalConclusionBanner";
 import { GlassButton, Spinner } from "../ui/Glass";
 import { LoadingState, Skeleton } from "../ui/Feedback";
 import StageShell from "../StageShell";
+import Stage7Mechanism, { MECHANISM_DEFAULTS, type MechanismTexts } from "./Stage7Mechanism";
 
 const RECORD_SECONDS = 10;
+/** כמה פעמים אפשר להקליט (לבקשת הלקוחה). בניסיון האחרון מופיע "ניסיון אחרון". */
+const MAX_ATTEMPTS = 3;
+const COUNTDOWN_SECONDS = 3;
 
 /** סולם הטורקיז של לבנת הזכוכית - אותם ערכים שמשמשים את שעון החול בשלב 6. */
 const PALETTE = ["#c7f5f4", "#a7e9e5", "#84c7c1", "#6baca6", "#4e8f8b"];
@@ -262,23 +266,42 @@ function RecordingLens() {
   );
 }
 
+/** תוכן שלב 7 מה-DB. הכול אופציונלי - ברירות המחדל הן הנוסח של הלקוחה. */
+export interface Stage7Content {
+  mechanism?: Partial<MechanismTexts>;
+  /** הטקסט שבראש חלונית הסימולציה ("עכשיו משנות צורה..."). השורה האחרונה מודגשת. */
+  shape_lines?: string[];
+}
+
+const DEFAULT_SHAPE_LINES = [
+  "עכשיו משנות צורה.",
+  "אחת מתוככן, רהוטה, ברורה ובעלת כושר הסבר ותיאור, מוזמנת להציג מול המצלמה את הפריים הבא של הדילמה הקודמת - במבט חדש, לאחר השינוי המקצועי שחוללתן.",
+  "הפרקטל שלכן מתחיל לקבל צורה חדשה",
+];
+
 interface Props {
   workshopId: string;
   myGroup: Group;
   allGroups: Group[];
+  content?: Stage7Content;
   onAdvance: () => void;
 }
 
 function SolutionAndRecord({
   workshopId,
   myGroup,
+  content,
   onDone,
 }: {
   workshopId: string;
   myGroup: Group;
+  content?: Stage7Content;
   onDone: () => void;
 }) {
-  const [phase, setPhase] = useState<"solution" | "record">("solution");
+  // "mechanism" - מסך "מרעיון למנגנון" (Stage7Mechanism), לפני ההוראות
+  const [phase, setPhase] = useState<"mechanism" | "solution" | "record">("mechanism");
+  const mechanismTexts = { ...MECHANISM_DEFAULTS, ...content?.mechanism };
+  const shapeLines = content?.shape_lines?.length ? content.shape_lines : DEFAULT_SHAPE_LINES;
   const [solution, setSolution] = useState("");
   const [status, setStatus] = useState<"idle" | "recording" | "review" | "uploading" | "error">("idle");
   const [error, setError] = useState("");
@@ -324,6 +347,13 @@ function SolutionAndRecord({
   // את זה לגלוי מראש.
   const [micLevel, setMicLevel] = useState(0);
   const [micSilent, setMicSilent] = useState(false);
+  // כמה הקלטות התחילו (עד MAX_ATTEMPTS), והספירה לאחור שלפני הקלטה
+  const [attempts, setAttempts] = useState(0);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const attemptsLeft = MAX_ATTEMPTS - attempts;
+  // בזמן הספירה לאחור ההקלטה עוד לא התחילה, ולכן הניסיון שלה הוא attempts + 1
+  const currentAttempt = countdown !== null ? attempts + 1 : attempts;
+  const lastAttempt = (countdown !== null || status === "recording") && currentAttempt === MAX_ATTEMPTS;
 
   useEffect(() => {
     if (phase !== "record") return;
@@ -396,8 +426,37 @@ function SolutionAndRecord({
     setPhase("record");
   }
 
+  /*
+    ספירה לאחור 3-2-1 לפני כל הקלטה (לבקשת הלקוחה: "המסך ייפתח בהקלטה
+    בעוד 3-2-1 שניות"), כדי שמי שעומדת מול המצלמה תספיק להתכונן. ההקלטה
+    הראשונה מתחילה לבד ברגע שהמצלמה מוכנה; החוזרות - מהכפתור.
+  */
+  function startCountdown() {
+    if (!streamRef.current || countdown !== null || attempts >= MAX_ATTEMPTS) return;
+    setCountdown(COUNTDOWN_SECONDS);
+  }
+
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown === 0) {
+      setCountdown(null);
+      startRecording();
+      return;
+    }
+    const t = window.setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countdown]);
+
+  // ההקלטה הראשונה נפתחת לבד כשהמצלמה מוכנה
+  useEffect(() => {
+    if (streamReady && status === "idle" && attempts === 0 && countdown === null) startCountdown();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamReady]);
+
   function startRecording() {
     if (!streamRef.current) return;
+    setAttempts((a) => a + 1);
     chunksRef.current = [];
     const recorder = new MediaRecorder(streamRef.current);
     recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
@@ -554,6 +613,10 @@ function SolutionAndRecord({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
+  if (phase === "mechanism") {
+    return <Stage7Mechanism texts={mechanismTexts} onDone={() => setPhase("solution")} />;
+  }
+
   if (phase === "solution") {
     const inputDelay = (SIMULATION_STEPS.length + 1) * STEP_DELAY_SECONDS;
 
@@ -584,6 +647,28 @@ function SolutionAndRecord({
           </span>
           <ConclusionInHeader />
           <h1 className="glass-title text-4xl sm:text-5xl">הוראות לעריכת הסימולציה</h1>
+        </div>
+
+        {/* "עכשיו משנות צורה" - עולה מלמטה, כהמשך ישיר לטקסט של "מרעיון
+            למנגנון" שנגרר למעלה ויצא מהמסך (ראו Stage7Mechanism) */}
+        <div
+          className="glass glass-brick glass-raised relative flex w-full max-w-3xl flex-none flex-col items-center gap-2 rounded-2xl px-8 py-5"
+          style={{ animation: "step-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both" }}
+        >
+          {shapeLines.map((line, i) => (
+            <p
+              key={i}
+              className={
+                i === shapeLines.length - 1
+                  ? "glass-title text-2xl sm:text-3xl"
+                  : i === 0
+                    ? "text-ink text-2xl font-extrabold"
+                    : "text-ink-2 text-xl leading-relaxed"
+              }
+            >
+              {line}
+            </p>
+          ))}
         </div>
 
         {/*
@@ -707,6 +792,24 @@ function SolutionAndRecord({
               </div>
             )}
 
+            {/* הספירה לאחור 3-2-1 - מספר ענק במרכז התצוגה */}
+            {countdown !== null && countdown > 0 && (
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/35">
+                {lastAttempt && (
+                  <span className="rounded-full bg-black/70 px-5 py-2 text-xl font-extrabold text-white">
+                    ניסיון אחרון
+                  </span>
+                )}
+                <span
+                  key={countdown}
+                  className="text-[9rem] leading-none font-black text-white tabular-nums"
+                  style={{ animation: "bounce-in 0.5s var(--ds-ease-spring) both", textShadow: "0 4px 30px rgba(0,0,0,0.6)" }}
+                >
+                  {countdown}
+                </span>
+              </div>
+            )}
+
             {/* חיווי קטן שהכתוביות החיות מאזינות - כדי שיהיה ברור שהטקסט זז
                 כי מדברים, ולא סתם. */}
             {status === "recording" && captionState === "listening" && (
@@ -737,8 +840,14 @@ function SolutionAndRecord({
                 {/* הקלטה / עצירה */}
                 <button
                   type="button"
-                  onClick={status === "recording" ? stopRecording : startRecording}
-                  disabled={!streamReady || status === "uploading" || status === "error"}
+                  onClick={status === "recording" ? stopRecording : startCountdown}
+                  disabled={
+                    !streamReady ||
+                    status === "uploading" ||
+                    status === "error" ||
+                    countdown !== null ||
+                    (status !== "recording" && attemptsLeft <= 0)
+                  }
                   title={status === "recording" ? "עצירת הקלטה" : "התחלת הקלטה"}
                   aria-label={status === "recording" ? "עצירת הקלטה" : "התחלת הקלטה"}
                   className="flex h-14 w-14 items-center justify-center rounded-full transition-colors duration-150 hover:bg-white/12 active:scale-90 disabled:opacity-40"
@@ -865,6 +974,11 @@ function SolutionAndRecord({
         </span>
         <ConclusionInHeader />
         <h1 className="glass-title text-3xl sm:text-4xl">היכונו להקלטה מול המצלמה</h1>
+        <p className="text-ink-2 text-base leading-snug font-bold sm:text-lg">
+          הכיני את עצמך להקלטה מול המצלמה
+          <br />
+          <span className="text-ink-3 font-semibold">המסך ייפתח בהקלטה בעוד 3-2-1 שניות</span>
+        </p>
       </div>
 
       <div className="relative" style={{ animation: "fade-up 0.9s 0.15s ease-out both" }}>
@@ -931,7 +1045,14 @@ function SolutionAndRecord({
       )}
 
       <div className="relative" style={{ animation: "fade-up 0.9s 0.3s ease-out both" }}>
-        {status === "idle" && (
+        {countdown !== null && (
+          <p className="glass glass-pill text-ink gap-2.5 px-6 py-3 text-xl font-extrabold">
+            <Icon name="record" size={18} className="text-record" />
+            {lastAttempt ? "ניסיון אחרון - " : ""}ההקלטה מתחילה בעוד {countdown}...
+          </p>
+        )}
+
+        {status === "idle" && countdown === null && (
           // הכפתור האדום הגדול הוסר לפי בקשת הלקוחה - ההקלטה מתחילה
           // מהכפתור העגול שבסרגל הנגן, כמו בכל נגן וידאו.
           <p className="glass glass-pill text-ink-2 gap-2.5 px-6 py-3 text-lg font-bold">
@@ -952,7 +1073,7 @@ function SolutionAndRecord({
                 className="bg-record h-3 w-3 rounded-full"
                 style={{ animation: "rec-dot 1.1s ease-in-out infinite" }}
               />
-              מקליט... {secondsLeft}
+              {lastAttempt ? "ניסיון אחרון · " : ""}מקליט... {secondsLeft}
             </p>
             <GlassButton icon="stop" size="lg" onClick={stopRecording}>
               סיימתי
@@ -960,9 +1081,15 @@ function SolutionAndRecord({
           </div>
         )}
 
-        {status === "review" && (
+        {status === "review" && countdown === null && (
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {/* הקלטה חוזרת = לחיצה שוב על הכפתור האדום בסרגל, בלי כפתור נפרד */}
+            {/* הקלטה חוזרת - כפתור גלוי (קודם רק הכפתור האדום בסרגל, והלקוחה
+                לא מצאה אותו), עד MAX_ATTEMPTS הקלטות */}
+            {attemptsLeft > 0 && (
+              <GlassButton size="lg" icon="refresh" onClick={startCountdown}>
+                {attemptsLeft === 1 ? "הקלטה חוזרת - ניסיון אחרון" : `הקלטה חוזרת (נותרו ${attemptsLeft})`}
+              </GlassButton>
+            )}
             <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={handleUpload}>
               שליחה
             </GlassButton>
@@ -1415,7 +1542,7 @@ function SharedViewing({
   );
 }
 
-function Stage7Simulation({ workshopId, myGroup, allGroups, onAdvance }: Props) {
+function Stage7Simulation({ workshopId, myGroup, allGroups, content, onAdvance }: Props) {
   const { items: media, loading: mediaLoading } = useMedia(workshopId, 7);
   const [myClipReady, setMyClipReady] = useState(false);
   const allReady = allGroups.every((g) => media.some((m) => m.group_id === g.id));
@@ -1434,6 +1561,7 @@ function Stage7Simulation({ workshopId, myGroup, allGroups, onAdvance }: Props) 
       <SolutionAndRecord
         workshopId={workshopId}
         myGroup={myGroup}
+        content={content}
         onDone={() => setMyClipReady(true)}
       />
     );

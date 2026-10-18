@@ -43,6 +43,72 @@ interface FunctioningPictureData {
   sentence2: string;
 }
 
+/** כמה פעמים לבקש ניסוח מחדש אם התשובה הגיעה עם תווים מכתב זר. */
+const MAX_ATTEMPTS = 3;
+
+/**
+ * כל תו שאינו אות עברית, רווח, ספרה, אות לטינית או סימן פיסוק. NFKC קודם
+ * הופך צורות תצוגה עבריות (ﬠ, ﭏ) לאותיות רגילות, כדי שלא ייחשבו זרות.
+ */
+const FOREIGN_SCRIPT = /[^א-תװ-״\s\p{P}\p{S}0-9A-Za-z]/gu;
+
+function hasForeignScript(text: string): boolean {
+  return new RegExp(FOREIGN_SCRIPT.source, "u").test(text.normalize("NFKC"));
+}
+
+function stripForeignScript(text: string): string {
+  return text.normalize("NFKC").replace(FOREIGN_SCRIPT, "").replace(/\s{2,}/g, " ").trim();
+}
+
+async function askGemini(prompt: string): Promise<FunctioningPictureData> {
+  const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+    method: "POST",
+    headers: {
+      "x-goog-api-key": Deno.env.get("GEMINI_API_KEY")!,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: GEMINI_MODEL,
+      input: prompt,
+      response_format: {
+        type: "text",
+        mime_type: "application/json",
+        schema: {
+          type: "object",
+          properties: {
+            sentence1: { type: "string" },
+            sentence2: { type: "string" },
+          },
+          required: ["sentence1", "sentence2"],
+        },
+      },
+    }),
+  });
+
+  if (!geminiResponse.ok) {
+    const errText = await geminiResponse.text();
+    console.error("Gemini API error:", geminiResponse.status, errText);
+    throw new Error(`Gemini API error ${geminiResponse.status}`);
+  }
+
+  const geminiData = await geminiResponse.json();
+  // "output_text" הוא property נוח שמוסיפות ה-SDKs הרשמיות (פייתון/JS) -
+  // בקריאת REST גולמית (כמו כאן) הוא לא קיים בפועל בתשובה; הטקסט האמיתי
+  // יושב בתוך steps[] (השלב מסוג "model_output").
+  const modelOutputStep = (geminiData.steps ?? []).find(
+    (step: { type?: string }) => step.type === "model_output",
+  );
+  const textContent = (modelOutputStep?.content ?? []).find(
+    (block: { type?: string }) => block.type === "text",
+  );
+  const rawText = geminiData.output_text ?? textContent?.text;
+  if (!rawText) {
+    console.error("Gemini response missing text content:", JSON.stringify(geminiData));
+    throw new Error("Gemini response missing text content");
+  }
+  return JSON.parse(rawText) as FunctioningPictureData;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -147,54 +213,26 @@ Deno.serve(async (req) => {
       `sentence2 - משפט חד ומשמעותי שמשקף את הקושי/החסם המרכזי שעולה מהתמונה הכוללת.\n` +
       `הישארו נאמנים לרוח החומר שקיבלתם - בלי להמציא עובדות חדשות שלא נרמזות ממנו. ` +
       `התאימו את השפה וההתייחסות (למשל אם מדובר בתלמיד/ה, בכיתה, או בגורם אחר לגמרי) למה שבאמת ` +
-      `עולה מהטקסט המקורי, לא להנחה קבועה מראש. כתבו בעברית תקנית, בגוף שלישי.`;
+      `עולה מהטקסט המקורי, לא להנחה קבועה מראש. כתבו בעברית תקנית, בגוף שלישי.\n` +
+      `השתמשו באותיות עבריות בלבד (וסימני פיסוק רגילים) - בלי אף תו מכתב אחר, בלי אימוג'י, ` +
+      `ובלי ניקוד. כל מילה חייבת להיות מילה עברית שלמה.`;
 
-    const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": Deno.env.get("GEMINI_API_KEY")!,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GEMINI_MODEL,
-        input: prompt,
-        response_format: {
-          type: "text",
-          mime_type: "application/json",
-          schema: {
-            type: "object",
-            properties: {
-              sentence1: { type: "string" },
-              sentence2: { type: "string" },
-            },
-            required: ["sentence1", "sentence2"],
-          },
-        },
-      }),
-    });
-
-    if (!geminiResponse.ok) {
-      const errText = await geminiResponse.text();
-      console.error("Gemini API error:", geminiResponse.status, errText);
-      throw new Error(`Gemini API error ${geminiResponse.status}`);
+    // Gemini "גולש" לפעמים באמצע מילה לכתב אחר - נתפס בפועל: "להצלחה" יצא
+    // "להצ" + אותיות קנאדה. תשובה כזו לא נשמרת: מבקשים ניסוח חדש, ורק אם
+    // גם הניסיון האחרון משובש - מסירים את התווים הזרים.
+    let result: FunctioningPictureData | null = null;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const candidate = await askGemini(prompt);
+      if (!hasForeignScript(candidate.sentence1) && !hasForeignScript(candidate.sentence2)) {
+        result = candidate;
+        break;
+      }
+      console.warn(`Gemini returned foreign script (attempt ${attempt}):`, JSON.stringify(candidate));
+      if (attempt === MAX_ATTEMPTS) {
+        result = { sentence1: stripForeignScript(candidate.sentence1), sentence2: stripForeignScript(candidate.sentence2) };
+      }
     }
-
-    const geminiData = await geminiResponse.json();
-    // "output_text" הוא property נוח שמוסיפות ה-SDKs הרשמיות (פייתון/JS) -
-    // בקריאת REST גולמית (כמו כאן) הוא לא קיים בפועל בתשובה; הטקסט האמיתי
-    // יושב בתוך steps[] (השלב מסוג "model_output").
-    const modelOutputStep = (geminiData.steps ?? []).find(
-      (step: { type?: string }) => step.type === "model_output",
-    );
-    const textContent = (modelOutputStep?.content ?? []).find(
-      (block: { type?: string }) => block.type === "text",
-    );
-    const rawText = geminiData.output_text ?? textContent?.text;
-    if (!rawText) {
-      console.error("Gemini response missing text content:", JSON.stringify(geminiData));
-      throw new Error("Gemini response missing text content");
-    }
-    const result: FunctioningPictureData = JSON.parse(rawText);
+    if (!result) throw new Error("Gemini returned no result");
 
     await supabase.from("responses").insert({
       workshop_id,

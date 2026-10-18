@@ -1,7 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { Group } from "../../types/group";
-import type { Stage4Content } from "../../types/stage4Content";
+import type { Stage4Content, Stage4IntroTexts } from "../../types/stage4Content";
 import StageShell from "../StageShell";
+import StageIntro from "../StageIntro";
+import ZoomIntro from "../ZoomIntro";
 import Icon from "../ui/Icon";
 import GlassModal from "../ui/GlassModal";
 import { GlassButton, Spinner } from "../ui/Glass";
@@ -224,6 +226,19 @@ interface CharCell {
   index: number;
 }
 
+/**
+ * מסירה תווים מכתב זר מניסוח ה-AI. Gemini "גלש" בפועל באמצע מילה לאותיות
+ * קנאדה, והניסוח המשובש כבר נשמר ב-DB. ה-Edge Function מונעת את זה מעכשיו
+ * (ומבקשת ניסוח חדש), וזו רשת ביטחון לשורות שנשמרו לפני התיקון.
+ */
+function stripForeignScript(text: string): string {
+  return text
+    .normalize("NFKC")
+    .replace(/[^א-תװ-״\s\p{P}\p{S}0-9A-Za-z]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 /** קטע שסומן זה עתה בגרירה, וממתין לבחירת קטגוריה (עוד לא נשמר כ-TaggedPhrase). */
 interface PendingPhrase {
   color: "green" | "red";
@@ -251,7 +266,7 @@ function CategoryPopup({
       tone={pending.color === "green" ? "ok" : "warn"}
       icon="marker"
       title={pending.color === "green" ? "סימנתן חוזקה" : "סימנתן חסם"}
-      description="לאיזו קטגוריה זה שייך?"
+      description="מה המונח המקצועי התואם ביותר?"
       cancelLabel="ביטול (להשאיר מסומן בלי תיוג)"
     >
       <p className="glass glass-dim text-ink rounded-lg px-5 py-4 text-xl font-bold">
@@ -306,7 +321,7 @@ function FramedCategoryLabel({ text }: { text: string; color: "green" | "red" })
   return <span className="text-ink text-lg font-extrabold">{text}</span>;
 }
 
-/** טור אחד בטבלת הסנכרון (שקף 7) - חוזקות או חסמים, כל שורה מחולקת לקטגוריה (מימין, כתגית מודגשת) ולמשפט עצמו (משמאל). */
+/** טור אחד בטבלת הסנכרון (שקף 7) - חוזקות או חסמים, כל שורה מחולקת לנתון עצמו (מימין) ולמונח המקצועי (משמאל, מודגש). */
 function PhraseColumn({
   title,
   color,
@@ -340,18 +355,19 @@ function PhraseColumn({
         <table className="w-full border-collapse text-right">
           <thead>
             <tr className="text-ink-3 text-sm">
-              <th className="border-edge-dim border-b px-4 py-2 font-extrabold">קטגוריה</th>
-              <th className="border-edge-dim border-b px-4 py-2 font-extrabold">משפט</th>
+              {/* קודם הנתון (המשפט מהטקסט) ואחריו המונח המקצועי - לבקשת הלקוחה */}
+              <th className="border-edge-dim border-b px-4 py-2 font-extrabold">נתון</th>
+              <th className="border-edge-dim border-b px-4 py-2 font-extrabold">מונח מקצועי</th>
             </tr>
           </thead>
           <tbody>
             {phrases.map((p) => (
               <tr key={p.id} className="border-edge-dim border-b last:border-b-0">
-                <td className="px-4 py-3.5 whitespace-nowrap align-middle">
-                  <FramedCategoryLabel text={p.category} color={color} />
-                </td>
                 <td className="text-ink px-4 py-3.5 align-middle text-lg leading-snug">
                   {p.text}
+                </td>
+                <td className="px-4 py-3.5 whitespace-nowrap align-middle">
+                  <FramedCategoryLabel text={p.category} color={color} />
                 </td>
               </tr>
             ))}
@@ -437,9 +453,19 @@ function FunctioningPictureStep({
       kicker="תמונת תפקוד"
       icon="sparkles"
       title="תמונת תפקוד כוללת ומסקנה מעשית"
+      subtitle={
+        <>
+          עכשיו מחברים את החלקים: בהתאם לנתונים שהזנתן, נבנתה לכן תמונת תפקוד.
+          <br />
+          כל פיסה מצטרפת לפיסה. הדילמה כבר לא נראית כמו נקודה. היא נראית כמו מערכת.
+        </>
+      }
       background="quiet"
       width="wide"
       compactHeader
+      // ההסבר מוסיף שתי שורות לכותרת - הרצועה התחתונה (מיותרת, הטיימר והמד
+      // בפינות) מתפנה כדי ששדה המסקנה לא ייחתך
+      tightBottom
       actions={
         result && !generating ? (
           <GlassButton
@@ -488,7 +514,7 @@ function FunctioningPictureStep({
           {/* שני המשפטים שה-AI ניסח - ממוספרים כלבנים נפרדות, כדי שיהיה
               ברור שאלו שתי אמירות ולא פסקה אחת ארוכה. */}
           <ol className="grid gap-4 lg:grid-cols-2">
-            {[result.sentence1, result.sentence2].map((sentence, i) => (
+            {[result.sentence1, result.sentence2].map(stripForeignScript).map((sentence, i) => (
               <li
                 key={i}
                 className="glass glass-brick glass-raised flex items-start gap-4 rounded-2xl p-6"
@@ -595,7 +621,93 @@ function FunctioningPictureStep({
 const PAPER_FONT_MAX = 30;
 const PAPER_FONT_MIN = 15;
 
-function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
+/* ברירות מחדל - הנוסח של הלקוחה מהתסריט (נדרס מ-content.intro ב-DB). */
+const INTRO_DEFAULTS: Stage4IntroTexts = {
+  lines: [
+    { text: "לפני שאתן ממהרות לפתור, קחו את הדילמה ופרקו אותה לחלקים:", bold: true },
+    { text: "מי התלמידה?", bold: true },
+    { text: "רקע קצר." },
+    { text: "סיכוי?", bold: true },
+    { text: "חוזקות." },
+    { text: "סיכון?", bold: true },
+    { text: "חסמים." },
+    { text: "ומה באמת קורה כאן?", bold: true },
+    { text: "הדילמה.", bold: true },
+    { text: "המטרה:" },
+    { text: "לא לראות ״בעיה״.", bold: true },
+    { text: "לראות מערכת שלמה של צורות וקשרים.", bold: true },
+  ],
+  start_label: "ועכשיו, זום אין",
+  marking_hint:
+    "לנוחיותכן! הדגישו קטע רלוונטי ע״י גרירה (זה עובד ממש פשוט כמו מרקר רגיל) והמערכת תציף לכן מאגר לבחירתכן של: חוזקות | חסמים | יכולות | מונחים מקצועיים שימקדו וידייקו אתכן בניסוח ובניתוח.",
+};
+
+/*
+  זוכרים בדפדפן שהקבוצה כבר עברה את מסך הפתיחה, כדי שרענון באמצע הסימון
+  יחזיר אותה לסימון ולא לפתיחה (סעיף 5: "מסך חוזר בדיוק למקום"). המפתח
+  כולל את ההפעלה והקבוצה, כך שסדנה חדשה מתחילה שוב מהפתיחה.
+*/
+function introSeenKey(workshopId: string, groupId: string) {
+  return `stage4-intro-seen:${workshopId}:${groupId}`;
+}
+
+function readIntroSeen(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * שלב 4 = מסך פתיחה, ואחריו הניתוח עצמו (Stage4Marking).
+ *
+ * הפתיחה היא רכיב נפרד ולא מסך בתוך Stage4Marking בכוונה: הדף המסומן מודד
+ * את עצמו (גודל הגופן, ה-canvas) ב-effects שרצים בהרכבה. אילו הדף היה
+ * מוסתר מאחורי החזרה מוקדמת, ה-effects היו רצים בלי אלמנטים למדוד ולא
+ * רצים שוב כשהוא מופיע.
+ */
+function Stage4Analysis(props: Props) {
+  const { workshopId, myGroup, content } = props;
+  const key = introSeenKey(workshopId, myGroup.id);
+  const [introSeen, setIntroSeen] = useState(() => readIntroSeen(key));
+  // הצלילה לפרקטל רק במעבר מהפתיחה - לא אחרי רענון באמצע הסימון
+  const [zoomIn, setZoomIn] = useState(false);
+  const intro = { ...INTRO_DEFAULTS, ...(content.intro ?? {}) };
+
+  if (!introSeen) {
+    return (
+      <StageIntro
+        stage={4}
+        kicker="זיהוי חוזקות וחסמים"
+        icon="marker"
+        background="quiet"
+        lines={intro.lines}
+        startLabel={intro.start_label}
+        onStart={() => {
+          try {
+            localStorage.setItem(key, "1");
+          } catch {
+            // בלי אחסון (חלון פרטי) - רק רענון יחזיר לפתיחה, וזה לא נורא
+          }
+          setZoomIn(true);
+          setIntroSeen(true);
+        }}
+      />
+    );
+  }
+
+  return <Stage4Marking {...props} markingHint={intro.marking_hint} zoomIn={zoomIn} />;
+}
+
+function Stage4Marking({
+  workshopId,
+  myGroup,
+  content,
+  onAdvance,
+  markingHint,
+  zoomIn,
+}: Props & { markingHint: string; zoomIn: boolean }) {
   const { marks, phrases, loading: loadingMarks, mutate } = useTextMarking(workshopId, myGroup.id);
   const [activeTool, setActiveTool] = useState<Tool>("green");
   const [step, setStep] = useState<"marking" | "table" | "functioning_picture">("marking");
@@ -881,10 +993,7 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         return;
       }
 
-      // נקודת השחרור בפועל של הגרירה הזו (לפני ההרחבה כלפי חוץ למטה) - זה מה
-      // שקובע אם קופץ פופ-אפ: רק אם משחררות בדיוק על פסיק/נקודה, כלומר בסוף
-      // משפט/פסוקית שלם. שחרור באמצע מילה/משפט רק צובע, בלי לקפוץ עם פופ-אפ -
-      // אפשר להמשיך לגרור אחר כך (הרחבה של אותו קטע) עד שמגיעות לסימן פיסוק.
+      // נקודת השחרור בפועל של הגרירה הזו (לפני ההרחבה כלפי חוץ למטה).
       let dragEnd = Math.max(...touched);
 
       // "הצמדה" לפיסוק: סימן פיסוק הוא תו צר וצמוד לאות שלפניו (אין רווח
@@ -903,7 +1012,6 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         if (ctx && paper && charEl) fillCharShape(ctx, charEl, paper.getBoundingClientRect(), tool);
         dragEnd = snapIndex;
       }
-      const endsAtPunctuation = charByIndex[dragEnd] === "," || charByIndex[dragEnd] === ".";
 
       // נלקח אחרי ה"הצמדה" למעלה, כדי ש-marksSnapshot יכלול גם את תו הפיסוק
       // שנצבע כרגע (אם היה).
@@ -951,9 +1059,10 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         phrases: current.phrases.filter((p) => !overwrittenIds.has(p.id)),
       }));
 
-      if (endsAtPunctuation) {
-        setPendingPhrase({ color: tool, startIndex: start, endIndex: end, text: textForRange(start, end) });
-      }
+      // דרישת הלקוחה: הפופ-אפ קופץ **בכל הרמת אצבע** שצבעה טקסט - לא רק
+      // כשעוצרים על פסיק/נקודה. ה"הצמדה" לפיסוק למעלה נשארת, כדי שקטע
+      // שנגמר תו אחד לפני הנקודה יכלול אותה.
+      setPendingPhrase({ color: tool, startIndex: start, endIndex: end, text: textForRange(start, end) });
     }
     window.addEventListener("pointerup", handleWindowPointerUp);
     return () => window.removeEventListener("pointerup", handleWindowPointerUp);
@@ -1097,8 +1206,8 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         kicker="חוזקות וחסמים"
         compactHeader
         icon="ladder"
-        title="טבלת סנכרון אוטומטית"
-        subtitle="הטבלה נבנתה לבד ממה שסימנתן. אם משהו חסר, אפשר לחזור ולסמן."
+        title="מערכת אפיון אוטומטית"
+        subtitle="המערכת ריכזה עבורכן את הנתונים עפ״י הסימונים שלכן. נשאר לכן לוודא שכולם באותה צורה."
         background="quiet"
         width="wide"
         actions={
@@ -1132,9 +1241,14 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
       kicker="זיהוי חוזקות וחסמים"
       icon="marker"
       title="ניתוח דילמה"
-      subtitle="סמנו את הטקסט בגרירה, כמו במרקר אמיתי על דף."
+      subtitle={markingHint}
       background="quiet"
       width="wide"
+      // הדף והמגש ממורכזים בין מד ההתקדמות לטיימר (שיושבים בפינות), כך
+      // שהרצועה התחתונה שנשמרת להם רק גזלה גובה - במסך נמוך (או זום 125%)
+      // המסגרת והמגש נחתכו בתחתית. compactHeader מאותה סיבה.
+      tightBottom
+      compactHeader
       actions={
         <GlassButton
           variant="primary"
@@ -1146,14 +1260,17 @@ function Stage4Analysis({ workshopId, myGroup, content, onAdvance }: Props) {
         </GlassButton>
       }
       overlay={
-        pendingPhrase ? (
-          <CategoryPopup
-            pending={pendingPhrase}
-            categories={content.categories ?? []}
-            onChoose={confirmCategory}
-            onCancel={() => setPendingPhrase(null)}
-          />
-        ) : null
+        <>
+          {zoomIn && <ZoomIntro />}
+          {pendingPhrase && (
+            <CategoryPopup
+              pending={pendingPhrase}
+              categories={content.categories ?? []}
+              onChoose={confirmCategory}
+              onCancel={() => setPendingPhrase(null)}
+            />
+          )}
+        </>
       }
     >
       {/* קופסת הכלים - שלושת המרקרים יושבים בתוך לבנה אחת, כמו מודול
