@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { GlassButton } from "../ui/Glass";
 import { normalizeVotes, useRatings } from "../../hooks/useRatings";
 import type { Group } from "../../types/group";
 import { BackgroundLayers } from "../ui/AppBackground";
@@ -8,10 +9,50 @@ import { LevelBadge } from "../ui/GameTile";
 import { ConclusionInHeader } from "../PracticalConclusionBanner";
 import { cx } from "../../lib/cx";
 
+/** שורה בכרטיסי הטקסט של השלב. `bold` לשורות שהלקוחה הדגישה. */
+interface Line {
+  text: string;
+  bold?: boolean;
+}
+
+/** תוכן שלב 8 מה-DB. הכול אופציונלי - ברירות המחדל הן התסריט של הלקוחה. */
+export interface Stage8Content {
+  kicker?: string;
+  kicker_sub?: string;
+  reflection_lines?: Line[];
+  winners_label?: string;
+  closing_lines?: Line[];
+}
+
+const DEFAULTS = {
+  kicker: "ברינה קצורה",
+  kicker_sub: "סיום ונצחון",
+  winners_label: "ויש לנו גם מנצחות",
+  reflection_lines: [
+    { text: "הגענו לשלב הגמר,", bold: true },
+    { text: "אך פרקטל הוא אין סופי..." },
+    { text: "מה שעשינו עכשיו בקבוצה אחת, עם תלמידה אחת, בסיטואציה אחת -" },
+    { text: "יכול להפוך לדפוס חדש ומתמשך..." },
+    { text: "כי ככה שינוי עובד." },
+    { text: "וזו אולי כל הנקודה:", bold: true },
+    { text: "לא צריך לשנות את כל המערכת ביום אחד." },
+    { text: "צריך לזהות איפה אנחנו יכולות לשנות את הדפוס." },
+    { text: "ואז לעשות את זה. שוב. ועוד פעם." },
+    { text: "כי מה שחוזר בקטן — בסוף נראה בגדול.", bold: true },
+  ] as Line[],
+  closing_lines: [
+    { text: "זה נחמד לנצח בסימולטור," },
+    { text: "אבל הכי חשוב לזכור את זה גם מחר בכיתה..." },
+    { text: "להאמין בכל צורה שהיא, לדעת מתי לשנות, להכפיל או לחסר" },
+    { text: "והזורעת בדמעה, ברינה קצורה, צורה.", bold: true },
+  ] as Line[],
+};
+
 interface Props {
   workshopId: string;
   myGroup: Group;
   allGroups: Group[];
+  content?: Stage8Content;
   onAdvance: () => void;
 }
 
@@ -191,8 +232,52 @@ function PlaceDisc({ place }: { place: number }) {
   );
 }
 
-function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
+/** כרטיס טקסט - השורות עולות אחת אחרי השנייה. גודל הכתב נגזר מגובה המסך. */
+function LinesCard({ lines }: { lines: Line[] }) {
+  return (
+    <div className="glass glass-brick glass-raised relative flex w-full max-w-3xl flex-col items-center gap-[0.6vh] rounded-2xl px-10 py-[2.6vh] text-center">
+      {lines.map((line, i) => {
+        const last = i === lines.length - 1;
+        return (
+          <p
+            key={i}
+            className={cx(
+              "leading-snug",
+              last && line.bold ? "glass-title mt-[0.8vh]" : line.bold ? "text-ink font-extrabold" : "text-ink-2",
+            )}
+            style={{
+              fontSize: last && line.bold ? "min(4.4vh, 2.6rem)" : line.bold ? "min(3.3vh, 1.9rem)" : "min(2.9vh, 1.6rem)",
+              animation: `fade-up 0.6s ${0.15 + i * 0.14}s var(--ds-ease) both`,
+            }}
+          >
+            {line.text}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+/*
+  שלושה מסכים, לפי התסריט של הלקוחה:
+    reflection - "הגענו לשלב הגמר, אך פרקטל הוא אין סופי..."
+    winner     - "ויש לנו גם מנצחות": הגביע, הקבוצה המנצחת והפודיום
+    closing    - "זה נחמד לנצח בסימולטור... והזורעת בדמעה, ברינה קצורה"
+  המעבר בכפתור. מצב מקומי: רענון חוזר למסך הראשון - זה שלב משותף קצר,
+  והטיימר שבפינה (שנשמר ב-DB) הוא שמעביר לשלב הבא.
+*/
+type Phase = "reflection" | "winner" | "closing";
+
+function Stage8Winner({ workshopId, myGroup, allGroups, content }: Props) {
   const { rows } = useRatings(workshopId, myGroup.id);
+  const [phase, setPhase] = useState<Phase>("reflection");
+  const t = {
+    kicker: content?.kicker || DEFAULTS.kicker,
+    kicker_sub: content?.kicker_sub || DEFAULTS.kicker_sub,
+    winners_label: content?.winners_label || DEFAULTS.winners_label,
+    reflection_lines: content?.reflection_lines?.length ? content.reflection_lines : DEFAULTS.reflection_lines,
+    closing_lines: content?.closing_lines?.length ? content.closing_lines : DEFAULTS.closing_lines,
+  };
 
   // הדירוג בשלב 7 הוא "לייק": כל בת מסמנת כוכב אחד, ולכן המנצחת היא מי
   // שצברה הכי הרבה לייקים - לא ממוצע (כל הלייקים שווים 1). normalizeVotes
@@ -212,9 +297,10 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
   const winner = ranking[0];
   const hasVotes = ranking.some((entry) => entry.likes > 0);
 
+  // הפנפרה ברגע ההכרזה עצמה, לא בכניסה לשלב
   useEffect(() => {
-    if (hasVotes) playWinSound();
-  }, [hasVotes]);
+    if (phase === "winner" && hasVotes) playWinSound();
+  }, [phase, hasVotes]);
 
   // סדר התצוגה בפודיום: שנייה, ראשונה במרכז, שלישית - כמו פודיום אמיתי
   const podium = [ranking[1], ranking[0], ranking[2]].filter(Boolean);
@@ -225,7 +311,9 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
     MIN שומר שגם קבוצה בלי כוכבים תקבל בסיס שרואים.
   */
   const PODIUM_MIN = 40;
-  const PODIUM_MAX = 220;
+  // נגזר מגובה המסך: 140 על הפלזמה, ונמוך יותר במסך נמוך - שם עמוד של 140
+  // נחתך בתחתית
+  const PODIUM_MAX = Math.min(140, Math.round(window.innerHeight * 0.13));
   const maxLikes = Math.max(1, ...ranking.map((e) => e.likes));
   const heightFor = (likes: number) =>
     Math.round(PODIUM_MIN + (likes / maxLikes) * (PODIUM_MAX - PODIUM_MIN));
@@ -233,8 +321,45 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
   // קבוצות עם אותו מספר כוכבים חולקות את אותו מקום.
   const placeFor = (likes: number) => ranking.filter((e) => e.likes > likes).length + 1;
 
+  // הכותרת העליונה - זהה בשלושת המסכים: התג, "ברינה קצורה" ומתחתיו "סיום ונצחון"
+  const header = (
+    <div
+      className="relative flex flex-none flex-col items-center gap-2"
+      style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
+    >
+      <LevelBadge value={8} progress={0.8} size={88} />
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <span className="glass glass-chip text-accent-soft gap-2">
+          <Icon name="trophy" size={15} />
+          {t.kicker}
+        </span>
+        <ConclusionInHeader />
+      </div>
+      <span className="text-ink-3 -mt-1 text-sm font-bold">{t.kicker_sub}</span>
+    </div>
+  );
+
+  if (phase !== "winner") {
+    const isReflection = phase === "reflection";
+    return (
+      <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-[2vh] overflow-hidden px-6 pt-20 pb-8 text-center">
+        <BackgroundLayers variant="night" />
+        {header}
+        <LinesCard key={phase} lines={isReflection ? t.reflection_lines : t.closing_lines} />
+        {isReflection && (
+          <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={() => setPhase("winner")}>
+            {t.winners_label}
+          </GlassButton>
+        )}
+      </main>
+    );
+  }
+
   return (
-    <main className="relative flex h-dvh flex-col items-center justify-center gap-4 overflow-hidden px-6 pt-20 pb-40 text-center">
+    // pb-4 ולא pb-40: הפודיום צר ויושב באמצע, בין מד ההתקדמות לטיימר שבפינות -
+    // הרצועה התחתונה הגבוהה רק דחפה את התוכן למעלה, ותג השלב נחתך בראש המסך.
+    // justify-center-safe: אם בכל זאת אין מקום - מצמיד למעלה, לא חותך.
+    <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-3 overflow-hidden px-6 pt-20 pb-4 text-center">
       <BackgroundLayers variant="night" />
 
       {/* קונפטי - רק כשיש תוצאה אמיתית להכריז עליה.
@@ -261,20 +386,10 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
         </div>
       )}
 
-      <div
-        className="relative flex flex-col items-center gap-2"
-        style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
-      >
-        <LevelBadge value={8} progress={0.8} size={88} />
-        <span className="glass glass-chip text-accent-soft gap-2">
-          <Icon name="trophy" size={15} />
-          הכרזת המנצחת
-        </span>
-        <ConclusionInHeader />
-      </div>
+      {header}
 
       {/* הגביע, עם קרני אור מסתובבות מאחוריו וניצוצות */}
-      <div className="relative flex h-44 w-44 items-center justify-center">
+      <div className="relative flex h-28 w-28 flex-none items-center justify-center">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute hidden h-[26rem] w-[26rem] opacity-50 motion-safe:block"
@@ -293,7 +408,7 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
         />
 
         <div
-          className="relative h-40 w-40"
+          className="relative h-28 w-28"
           style={{
             animation: "trophy-float 3.4s ease-in-out infinite",
             filter: "drop-shadow(0 12px 34px var(--ds-glow))",
@@ -320,7 +435,7 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
               animation: `sparkle 2.6s ${sp.delay}s ease-in-out infinite`,
             }}
           >
-            <Icon name="sparkles" size={sp.size} />
+            <Icon name="star" size={sp.size} filled />
           </span>
         ))}
       </div>
@@ -338,16 +453,33 @@ function Stage8Winner({ workshopId, myGroup, allGroups }: Props) {
           >
             {winner.group.name ?? `מסך ${winner.group.screen_number}`}
           </h1>
-          <p
-            className="glass glass-pill text-accent mt-1 gap-2 px-5 py-2 text-xl font-extrabold"
-            style={{ animation: "fade-up 0.8s 0.6s var(--ds-ease) both" }}
-          >
-            <Icon name="star" size={20} filled />
-            {winner.likes} {winner.likes === 1 ? "כוכב" : "כוכבים"}
-          </p>
+          {/* מספר הכוכבים ו"להמשך" באותה שורה - כל שורה שנחסכת כאן היא
+              מקום לפודיום, שאחרת נחתך בתחתית המסך */}
+          <div className="mt-1 flex flex-wrap items-center justify-center gap-3">
+            <p
+              className="glass glass-pill text-accent gap-2 px-5 py-2 text-xl font-extrabold"
+              style={{ animation: "fade-up 0.8s 0.6s var(--ds-ease) both" }}
+            >
+              <Icon name="star" size={20} filled />
+              {winner.likes} {winner.likes === 1 ? "כוכב" : "כוכבים"}
+            </p>
+            <GlassButton
+              size="md"
+              iconAfter="arrowNext"
+              onClick={() => setPhase("closing")}
+              style={{ animation: "fade-up 0.8s 1.2s var(--ds-ease) both" }}
+            >
+              להמשך
+            </GlassButton>
+          </div>
         </div>
       ) : (
-        <h1 className="glass-title relative text-3xl">אף קבוצה לא קיבלה כוכבים עדיין</h1>
+        <div className="relative flex flex-col items-center gap-3">
+          <h1 className="glass-title text-3xl">אף קבוצה לא קיבלה כוכבים עדיין</h1>
+          <GlassButton size="md" iconAfter="arrowNext" onClick={() => setPhase("closing")}>
+            להמשך
+          </GlassButton>
+        </div>
       )}
 
       {/* פודיום עם כל שלוש הקבוצות */}

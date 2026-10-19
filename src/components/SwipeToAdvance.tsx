@@ -147,7 +147,7 @@ export function SwipeToAdvanceLayer({ swipe, title, hint }: LayerProps) {
         style={{ animation: "pop-in var(--ds-dur) var(--ds-ease-spring) both" }}
       >
         <span className="bubble bubble--1 flex h-16 w-16 items-center justify-center">
-          <Icon name="sparkles" size={30} />
+          <Icon name="check" size={30} />
         </span>
         <h2 className="glass-title text-3xl sm:text-4xl">{title}</h2>
         <div className="text-ink-2 flex items-center gap-4 text-lg font-bold sm:text-xl">

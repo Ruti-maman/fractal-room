@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useScreenData } from "../hooks/useScreenData";
 import { useProgramStages } from "../hooks/useProgramStages";
@@ -16,6 +17,22 @@ function ScreenPage() {
   const { loading, workshop, myGroup, allGroups, advanceMyStage, goBackStage } =
     useScreenData(screenNumber);
   const { stages, loading: stagesLoading } = useProgramStages(workshop?.program_id);
+
+  // השלב הקיים הבא / הקודם בתוכנית. המספרים לא בהכרח רציפים (שלב 9 הוסר),
+  // ולכן לא מוסיפים/מחסירים 1 - אחרת הקבוצה נוחתת על שלב שלא קיים.
+  const stageNumbers = stages.map((s) => s.stage_number).sort((a, b) => a - b);
+  const current = myGroup?.current_stage ?? 0;
+  const nextStage = stageNumbers.find((n) => n > current);
+  const previousStage = [...stageNumbers].reverse().find((n) => n < current);
+
+  // התאוששות: קבוצה שכבר נתקעה על שלב שלא קיים בתוכנית (למשל 9, מלפני
+  // התיקון) ממשיכה לבד לשלב הקיים הבא, בלי מסך שגיאה.
+  const stuckOnMissingStage =
+    !stagesLoading && !!myGroup && stageNumbers.length > 0 && !stageNumbers.includes(current) && nextStage !== undefined;
+  useEffect(() => {
+    if (stuckOnMissingStage && nextStage !== undefined) advanceMyStage(nextStage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stuckOnMissingStage, nextStage]);
 
   // כתובת כמו /screen/7 או /screen/abc - עדיף מסך שמסביר מה לעשות על פני
   // ניסיון להתחבר לקבוצה שלא קיימת ואז "אין הפעלה פעילה" מבלבל.
@@ -76,8 +93,8 @@ function ScreenPage() {
       workshopCreatedAt={workshop.created_at}
       sharedStageStartedAt={workshop.shared_stage_started_at}
       sharedStageNumber={workshop.shared_stage_number}
-      onAdvance={advanceMyStage}
-      onGoBack={goBackStage}
+      onAdvance={() => advanceMyStage(nextStage)}
+      onGoBack={() => goBackStage(previousStage)}
     />
   );
 }

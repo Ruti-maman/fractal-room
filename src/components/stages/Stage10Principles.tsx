@@ -1,7 +1,6 @@
 import type { Group } from "../../types/group";
 import { useClosingPrinciple } from "../../hooks/useClosingPrinciple";
 import StageShell from "../StageShell";
-import Icon from "../ui/Icon";
 import { Spinner } from "../ui/Glass";
 import { InlineNotice } from "../ui/Feedback";
 
@@ -34,7 +33,7 @@ function Stage10Principles({ workshopId, myGroup }: Props) {
     <StageShell
       stage={10}
       kicker="סיום התהליך"
-      icon="sparkles"
+      icon="lightbulb"
       title="העיקרון שעולה מהסדנה שלכן"
       background="night"
       width="wide"
@@ -65,12 +64,6 @@ function Stage10Principles({ workshopId, myGroup }: Props) {
           className="glass glass-brick relative w-full overflow-hidden rounded-2xl px-8 py-14 text-center sm:px-16"
           style={{ animation: "glass-in 1.4s 200ms var(--ds-ease) both" }}
         >
-
-          <Icon
-            name="sparkles"
-            size={30}
-            className="text-accent-soft mx-auto mb-8 opacity-70"
-          />
 
           <blockquote className="relative">
             <p className="text-ink text-3xl leading-[1.65] font-bold sm:text-4xl">

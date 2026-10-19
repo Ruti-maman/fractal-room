@@ -145,7 +145,7 @@ function AnswerMark({ ok }: { ok: boolean }) {
               animation: `spark-out 0.85s ${spark.delay}ms var(--ds-ease) both`,
             }}
           >
-            <Icon name="sparkles" size={16} />
+            <Icon name="star" size={16} filled />
           </span>
         ))}
     </div>

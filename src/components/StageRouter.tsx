@@ -11,7 +11,7 @@ import Stage4Analysis from "./stages/Stage4Analysis";
 import Stage5Solutions from "./stages/Stage5Solutions";
 import Stage6Discussion from "./stages/Stage6Discussion";
 import Stage7Simulation, { type Stage7Content } from "./stages/Stage7Simulation";
-import Stage8Winner from "./stages/Stage8Winner";
+import Stage8Winner, { type Stage8Content } from "./stages/Stage8Winner";
 import Stage10Principles from "./stages/Stage10Principles";
 import Timer from "./Timer";
 import ProgressBar from "./ProgressBar";
@@ -148,14 +148,19 @@ function StageRouter({
   if (!selfManagedGate && stage.sync_gate && !allArrived) {
     return (
       <>
-        <WaitingScreen stageNumber={stage.stage_number} allGroups={allGroups} />
+        <WaitingScreen stageNumber={stage.stage_number} allGroups={allGroups} workshopId={workshopId} />
         <TopBar
           myGroup={myGroup}
           screenNumber={screenNumber}
           onGoBack={canGoBack ? onGoBack : undefined}
         />
         {progressBar}
-        {waitingTimer}
+        {/* השעון המשותף מתחיל רק כשכולן מגיעות - עד אז הטיימר מוצג מלא
+            ועוצר ("מתחיל כשכולן יגיעו"), כדי שהפינה לא תהיה ריקה */}
+        {waitingTimer ??
+          (stage.duration_minutes ? (
+            <Timer startedAt={new Date().toISOString()} durationMinutes={stage.duration_minutes} pending />
+          ) : null)}
       </>
     );
   }
@@ -214,6 +219,7 @@ function StageRouter({
         workshopId={workshopId}
         myGroup={myGroup}
         allGroups={allGroups}
+        content={stage.content as unknown as Stage8Content}
         onAdvance={onAdvance}
       />
     ) : stage.stage_number === 10 ? (

@@ -16,8 +16,10 @@ interface ScreenData {
   workshop: Workshop | null;
   myGroup: Group | null;
   allGroups: Group[];
-  advanceMyStage: () => void;
-  goBackStage: () => void;
+  /** `target` - מספר השלב הבא בתוכנית. בלי - השלב שאחרי (לתאימות). */
+  advanceMyStage: (target?: number) => void;
+  /** `target` - מספר השלב הקודם בתוכנית. בלי - השלב שלפני. */
+  goBackStage: (target?: number) => void;
 }
 
 /**
@@ -152,9 +154,11 @@ export function useScreenData(screenNumber: number): ScreenData {
    * מקדמת את הקבוצה שלי לשלב הבא - מעדכנת מיד על המסך שלי (בלי לחכות לשרת),
    * ובמקביל שומרת ב-Supabase ברקע. שאר המסכים יתעדכנו כרגיל דרך הסנכרון.
    */
-  function advanceMyStage() {
+  function advanceMyStage(target?: number) {
     if (!myGroup) return;
-    const nextStage = myGroup.current_stage + 1;
+    // מספרי השלבים בתוכנית לא בהכרח רציפים (שלב 9 הוסר) - המסך מעביר את
+    // מספר השלב הקיים הבא. קודם תמיד נוסף 1, והקבוצות נתקעו ב"אין הגדרה לשלב 9".
+    const nextStage = target ?? myGroup.current_stage + 1;
     const startedAt = new Date().toISOString();
 
     setAllGroups((current) =>
@@ -181,9 +185,9 @@ export function useScreenData(screenNumber: number): ScreenData {
    * הזמן לא מתאפס: שומרים את stage_started_at המקורי אם הוא קיים, אחרת
    * הטיימר של השלב הקודם היה מתחיל מחדש בכל חזרה.
    */
-  function goBackStage() {
+  function goBackStage(target?: number) {
     if (!myGroup || myGroup.current_stage <= 1) return;
-    const previousStage = myGroup.current_stage - 1;
+    const previousStage = target ?? myGroup.current_stage - 1;
 
     setAllGroups((current) =>
       current.map((g) => (g.id === myGroup.id ? { ...g, current_stage: previousStage } : g)),

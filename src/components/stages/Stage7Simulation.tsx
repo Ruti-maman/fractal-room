@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "../../lib/supabase";
@@ -278,6 +278,23 @@ const DEFAULT_SHAPE_LINES = [
   "אחת מתוככן, רהוטה, ברורה ובעלת כושר הסבר ותיאור, מוזמנת להציג מול המצלמה את הפריים הבא של הדילמה הקודמת - במבט חדש, לאחר השינוי המקצועי שחוללתן.",
   "הפרקטל שלכן מתחיל לקבל צורה חדשה",
 ];
+
+/**
+ * שלוש נקודות - ניסיון שנוצל מלא באדום ההקלטה, ניסיון שנשאר חלול. ככה רואים
+ * במבט אחד שיש עד 3 הקלטות וכמה נשארו, בלי לקרוא מספרים.
+ */
+function AttemptDots({ used }: { used: number }) {
+  return (
+    <span className="flex items-center gap-1.5" aria-label={`נוצלו ${used} מתוך ${MAX_ATTEMPTS} ניסיונות`}>
+      {Array.from({ length: MAX_ATTEMPTS }, (_, i) => (
+        <span
+          key={i}
+          className={`h-3 w-3 rounded-full border-2 border-record ${i < used ? "bg-record" : "bg-transparent"}`}
+        />
+      ))}
+    </span>
+  );
+}
 
 interface Props {
   workshopId: string;
@@ -623,12 +640,13 @@ function SolutionAndRecord({
     return (
       <main
         /*
-          כל הדף גולל כיחידה אחת (התג, הכותרת וההוראות יחד), וגולל מעצמו
-          אל כל הוראה שמופיעה. קודם רק האזור התחתון גלל מתחת לכותרת קבועה,
-          וההוראות נחתכו מתחתיה - זה נראה תקוע.
+          הכותרת (תג השלב, התגית והכותרת) **קבועה** למעלה, ורק התוכן שמתחתיה
+          גולל - וגולל מעצמו אל כל הוראה שמופיעה. קודם כל הדף גלל כיחידה אחת,
+          ותג השלב העגול נגלל אל מחוץ למסך ונראה חתוך (דרישת הלקוחה: התג לא
+          נחתך בשום מסך). הקצה העליון של אזור הגלילה דוהה, כך שהוראה שעוברת
+          מתחת לכותרת נעלמת ברכות ולא נחתכת בקו ישר.
         */
-        ref={stepsScrollRef}
-        className="glass-scroll relative flex h-dvh flex-col items-center gap-5 overflow-x-hidden overflow-y-auto px-8 pt-20 pb-6 text-center"
+        className="relative flex h-dvh flex-col items-center gap-4 overflow-hidden px-8 pt-20 pb-0 text-center"
       >
         <style>{`
           @keyframes step-in {
@@ -639,15 +657,26 @@ function SolutionAndRecord({
 
         <BackgroundLayers variant="deep" />
 
-        <div className="relative flex flex-col items-center gap-3" style={{ animation: "fade-up 0.7s ease-out both" }}>
+        <div className="relative flex flex-none flex-col items-center gap-2" style={{ animation: "fade-up 0.7s ease-out both" }}>
           <LevelBadge value={7} progress={0.7} size={88} />
-          <span className="glass glass-chip text-accent-soft gap-2">
-            <Icon name="camera" size={15} />
-            סימולציות
-          </span>
-          <ConclusionInHeader />
-          <h1 className="glass-title text-4xl sm:text-5xl">הוראות לעריכת הסימולציה</h1>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <span className="glass glass-chip text-accent-soft gap-2">
+              <Icon name="camera" size={15} />
+              סימולציות
+            </span>
+            <ConclusionInHeader />
+          </div>
+          <h1 className="glass-title text-3xl sm:text-4xl">הוראות לעריכת הסימולציה</h1>
         </div>
+
+        <div
+          ref={stepsScrollRef as React.RefObject<HTMLDivElement>}
+          className="glass-scroll relative flex min-h-0 w-full flex-1 flex-col items-center gap-5 overflow-x-hidden overflow-y-auto px-2 pt-4"
+          style={{
+            maskImage: "linear-gradient(to bottom, transparent 0, #000 1.5rem)",
+            WebkitMaskImage: "linear-gradient(to bottom, transparent 0, #000 1.5rem)",
+          }}
+        >
 
         {/* "עכשיו משנות צורה" - עולה מלמטה, כהמשך ישיר לטקסט של "מרעיון
             למנגנון" שנגרר למעלה ויצא מהמסך (ראו Stage7Mechanism) */}
@@ -741,6 +770,7 @@ function SolutionAndRecord({
           </GlassButton>
         </div>
         </div>
+        </div>
       </main>
     );
   }
@@ -775,7 +805,10 @@ function SolutionAndRecord({
                 */
                 ...(expanded
                   ? null
-                  : { width: "min(68rem, calc(100vw - 42rem), (100dvh - 25rem) * 16 / 9)", minWidth: "22rem" }),
+                  // 31rem ולא 25rem: מתחת לכותרת נוספו שתי שורות הסבר, ואחרי
+                  // הקלטה יש שתי שורות (רמז הניסיונות + "שליחה") - בלי המקום
+                  // הזה התוכן היה גבוה מהמסך ותג השלב נחתך למעלה
+                  : { width: "min(68rem, calc(100vw - 42rem), (100dvh - 31rem) * 16 / 9)", minWidth: "22rem" }),
               }}
             />
 
@@ -813,7 +846,9 @@ function SolutionAndRecord({
             {/* חיווי קטן שהכתוביות החיות מאזינות - כדי שיהיה ברור שהטקסט זז
                 כי מדברים, ולא סתם. */}
             {status === "recording" && captionState === "listening" && (
-              <div className="pointer-events-none absolute top-5 left-5 flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm font-bold text-ink-2">
+              // text-white ולא text-ink-2: במצב בהיר ink הוא נייבי, והחיווי
+              // נבלע לגמרי ברקע השחור של הנגן
+              <div className="pointer-events-none absolute top-5 left-5 flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm font-bold text-white/85">
                 <span className="h-2 w-2 rounded-full bg-ok" style={{ animation: "rec-dot 1.4s ease-in-out infinite" }} />
                 כתוביות חיות
               </div>
@@ -855,12 +890,23 @@ function SolutionAndRecord({
                   {status === "recording" ? (
                     <span className="h-5 w-5 rounded-[3px] bg-white" />
                   ) : (
-                    <span className="h-6 w-6 rounded-full bg-record shadow-[0_0_14px_var(--ds-record-glow)]" />
+                    <span
+                      className="h-6 w-6 rounded-full bg-record shadow-[0_0_14px_var(--ds-record-glow)]"
+                      // אחרי הקלטה, כשעוד אפשר לנסות שוב - הכפתור נושם, כדי
+                      // שיהיה ברור שדרכו מקליטים מחדש
+                      style={status === "review" && attemptsLeft > 0 ? { animation: "rec-dot 1.6s ease-in-out infinite" } : undefined}
+                    />
                   )}
                 </button>
 
-                <span className="text-base font-bold text-ink tabular-nums">
+                {/* לבן ולא text-ink - אותה סיבה כמו חיווי הכתוביות החיות */}
+                <span className="text-base font-bold text-white tabular-nums">
                   <span ref={elapsedRef}>{fmtTime(0)}</span> / {fmtTime(RECORD_SECONDS)}
+                </span>
+
+                {/* כמה ניסיונות נוצלו מתוך שלושה */}
+                <span className="flex items-center gap-2 px-1" title={`ניסיון ${Math.max(1, currentAttempt)} מתוך ${MAX_ATTEMPTS}`}>
+                  <AttemptDots used={currentAttempt} />
                 </span>
 
                 {/* מד קליטת המיקרופון - חמישה פסים שמתמלאים לפי העוצמה */}
@@ -921,7 +967,9 @@ function SolutionAndRecord({
 
   return (
     <main
-      className="relative flex h-dvh flex-col items-center justify-center gap-3 overflow-hidden px-8 pt-16 pb-4 text-center"
+      // justify-center-safe: כשהתוכן גבוה מהמסך - מצמידים למעלה ולא חותכים את
+      // תג השלב (justify-center רגיל דחף אותו החוצה מראש המסך)
+      className="relative flex h-dvh flex-col items-center justify-center-safe gap-3 overflow-hidden px-8 pt-16 pb-4 text-center"
     >
       <style>{`
         @keyframes rec-dot {
@@ -977,7 +1025,7 @@ function SolutionAndRecord({
         <p className="text-ink-2 text-base leading-snug font-bold sm:text-lg">
           הכיני את עצמך להקלטה מול המצלמה
           <br />
-          <span className="text-ink-3 font-semibold">המסך ייפתח בהקלטה בעוד 3-2-1 שניות</span>
+          <span className="text-ink-3 font-semibold">המסך ייפתח בהקלטה בעוד 3 שניות</span>
         </p>
       </div>
 
@@ -1082,13 +1130,18 @@ function SolutionAndRecord({
         )}
 
         {status === "review" && countdown === null && (
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            {/* הקלטה חוזרת - כפתור גלוי (קודם רק הכפתור האדום בסרגל, והלקוחה
-                לא מצאה אותו), עד MAX_ATTEMPTS הקלטות */}
+          // הרמז מעל, "שליחה" מתחתיו - בשורה אחת זה נראה כמו שני כפתורים
+          <div className="flex flex-col items-center gap-3">
+            {/* הקלטה חוזרת - דרך הכפתור האדום בסרגל הנגן (לבקשת הלקוחה,
+                במקום כפתור נפרד). כאן רק רמז עדין, עם שלוש נקודות שמראות
+                כמה ניסיונות נוצלו מתוך שלושה. */}
             {attemptsLeft > 0 && (
-              <GlassButton size="lg" icon="refresh" onClick={startCountdown}>
-                {attemptsLeft === 1 ? "הקלטה חוזרת - ניסיון אחרון" : `הקלטה חוזרת (נותרו ${attemptsLeft})`}
-              </GlassButton>
+              <p className="glass glass-pill text-ink-2 gap-3 px-5 py-3 text-lg font-bold">
+                <AttemptDots used={attempts} />
+                {attemptsLeft === 1
+                  ? "נשאר לכן עוד ניסיון אחד – לחצנה על הכפתור האדום להקלטה האחרונה"
+                  : `רוצות לשפר? יש לכן עד ${MAX_ATTEMPTS} ניסיונות – לחצנה על הכפתור האדום להקלטה חוזרת`}
+              </p>
             )}
             <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={handleUpload}>
               שליחה
@@ -1116,22 +1169,28 @@ function SolutionAndRecord({
   גובה סרטון בצפייה המשותפת: מה שנשאר אחרי הכותרת (כ-25rem) ואחרי הרצועה
   התחתונה שבה יושבים מד ההתקדמות והטיימר (כ-14rem), עד 22rem.
 */
-const CLIP_H = "clamp(9rem, calc(100dvh - 39rem), 22rem)";
+const CLIP_H = "clamp(9rem, calc(100dvh - 39rem), 24rem)";
 
-function GroupClip({
+export function GroupClip({
   workshopId,
   groupId,
   url,
   title,
   inProject,
   segments,
+  height = CLIP_H,
+  onPlayingChange,
 }: {
+  /** מדווח כשהסרטון מתחיל / מפסיק להתנגן (מסך ההמתנה לשלב 8 מעלים את ה-V בזמן ניגון). */
+  onPlayingChange?: (playing: boolean) => void;
   workshopId: string;
   groupId: string;
   url: string;
   title?: string;
   inProject: boolean;
   segments?: TranscriptSegment[];
+  /** גובה הסרטון. ברירת מחדל - גובה הצפייה המשותפת. מסך ההמתנה לשלב 8 מקטין. */
+  height?: string;
 }) {
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -1199,11 +1258,14 @@ function GroupClip({
       preload="metadata"
       title={title}
       onError={() => setFailed(true)}
+      onPlay={() => onPlayingChange?.(true)}
+      onPause={() => onPlayingChange?.(false)}
+      onEnded={() => onPlayingChange?.(false)}
       // object-cover ממלא את המסגרת: ההקלטה היא 4:3 והמסגרת רחבה יותר, ובלי
       // זה נוספים פסים שחורים בצדדים.
       // הגובה נגזר מהגובה הפנוי (בין הכותרת לפאנלים שבפינות), לא קבוע.
       className="block w-full object-cover"
-      style={{ height: CLIP_H }}
+      style={{ height }}
     >
       {captionsUrl && <track kind="captions" srcLang="he" label="עברית" src={captionsUrl} default />}
     </video>
@@ -1318,13 +1380,15 @@ function LikeStar({
         onClick={like}
         disabled={full}
         aria-label={full ? "כל הסימונים נוצלו" : "אהבנו"}
-        className={`flex items-center gap-1.5 transition-transform duration-150 ${
+        // לבן על הסרטון - הכוכב הריק מצויר ב-currentColor, ובמצב בהיר זה
+        // היה נייבי על שחור, כמעט בלתי נראה
+        className={`flex h-6 items-center gap-0.5 text-white transition-transform duration-150 ${
           full ? "cursor-not-allowed opacity-70" : "hover:scale-110 active:scale-90"
         }`}
       >
         <svg
           viewBox="0 0 24 24"
-          className="h-7 w-7"
+          className="h-6 w-6"
           fill={myVotes > 0 ? "var(--ds-accent)" : "none"}
           stroke={myVotes > 0 ? "var(--ds-accent)" : "currentColor"}
           strokeWidth={1.6}
@@ -1334,7 +1398,9 @@ function LikeStar({
         </svg>
         <span
           key={totalLikes}
-          className="text-base font-bold text-white tabular-nums drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
+          // leading-none + בלי צל: המספר יושב בדיוק בגובה הכוכב, צמוד אליו,
+          // בלי "הילה" כהה סביבו (הסרגל של הנגן כבר כהה)
+          className="text-sm leading-none font-bold text-white tabular-nums"
           style={{ animation: "count-pop 0.35s ease-out" }}
         >
           {totalLikes}
@@ -1343,6 +1409,113 @@ function LikeStar({
 
     </div>
   );
+}
+
+/*
+  גודל הסרטונים בצפייה המשותפת - מחושב לפי החלון, כי יש שתי פריסות אפשריות
+  ואף אחת לא טובה תמיד:
+    א. **שורה רחבה מעל הפינות** (16:9) - הסרטונים חייבים להיגמר מעל מד
+       ההתקדמות והטיימר שבפינות התחתונות, אחרת הפאנלים מכסים את הנגן.
+       טוב במסך גבוה (הפלזמה).
+    ב. **שורה צרה בין הפינות** (4:3, היחס של ההקלטה עצמה) - הסרטונים
+       יכולים לרדת עד תחתית המסך, כי הפאנלים בצדדים ולא מתחתם. טוב במסך
+       נמוך, כמו מחשב נייד עם זום 125%, שם פריסה א' השאירה סרטונים קטנים.
+  נבחרת הפריסה שבה כל סרטון יוצא גדול יותר (שטח).
+*/
+const CLIP_GAP = 12;
+/** כמה מותר להזיז את שורת הסרטונים מהמרכז, כדי לנצל את הרווח שליד הטיימר. */
+const MAX_SHIFT = 40;
+const CLIP_MAX_W = 576; // 36rem
+/*
+  הרוחב המינימלי שבו הכוכב (בשורת סרגל הנגן, 9.5rem מימין) לא עולה על הזמן
+  שבצד שמאל: הזמן נגמר בערך 150px מהשמאל, והכוכב תופס עד ~215px מהימין.
+*/
+const CLIP_MIN_W = 390;
+const BELOW_CLIP = 24; // השורה "בת אחת מכן סימנה" מתחת לסרטון
+const PANEL_MARGIN = 8; // מרווח בין סרטון לפאנל שבפינה
+
+/**
+ * מודד את הפאנלים שבפינות התחתונות (מד ההתקדמות, הטיימר - מסומנים
+ * data-corner-panel) במקום להעריך אותם. כך כל פיקסל שביניהם הולך לסרטונים.
+ */
+function measureCornerPanels(vw: number, vh: number) {
+  let left = 0;
+  let right = 0;
+  let top = vh;
+  document.querySelectorAll<HTMLElement>("[data-corner-panel]").forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width === 0) return;
+    if (r.left + r.width / 2 < vw / 2) left = Math.max(left, r.right);
+    else right = Math.max(right, vw - r.left);
+    top = Math.min(top, r.top);
+  });
+  return { left: left + PANEL_MARGIN, right: right + PANEL_MARGIN, top: top - PANEL_MARGIN };
+}
+
+function useClipLayout(gridRef: React.RefObject<HTMLDivElement | null>, count: number) {
+  const [size, setSize] = useState<{ w: number; h: number; shift: number } | null>(null);
+
+  useLayoutEffect(() => {
+    function measure() {
+      const grid = gridRef.current;
+      if (!grid) return;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const panels = measureCornerPanels(vw, vh);
+      // ראש הסרטון = ראש השורה + שם הקבוצה שמעליו
+      const top = grid.getBoundingClientRect().top + 44;
+      const n = Math.max(1, count);
+      // כל הסרטונים חייבים להיכנס בשורה אחת, אחרת השורה נשברת לשתיים
+      const rowW = (grid.clientWidth - (n - 1) * CLIP_GAP) / n;
+
+      // א. מעל הפינות, ברוחב כמעט מלא
+      const hA = panels.top - BELOW_CLIP - top;
+      const wA = Math.max(0, Math.min(CLIP_MAX_W, rowW, (hA * 16) / 9));
+      const areaA = wA * ((wA * 9) / 16);
+
+      // ב. בין הפינות, עד תחתית המסך. מד ההתקדמות (שמאל) רחב מהטיימר (ימין),
+      // ולכן השורה מוזזת מעט ימינה כדי לנצל גם את הרווח שליד הטיימר - אבל
+      // לכל היותר MAX_SHIFT, כדי שתיראה ממורכזת (דרישת הלקוחה). כשהטיימר עוד
+      // לא הופיע ברגע המדידה, ההגבלה הזו היא מה שמונע מהשורה לזוז עליו.
+      const shift = Math.max(-MAX_SHIFT, Math.min(MAX_SHIFT, (panels.left - panels.right) / 2));
+      const side = Math.max(panels.left, panels.right) - Math.abs(shift);
+      const band = vw - 2 * side;
+      const wB = Math.max(0, Math.min(CLIP_MAX_W, rowW, (band - (n - 1) * CLIP_GAP) / n));
+      // עד 0.83 מהרוחב - אותו גובה כמו קודם, אבל רחב יותר (הלקוחה: "בגובה
+      // הזה אבל יותר רחבים"). ההקלטה 4:3 ממלאת את המסגרת (object-cover).
+      const hB = Math.max(0, Math.min(wB * 0.83, vh - 24 - BELOW_CLIP - top));
+      const areaB = wB * hB;
+
+      const a = { w: wA, h: (wA * 9) / 16, shift: 0 };
+      const b = { w: wB, h: hB, shift };
+      // קודם כל - פריסה שבה הכוכב לא עולה על הזמן (רוחב CLIP_MIN_W לפחות).
+      // רק אם אין כזו (מסך קטן מאוד / זום גבוה) - הפריסה עם הסרטון הגדול יותר.
+      const aFits = wA >= CLIP_MIN_W;
+      const bFits = wB >= CLIP_MIN_W;
+      const next = aFits !== bFits ? (aFits ? a : b) : areaA >= areaB ? a : b;
+      // אותו גודל (עד חצי פיקסל) - משאירים את האובייקט הקודם, בלי רינדור מחדש
+      setSize((prev) =>
+        prev &&
+        Math.abs(prev.w - next.w) < 0.5 &&
+        Math.abs(prev.h - next.h) < 0.5 &&
+        Math.abs(prev.shift - next.shift) < 0.5
+          ? prev
+          : next,
+      );
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    // מודדות שוב כל שנייה: הטיימר שבפינה מופיע רק אחרי שהשעון המשותף
+    // מתחיל, והכותרת מונפשת - מדידה חד-פעמית פספסה אותם. setSize עם אותו
+    // גודל לא גורם לרינדור, אז זה זול.
+    const interval = window.setInterval(measure, 1000);
+    return () => {
+      window.removeEventListener("resize", measure);
+      clearInterval(interval);
+    };
+  }, [gridRef, count]);
+
+  return size;
 }
 
 function SharedViewing({
@@ -1379,6 +1552,25 @@ function SharedViewing({
   const usedVotes = Object.values(myVotes).reduce((sum, votes) => sum + votes.length, 0);
   const votesLeft = Math.max(0, maxVotes - usedVotes);
   const transcripts = useClipTranscripts(workshopId);
+
+  /*
+    הקלטה בלי כתוביות - מבקשות תמלול שוב, פעם אחת לכל קבוצה בכל כניסה למסך.
+    הבקשה שנשלחת אחרי ההעלאה יכולה להיכשל (רשת, Gemini עמוס), וקודם
+    ההקלטה נשארה בלי כתוביות לתמיד. הבדיקה מחכה 6 שניות כדי שהשליפה
+    הראשונה של הכתוביות תספיק לחזור, ולא תשלח בקשות מיותרות.
+  */
+  const retriedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      for (const m of media) {
+        if (transcripts[m.group_id]?.length || retriedRef.current.has(m.group_id)) continue;
+        retriedRef.current.add(m.group_id);
+        requestTranscript(workshopId, m.group_id);
+      }
+    }, 6000);
+    return () => clearTimeout(t);
+  }, [media, transcripts, workshopId]);
+
   // אילו הקלטות שמורות כקבצים בתוך הפרויקט (ראו src/lib/projectClips.ts)
   const [projectClips, setProjectClips] = useState<string[]>([]);
 
@@ -1386,6 +1578,11 @@ function SharedViewing({
     listProjectClips(workshopId).then(setProjectClips);
   }, [workshopId]);
 
+  const gridRef = useRef<HTMLDivElement>(null);
+  const clipSize = useClipLayout(gridRef, allGroups.length);
+  // עד המדידה הראשונה - הגודל הקודם, מחושב ב-CSS
+  const clipW = clipSize ? `${clipSize.w}px` : `min(30vw, 36rem, ${CLIP_H} * 16 / 9)`;
+  const clipH = clipSize ? `${clipSize.h}px` : CLIP_H;
 
   return (
     <main
@@ -1433,14 +1630,18 @@ function SharedViewing({
         style={{ animation: "fade-up 0.7s ease-out both" }}
       >
         <LevelBadge value={7} progress={0.7} size={88} />
-        <span className="glass glass-chip text-accent-soft gap-2">
-          <Icon name="film" size={15} />
-          צפייה משותפת
-        </span>
-        <ConclusionInHeader />
-        <h1 className="glass-title text-3xl sm:text-4xl lg:text-5xl">צפייה משותפת בכל ההסרטות</h1>
+        {/* התגית והמסקנה באותה שורה (כמו ב-StageShell) - כל שורה שנחסכת
+            כאן הולכת לגובה של הסרטונים */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <span className="glass glass-chip text-accent-soft gap-2">
+            <Icon name="film" size={15} />
+            צפייה משותפת
+          </span>
+          <ConclusionInHeader />
+        </div>
+        <h1 className="glass-title text-3xl sm:text-4xl">צפייה משותפת בכל ההסרטות</h1>
         <p className="text-ink-2 text-lg">
-          צפו בהקלטות של שאר הקבוצות וסמנו בכוכב את מה שאהבתן.
+          צפו בהקלטות של שאר הצוותים וסמנו בכוכב את מה שאהבתן.
         </p>
         {/* מונה הסימונים הוא מד ולא רק טקסט: כמה כבר סומן נקרא גם בפס
             שמתמלא, בלי לקרוא את המספר. */}
@@ -1468,7 +1669,11 @@ function SharedViewing({
 
       {/* ריווח תחתון במסך רחב: מד ההתקדמות והטיימר יושבים בפינות התחתונות,
           והסרטונים צריכים להיגמר מעליהם ולא מתחתם. */}
-      <div className="relative flex w-full max-w-[108rem] flex-wrap items-start justify-center gap-6">
+      <div
+        ref={gridRef}
+        className="relative flex w-full max-w-[108rem] flex-wrap items-start justify-center"
+        style={{ gap: CLIP_GAP, transform: clipSize?.shift ? `translateX(${clipSize.shift}px)` : undefined }}
+      >
         {allGroups
           .slice()
           .sort((a, b) => a.screen_number - b.screen_number)
@@ -1481,9 +1686,9 @@ function SharedViewing({
                 className="group flex flex-col gap-2 transition-transform duration-200 hover:-translate-y-1"
                 style={{
                   animation: `fade-up 0.8s ${0.15 + i * 0.12}s ease-out both`,
-                  // רוחב 16:9 מהגובה של הסרטון (ראו CLIP_H) - כך כל השורה
-                  // נגמרת מעל מד ההתקדמות והטיימר שבפינות, וכל הכפתורים נגישים.
-                  width: `min(30vw, 32rem, ${CLIP_H} * 16 / 9)`,
+                  // הגודל מחושב ב-useClipLayout - כך הסרטונים אף פעם לא עולים
+                  // על מד ההתקדמות והטיימר שבפינות, וכל כפתורי הנגן נגישים.
+                  width: clipW,
                 }}
               >
                 <p className="text-ink text-2xl font-extrabold">
@@ -1502,12 +1707,19 @@ function SharedViewing({
                     title={g.name ?? `מסך ${g.screen_number}`}
                         inProject={projectClips.includes(g.id)}
                         segments={transcripts[g.id]}
+                        height={clipH}
                       />
                     </div>
 
-                    {/* הדירוג יושב על הסרטון, בשורה של סרגל הנגן וקצת מעליו -
-                        ממש ליד סמל הרמקול, כמו סימון מועדף על מדיה. */}
-                    <div className="absolute right-[9.5rem] bottom-[1.9rem] z-10">
+                    {/* הכוכב במקומו המקורי - בשורת סרגל הנגן, ליד סמל הרמקול.
+                        כדי שלא יעלה על הזמן (0:00 / 0:06) הסרטון צריך להיות
+                        ברוחב CLIP_MIN_W לפחות, וזה מה ש-useClipLayout דואג לו. */}
+                    {/* bottom-[2.2rem]: מרכז הכוכב (24px) בדיוק בגובה מרכז סמל
+                        הרמקול - נמדד בצילום: ~47px מתחתית המסגרת */}
+                    {/* right-[8.9rem]: משמאל לסמל הרמקול (שיושב תמיד ~130px מהקצה
+                        הימני של הנגן, בכל רוחב), עם רווח קטן ממנו. כך הכוכב תופס
+                        את הרווח שבין הרמקול לזמן, ולא עולה על הזמן בסרטון ברוחב ~300px. */}
+                    <div className="absolute right-[8.9rem] bottom-[2.4rem] z-10">
                       <LikeStar
                         totalLikes={(likesByGroup[g.id] ?? 0) + (pending[g.id]?.length ?? 0)}
                         myVotes={votes.length}
@@ -1581,7 +1793,7 @@ function Stage7Simulation({ workshopId, myGroup, allGroups, content, onAdvance }
         kicker="סימולציות"
         icon="film"
         title="ממתינים לשאר ההקלטות"
-        subtitle="ההקלטה שלכן נשמרה. הצפייה המשותפת תתחיל כשכל הקבוצות יסיימו."
+        subtitle="ההקלטה שלכן נשמרה. הצפייה המשותפת תתחיל כשכל הצוותים יסיימו."
         background="ripple"
       >
         <div className="glass glass-brick mb-8 flex w-full max-w-md flex-col gap-3 rounded-xl p-5">

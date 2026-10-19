@@ -154,7 +154,7 @@ function AdminPage() {
 
           <div className="glass glass-dim flex items-center justify-between gap-4 rounded-lg p-4">
             <div className="flex min-w-0 items-start gap-3">
-              <Icon name="sparkles" size={22} className="text-accent-soft mt-0.5 flex-none" />
+              <Icon name="info" size={22} className="text-accent-soft mt-0.5 flex-none" />
               <div className="min-w-0">
                 <p className="text-ink font-bold">אפקטים מופחתים</p>
                 <p className="text-ink-2 text-sm leading-relaxed">

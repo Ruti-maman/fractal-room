@@ -451,7 +451,7 @@ function FunctioningPictureStep({
     <StageShell
       stage={4}
       kicker="תמונת תפקוד"
-      icon="sparkles"
+      icon="lightbulb"
       title="תמונת תפקוד כוללת ומסקנה מעשית"
       subtitle={
         <>
@@ -1207,7 +1207,7 @@ function Stage4Marking({
         compactHeader
         icon="ladder"
         title="מערכת אפיון אוטומטית"
-        subtitle="המערכת ריכזה עבורכן את הנתונים עפ״י הסימונים שלכן. נשאר לכן לוודא שכולם באותה צורה."
+        subtitle="המערכת ריכזה עבורכן את הנתונים עפ״י הסימונים שלכן. נשאר לכן לוודא שכולנו באותה צורה."
         background="quiet"
         width="wide"
         actions={

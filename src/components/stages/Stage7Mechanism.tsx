@@ -12,9 +12,9 @@ import { cx } from "../../lib/cx";
  *  לפי התסריט של הלקוחה, לפני הוראות הסימולציה: לוקחות את הרעיון מהדיון
  *  (שלב 6) ומפרקות אותו לחלקים שאפשר להפעיל.
  *
- *  חמש השאלות מוצגות **אחת בכל פעם**, 30 שניות לכל אחת (דרישת הלקוחה),
- *  עם כפתור להוספת זמן כשצריך לשהות על שאלה. בסוף הזמן עוברים לבד לשאלה
- *  הבאה. אחרי האחרונה מופיעה השורה המסכמת, והכפתור "גורר" את כל הטקסט
+ *  חמש השאלות מוצגות **אחת בכל פעם**, 30 שניות לכל אחת (דרישת הלקוחה).
+ *  בסוף הזמן עוברים לבד לשאלה הבאה, ואפשר להקדים בכפתור. (כפתור "עוד 30
+ *  שניות" הוסר לבקשת הלקוחה.) אחרי האחרונה מופיעה השורה המסכמת, והכפתור "גורר" את כל הטקסט
  *  למעלה אל מחוץ למסך - ומתחתיו עולה חלונית הסימולציה.
  *
  *  הספירה של 30 השניות מקומית בכוונה: זה קצב קריאה של שאלה, לא טיימר של
@@ -51,7 +51,6 @@ export const MECHANISM_DEFAULTS: MechanismTexts = {
 };
 
 const QUESTION_SECONDS = 30;
-const EXTRA_SECONDS = 30;
 /** משך ה"גרירה" למעלה של כל הטקסט, לפני שחלונית הסימולציה עולה. */
 const LIFT_MS = 900;
 
@@ -59,7 +58,6 @@ function Stage7Mechanism({ texts, onDone }: { texts: MechanismTexts; onDone: () 
   const total = texts.questions.length;
   const [index, setIndex] = useState(0);
   const [startedAt, setStartedAt] = useState(() => Date.now());
-  const [allowedSeconds, setAllowedSeconds] = useState(QUESTION_SECONDS);
   const [now, setNow] = useState(() => Date.now());
   const [lifting, setLifting] = useState(false);
   const finished = index >= total;
@@ -70,14 +68,13 @@ function Stage7Mechanism({ texts, onDone }: { texts: MechanismTexts; onDone: () 
     return () => clearInterval(id);
   }, [finished]);
 
-  const remainingMs = Math.max(0, allowedSeconds * 1000 - (now - startedAt));
+  const remainingMs = Math.max(0, QUESTION_SECONDS * 1000 - (now - startedAt));
   const remaining = Math.ceil(remainingMs / 1000);
 
   function nextQuestion() {
     setIndex((i) => i + 1);
     setStartedAt(Date.now());
     setNow(Date.now());
-    setAllowedSeconds(QUESTION_SECONDS);
   }
 
   // בסוף הזמן - לשאלה הבאה לבד
@@ -115,14 +112,9 @@ function Stage7Mechanism({ texts, onDone }: { texts: MechanismTexts; onDone: () 
             {texts.next_label}
           </GlassButton>
         ) : (
-          <>
-            <GlassButton size="lg" icon="clock" onClick={() => setAllowedSeconds((s) => s + EXTRA_SECONDS)}>
-              עוד {EXTRA_SECONDS} שניות
-            </GlassButton>
-            <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={nextQuestion}>
-              {index === total - 1 ? "סיימנו את השאלות" : "לשאלה הבאה"}
-            </GlassButton>
-          </>
+          <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={nextQuestion}>
+            {index === total - 1 ? "סיימנו את השאלות" : "לשאלה הבאה"}
+          </GlassButton>
         )
       }
     >
@@ -164,7 +156,7 @@ function Stage7Mechanism({ texts, onDone }: { texts: MechanismTexts; onDone: () 
                 <div
                   className="bg-accent h-full rounded-full"
                   style={{
-                    width: `${(remainingMs / (allowedSeconds * 1000)) * 100}%`,
+                    width: `${(remainingMs / (QUESTION_SECONDS * 1000)) * 100}%`,
                     transition: "width 0.25s linear",
                   }}
                 />

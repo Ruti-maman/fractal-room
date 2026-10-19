@@ -18,7 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Group } from "../types/group";
 import { supabase } from "../lib/supabase";
 import Icon from "./ui/Icon";
-import { ConnectionBadge, ThemeToggle } from "./ui/SystemControls";
+import { ThemeToggle } from "./ui/SystemControls";
 
 interface Props {
   myGroup: Group;
@@ -41,7 +41,8 @@ function TopBar({ myGroup, screenNumber, center, onGoBack }: Props) {
       {/* פקדי מערכת - בצד הסיום (שמאל ב-RTL) */}
       <div className="pointer-events-auto flex flex-none items-center gap-2">
         {onGoBack && <BackButton onClick={onGoBack} />}
-        <ConnectionBadge />
+        {/* חיווי הוויי-פיי הוסר לבקשת הלקוחה ("להוריד את כל הסימונים של
+            הוויי-פיי"). ConnectionBadge נשאר ב-SystemControls אם יידרש שוב. */}
         <ThemeToggle />
       </div>
     </div>

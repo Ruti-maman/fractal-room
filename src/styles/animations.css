@@ -260,6 +260,35 @@
   }
 }
 
+/* ה-V הגדול במסך ההמתנה לשלב 8 (BigCheck): הבזק אור שרץ לאורך הקו,
+   והילה צבעונית שנושמת. ההבזק מתחיל מחוץ לקו (18) ויוצא מצדו השני (-140). */
+@keyframes check-shine {
+  0% {
+    stroke-dashoffset: 18;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  45%,
+  100% {
+    stroke-dashoffset: -140;
+    opacity: 0;
+  }
+}
+
+@keyframes check-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px rgba(115, 104, 201, 0.35));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(14, 156, 147, 0.6));
+    transform: scale(1.05);
+  }
+}
+
 /* טבעת שמתפרצת החוצה ונמוגה - פעם אחת, לא בלולאה. */
 @keyframes ring-out {
   0% {

@@ -22,6 +22,11 @@ interface Props {
   placement?: "corner" | "center";
   /** הכיתוב הקטן ליד הטבעת. ברירת מחדל: "זמן לשלב". */
   label?: string;
+  /**
+   * השעון עוד לא התחיל - מסך ההמתנה בשער סנכרון, לפני שכל הקבוצות הגיעו.
+   * מוצג מלא ועוצר (כל הזמן עוד לפניהן), בלי מעבר אוטומטי ובלי תקתוק.
+   */
+  pending?: boolean;
 }
 
 /**
@@ -53,6 +58,7 @@ function Timer({
   hidden = false,
   placement = "corner",
   label = "זמן לשלב",
+  pending = false,
 }: Props) {
   const center = placement === "center";
   const [now, setNow] = useState(() => Date.now());
@@ -64,7 +70,7 @@ function Timer({
     return () => clearInterval(interval);
   }, []);
 
-  const elapsedMs = now - new Date(startedAt).getTime();
+  const elapsedMs = pending ? 0 : now - new Date(startedAt).getTime();
   const totalMs = durationMinutes * 60_000;
   const remainingMs = Math.max(0, totalMs - elapsedMs);
   const isTimeUp = remainingMs <= 0;
@@ -106,6 +112,8 @@ function Timer({
 
   return (
     <div
+      // מסומן כפאנל פינה רק בפינה - הצפייה בשלב 7 מודדת את הפאנלים כדי שהסרטונים לא יעלו עליהם
+      data-corner-panel={center ? undefined : ""}
       className={cx(
         "glass glass-brick glass-raised flex",
         center
@@ -190,7 +198,13 @@ function Timer({
           {label}
         </div>
         <div className={cx("font-bold", center ? "text-xl" : "text-base")}>
-          {isTimeUp ? "הזמן נגמר" : isWarning ? "דקה אחרונה" : `${durationMinutes} דקות`}
+          {pending
+            ? "מתחיל כשכולן יגיעו"
+            : isTimeUp
+              ? "הזמן נגמר"
+              : isWarning
+                ? "דקה אחרונה"
+                : `${durationMinutes} דקות`}
         </div>
       </div>
 

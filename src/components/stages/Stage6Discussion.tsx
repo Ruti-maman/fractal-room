@@ -7,7 +7,6 @@ import StageShell from "../StageShell";
 import Timer from "../Timer";
 import TipPopups, { type Tip, type TipSlot } from "../TipPopups";
 import FractalSentence from "../FractalSentence";
-import Icon from "../ui/Icon";
 import { GlassButton } from "../ui/Glass";
 import { cx } from "../../lib/cx";
 
@@ -173,7 +172,6 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
         {/* כלל הפרקטל - באותו עיצוב כמו בסיכום שלב 2 */}
         <div className="mt-[1vh] flex min-h-0 w-full flex-[0_1_auto] flex-col items-center gap-1">
           <span className="text-accent-soft flex flex-none items-center gap-2 text-lg font-extrabold">
-            <Icon name="sparkles" size={18} />
             {t.fractal_title}
           </span>
           <FractalSentence text={t.fractal_text} className="h-[min(8rem,13vh)] min-h-10 w-full flex-[0_1_auto]" />

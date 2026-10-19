@@ -6,7 +6,7 @@ update program_stages
 set content = content || jsonb_build_object(
   'room', jsonb_build_object(
     'intro', 'התחברנו לחלקים. עכשיו רואים את התמונה.',
-    'journey_title', 'איפה אנחנו במסע:',
+    'journey_title', 'איתנו במסע:',
     'after_line', 'כל קבוצה היא צורה אחרת. עכשיו נראה',
     'after_bold', 'איזו צורה תצליח לעשות שינוי בדפוס.',
     'waiting', 'המערכת ממתינה לכל הצוותים'

@@ -29,7 +29,7 @@ function ContentFrame({ children }: { children: React.ReactNode }) {
 }
 
 /** מציין-מקום לתוכן שעדיין לא הגיע מהלקוחה - מעוצב, ואומר בדיוק מה חסר. */
-function Awaiting({ icon, label }: { icon: "camera" | "film" | "sparkles"; label: string }) {
+function Awaiting({ icon, label }: { icon: "camera" | "film" | "star"; label: string }) {
   return (
     <div className="text-ink-3 flex flex-col items-center gap-3 text-center">
       <span className="glass glass-dim glass-icon-btn glass-icon-btn-lg">
@@ -42,14 +42,14 @@ function Awaiting({ icon, label }: { icon: "camera" | "film" | "sparkles"; label
 
 function ScreenContent({ screen }: { screen: Stage1Content["screens"][string] | undefined }) {
   if (!screen) {
-    return <Awaiting icon="sparkles" label="אין תוכן מוגדר למסך הזה בשלב 1" />;
+    return <Awaiting icon="star" label="אין תוכן מוגדר למסך הזה בשלב 1" />;
   }
 
   if (screen.type === "logo") {
     return screen.image_url ? (
       <img src={screen.image_url} alt="לוגו חדר פרקטל" className="max-h-72 object-contain" />
     ) : (
-      <Awaiting icon="sparkles" label="כאן יופיע הלוגו" />
+      <Awaiting icon="star" label="כאן יופיע הלוגו" />
     );
   }
 
@@ -98,7 +98,7 @@ function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
   }
 
   return (
-    <main className="relative flex h-dvh flex-col items-center justify-center gap-8 overflow-hidden px-4 py-8 sm:px-8">
+    <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-8 overflow-hidden px-4 py-8 sm:px-8">
       <BackgroundLayers variant="dawn" />
 
       <header
@@ -106,7 +106,7 @@ function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
         style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
       >
         <span className="glass glass-chip text-accent-soft gap-2">
-          <Icon name="sparkles" size={15} />
+          <Icon name="star" size={15} />
           ברוכות הבאות
         </span>
       </header>

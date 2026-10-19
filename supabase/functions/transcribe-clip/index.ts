@@ -26,19 +26,45 @@ interface Segment {
   text: string;
 }
 
+/** "1.5", 1.5, "00:01.5", "0:01" - כל הצורות שהמודל החזיר בפועל לזמן. */
+function toSeconds(value: unknown): number {
+  if (typeof value === "number") return value;
+  const s = String(value ?? "").trim();
+  if (s.includes(":")) {
+    return s.split(":").reduce((acc, part) => acc * 60 + Number(part), 0);
+  }
+  return Number(s);
+}
+
 /** ממיר את מה שהמודל החזיר למבנה בטוח, גם אם חלק מהשדות חסרים או הפוכים. */
 function normalize(raw: unknown): Segment[] {
   if (!Array.isArray(raw)) return [];
   const out: Segment[] = [];
   for (const item of raw) {
-    const text = String((item as Segment)?.text ?? "").trim();
+    const it = item as Record<string, unknown>;
+    const text = String(it?.text ?? it?.transcript ?? "").trim();
     if (!text) continue;
-    const start = Number((item as Segment)?.start ?? 0);
-    const end = Number((item as Segment)?.end ?? start + 3);
+    const start = toSeconds(it?.start ?? it?.start_time ?? 0);
+    const end = toSeconds(it?.end ?? it?.end_time ?? start + 3);
     if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
     out.push({ start: Math.max(0, start), end: Math.max(start + 0.5, end), text });
   }
   return out.sort((a, b) => a.start - b.start);
+}
+
+/**
+ * מחלץ את הקטעים מהטקסט שהמודל החזיר. נתפס בפועל שהתשובה הגיעה לפעמים
+ * עטופה ב-```json, או כמערך ישיר בלי {"segments": ...} - ואז JSON.parse
+ * נכשל או ש-segments היה undefined, ונשמר תמלול ריק.
+ */
+function parseSegments(rawText: string): Segment[] {
+  const cleaned = rawText.replace(/^\s*```(?:json)?/i, "").replace(/```\s*$/, "").trim();
+  try {
+    const parsed = JSON.parse(cleaned);
+    return normalize(Array.isArray(parsed) ? parsed : parsed?.segments);
+  } catch {
+    return [];
+  }
 }
 
 Deno.serve(async (req) => {
@@ -60,16 +86,21 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    // אם כבר תומלל - מחזירים את מה שיש, בלי לבזבז קריאה ל-AI
-    const { data: existing } = await supabase
+    // אם כבר תומלל - מחזירים את מה שיש, בלי לבזבז קריאה ל-AI. **תמלול ריק
+    // לא נחשב**: קודם שורה עם segments ריק "נעלה" את הקבוצה לתמיד בלי
+    // כתוביות, כי היא נחשבה כאילו כבר תומללה.
+    const { data: existingRows } = await supabase
       .from("responses")
-      .select("data")
+      .select("id, data")
       .eq("workshop_id", workshop_id)
       .eq("group_id", group_id)
       .eq("stage_number", 7)
       .eq("type", "clip_transcript")
-      .maybeSingle();
-    if (existing?.data) {
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const existing = existingRows?.[0];
+    const existingSegments = (existing?.data as { segments?: Segment[] } | undefined)?.segments ?? [];
+    if (existing && existingSegments.length > 0) {
       return new Response(JSON.stringify(existing.data), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -153,22 +184,29 @@ Deno.serve(async (req) => {
     }
 
     const geminiJson = await geminiRes.json();
-    const rawText: string = geminiJson?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
-    let segments: Segment[] = [];
-    try {
-      segments = normalize(JSON.parse(rawText)?.segments);
-    } catch {
-      segments = [];
-    }
+    // כל חלקי הטקסט, לא רק הראשון - המודל מפצל לפעמים את התשובה לכמה parts
+    const rawText: string = (geminiJson?.candidates?.[0]?.content?.parts ?? [])
+      .map((p: { text?: string }) => p.text ?? "")
+      .join("");
+    const segments = parseSegments(rawText || "{}");
 
     const payload = { segments };
-    await supabase.from("responses").insert({
-      workshop_id,
-      group_id,
-      stage_number: 7,
-      type: "clip_transcript",
-      data: payload,
-    });
+    if (segments.length === 0) {
+      // לא שומרים ריק - כך הבקשה הבאה (מסך הצפייה מבקש שוב) תנסה מחדש.
+      // התשובה הגולמית ביומן של הפונקציה, כדי שיהיה אפשר לראות מה חזר.
+      console.warn("transcribe-clip: no segments parsed. raw:", rawText.slice(0, 500));
+    } else if (existing) {
+      // הייתה שורה ריקה מלפני התיקון - מעדכנים אותה במקום להוסיף כפולה
+      await supabase.from("responses").update({ data: payload }).eq("id", existing.id);
+    } else {
+      await supabase.from("responses").insert({
+        workshop_id,
+        group_id,
+        stage_number: 7,
+        type: "clip_transcript",
+        data: payload,
+      });
+    }
 
     return new Response(JSON.stringify(payload), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

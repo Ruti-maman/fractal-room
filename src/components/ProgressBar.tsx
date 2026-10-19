@@ -27,9 +27,10 @@ function ProgressBar({ allGroups, myScreenNumber, totalStages }: Props) {
 
   return (
     <aside
-      aria-label="התקדמות הקבוצות"
+      aria-label="התקדמות הצוותים"
       // על מסך צר המד מתכווץ לגרסה מינימלית (מספר מסך + פס בלבד): בפריסה
       // המלאה הוא תפס כרבע ממסך טלפון וכיסה את התוכן שמתחתיו.
+      data-corner-panel
       className="glass glass-brick glass-raised fixed bottom-4 left-4 z-30 flex w-[9.5rem] flex-col gap-2.5 rounded-xl p-3 sm:bottom-6 sm:left-6 sm:w-[17rem] sm:p-4"
     >
       <div className="text-ink-3 hidden items-center gap-2 text-[11px] font-bold tracking-wide sm:flex">
