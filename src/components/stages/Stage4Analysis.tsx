@@ -130,28 +130,26 @@ function ToolButton({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className="glass glass-interactive glass-3d glass-pill btn-rect flex w-full min-w-[9.5rem] items-center gap-3 py-2 ps-2 pe-5 transition-all duration-300"
-      style={
-        active
-          ? {
-              background: `linear-gradient(180deg, color-mix(in srgb, ${color} 14%, white), color-mix(in srgb, ${color} 26%, white))`,
-              outline: `2.5px solid ${color}`,
-              outlineOffset: "2px",
-            }
-          : undefined
-      }
+      // לבן, טקסט כחול, מסגרת אדומה (בקשת הלקוחה, 2026-11-08). הכלי הפעיל
+      // מורם ומקבל טבעת לבנה עבה מסביב - בולטת על המגש האדום
+      className={cx(
+        "glass glass-interactive glass-3d glass-pill btn-rect frame-red flex w-full min-w-[11rem] items-center gap-3.5 py-2.5 ps-2.5 pe-5 transition-all duration-300",
+        active && "-translate-y-0.5 scale-[1.04]",
+      )}
+      style={active ? { outline: "4px solid var(--ds-on-active)", outlineOffset: "3px" } : undefined}
     >
+      {/* האייקון גדול יותר (בקשת הלקוחה) - 64 במקום 44 */}
       <span
         aria-hidden="true"
-        className="flex h-11 w-11 flex-none items-center justify-center diamond text-white"
+        className="flex h-16 w-16 flex-none items-center justify-center diamond text-white"
         style={{
           background: `radial-gradient(circle at 32% 26%, color-mix(in srgb, ${color} 45%, white) 0%, ${color} 50%, color-mix(in srgb, ${color} 65%, #0b2a2a) 100%)`,
           boxShadow: `inset 0 -3px 6px -2px rgba(0,0,0,0.25), inset 0 2px 3px rgba(255,255,255,0.6), 0 4px 10px -3px color-mix(in srgb, ${color} 70%, transparent)`,
         }}
       >
-        <Icon name={icon} size={20} />
+        <Icon name={icon} size={30} />
       </span>
-      <span className={cx("text-lg font-extrabold", active ? "text-ink" : "text-ink-2")}>
+      <span className={cx("text-ink text-xl", active ? "font-extrabold" : "font-bold")}>
         {label}
       </span>
     </button>
@@ -351,15 +349,11 @@ function PhraseColumn({
     else groups.push({ category: p.category, items: [p] });
   }
   return (
-    <div className="glass glass-brick glass-raised flex max-h-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
-      {/* כותרת הטור: נקייה, על הלבן של הכרטיס, עם קו דק מתחתיה */}
-      <div
-        className={cx(
-          "border-edge-dim flex flex-none items-center gap-2.5 border-b px-5 py-4 text-xl font-extrabold",
-          styles.header,
-        )}
-      >
-        <Icon name={styles.icon} size={20} />
+    // לבן, כותרות אדומות, טקסט כחול, מסגרות אדומות (בקשת הלקוחה, 2026-11-08)
+    <div className="glass glass-brick glass-raised frame-red flex max-h-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
+      {/* כותרת הטור: אדומה, על הלבן של הכרטיס, עם קו אדום מתחתיה */}
+      <div className="text-red-head border-pal-3 flex flex-none items-center gap-2.5 border-b-2 px-5 py-4 text-2xl font-extrabold">
+        <Icon name={styles.icon} size={24} />
         {title}
         <span className="text-ink-3 ms-auto text-sm font-bold tabular-nums">
           {phrases.length}
@@ -375,14 +369,14 @@ function PhraseColumn({
         <div className="glass-scroll mx-0.5 mb-0.5 min-h-0 flex-1 overflow-y-auto rounded-b-2xl">
         <table className="w-full border-collapse text-right">
           <thead>
-            <tr className="text-ink-3 text-sm">
+            <tr className="text-red-head text-base">
               {/* המונח המקצועי מימין (נקרא ראשון, טור קצר ואחיד שקל לסרוק) והנתון
                   - המשפט מהטקסט - משמאלו. אושר ע"י המפתחת, 2026-10-20. */}
               {/* sticky: שורת הכותרות נשארת קבועה כשהשורות גוללות מתחתיה */}
-              <th className="border-edge-dim bg-bg-solid sticky top-0 z-10 border-b px-4 py-2 font-extrabold">
+              <th className="border-pal-3 sticky top-0 z-10 border-b bg-white px-4 py-2 font-extrabold">
                 מונח מקצועי
               </th>
-              <th className="border-edge-dim bg-bg-solid sticky top-0 z-10 border-b px-4 py-2 font-extrabold">
+              <th className="border-pal-3 sticky top-0 z-10 border-b bg-white px-4 py-2 font-extrabold">
                 נתון
               </th>
             </tr>
@@ -394,7 +388,7 @@ function PhraseColumn({
                   key={p.id}
                   // קו מפריד רק בין תחומים; בתוך תחום - קו עדין בין המשפטים בלבד
                   className={cx(
-                    i === g.items.length - 1 ? "border-edge-dim border-b" : "border-edge-dim/40 border-b border-dashed",
+                    i === g.items.length - 1 ? "border-pal-5 border-b" : "border-pal-6 border-b border-dashed",
                     "last:border-b-0",
                   )}
                 >
@@ -572,14 +566,15 @@ function FunctioningPictureStep({
             {[result.sentence1, result.sentence2].map(cleanAiHebrew).map((sentence, i) => (
               <li
                 key={i}
-                className="glass glass-brick glass-raised flex items-start gap-4 rounded-2xl p-6"
+                // לבן, טקסט כחול, מסגרת אדומה (בקשת הלקוחה, 2026-11-08)
+                className="glass glass-brick glass-raised frame-red flex items-start gap-4 rounded-2xl p-6"
                 style={{
                   animation: `glass-in var(--ds-dur-slow) ${i * 120}ms var(--ds-ease) both`,
                 }}
               >
                 <span
                   aria-hidden="true"
-                  className="glass glass-active flex h-9 w-9 flex-none items-center justify-center diamond text-sm font-extrabold"
+                  className="glass glass-active slot-chosen flex h-10 w-10 flex-none items-center justify-center diamond text-base font-extrabold"
                 >
                   {i + 1}
                 </span>
@@ -591,12 +586,13 @@ function FunctioningPictureStep({
           {/* לפי בקשת הלקוחה: לא הצעת AI מוצגת כאן - תיבה ריקה שהקבוצה
               עצמה מקלידה לתוכה את המסקנה המעשית שלה. הלבנה הזו מודגשת
               (glass-strong) כי היא הפעולה היחידה במסך. */}
-          <div className="glass glass-strong glass-brick glass-raised rounded-2xl p-5">
+          <div className="glass glass-strong glass-brick glass-raised frame-red rounded-2xl p-5">
+            {/* הכותרת באדום (בקשת הלקוחה, 2026-11-08) */}
             <label
               htmlFor="group-conclusion"
-              className="text-accent-soft mb-3 flex items-center justify-center gap-2 text-center text-sm font-bold"
+              className="text-red-head mb-3 flex items-center justify-center gap-2 text-center text-lg font-extrabold"
             >
-              <Icon name="lightbulb" size={16} />
+              <Icon name="lightbulb" size={20} />
               על סמך ההבנות למעלה - כתבו מסקנה מעשית שתלווה את כל השלבים הבאים
             </label>
             <textarea
@@ -604,7 +600,7 @@ function FunctioningPictureStep({
               ref={conclusionRef}
               id="group-conclusion"
               className={cx(
-                "glass-input h-24 w-full resize-none !rounded-xl py-4 !text-xl",
+                "glass-input !border-pal-4 text-navy h-24 w-full resize-none !rounded-xl !border-2 !bg-white py-4 !text-xl",
                 conclusionMissing && !groupConclusion.trim() && "!border-accent ring-accent/35 !border-2 ring-4",
               )}
               style={
@@ -750,6 +746,9 @@ function Stage4Analysis(props: Props) {
         icon="marker"
         background="quiet"
         lines={intro.lines}
+        // "להפוך את הטקסט ליותר מעניין" (בקשת הלקוחה, 2026-11-08): אותו
+        // נוסח, מוצג כפירוק - שאלות כאריחים שמתפרקים מהמרכז, ו"המטרה" בסוף
+        layout="breakdown"
         startLabel={intro.start_label}
         onStart={() => {
           try {
@@ -1406,7 +1405,8 @@ function Stage4Marking({
       >
       {/* המגש. שטוח ונמוך בכוונה (glass-dim) - הכלים הם הגיבורים כאן,
           והמגש רק מחזיק אותם; לבנה עבה מסביבם הייתה מתחרה בהם. */}
-      <div className="glass glass-dim glass-raised flex flex-none flex-wrap items-center justify-center gap-3 rounded-2xl p-3 lg:flex-col lg:flex-nowrap lg:items-stretch lg:self-center lg:p-4">
+      {/* המגש אדום (בקשת הלקוחה, 2026-11-08), והכלים עליו לבנים */}
+      <div className="glass glass-raised tray-red flex flex-none flex-wrap items-center justify-center gap-4 rounded-2xl p-3 lg:flex-col lg:flex-nowrap lg:items-stretch lg:self-center lg:p-5">
         <MarkerTool
           tool="green"
           label="חוזקות"

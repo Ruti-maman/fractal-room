@@ -9,7 +9,8 @@ set content = content || jsonb_build_object(
     'journey_title', 'איתנו במסע:',
     'after_line', 'כל קבוצה היא צורה אחרת,',
     'after_bold', 'עכשיו נראה איזו צורה תצליח לעשות שינוי בדפוס.',
-    'waiting', 'המערכת ממתינה לכל הצוותים...'
+    'waiting', 'המערכת ממתינה לכל הצוותים...',
+    'start_button', 'אנחנו מתחילות, לצפייה בדילמה'
   ),
   'identification', jsonb_build_object(
     'shape_line', 'עכשיו משנים צורה, שמים את הפרקטל על השולחן.',

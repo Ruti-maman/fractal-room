@@ -511,6 +511,16 @@
   --color-danger-fill: var(--ds-danger-fill);
   --color-record: var(--ds-record);
 
+  /* סולם הקורל של הלקוחה ונייבי הלוגו (מסגרות וכותרות "אדומות" בשלב 4) */
+  --color-pal-1: var(--ds-pal-1);
+  --color-pal-2: var(--ds-pal-2);
+  --color-pal-3: var(--ds-pal-3);
+  --color-pal-4: var(--ds-pal-4);
+  --color-pal-5: var(--ds-pal-5);
+  --color-pal-6: var(--ds-pal-6);
+  --color-pal-7: var(--ds-pal-7);
+  --color-navy: var(--ds-navy);
+
   --radius-xs: var(--ds-r-xs);
   --radius-sm: var(--ds-r-sm);
   --radius-md: var(--ds-r-md);

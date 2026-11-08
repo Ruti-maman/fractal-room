@@ -1235,6 +1235,78 @@
     opacity: 0;
   }
 
+  /*
+    צבעי משבצות השמש (בקשת הלקוחה, 2026-11-08):
+    ריקה - כחול מלא; ברגע שמקלידים - לבן עם אותיות כחולות; נבחרה - אדום.
+    :placeholder-shown = השדה עוד ריק, גם כשהסמן כבר בתוכו.
+  */
+  .slot-input:placeholder-shown {
+    background-image: linear-gradient(
+      180deg,
+      var(--ds-active-from) 0%,
+      var(--ds-active-mid) 52%,
+      var(--ds-active-to) 100%
+    );
+    border-color: transparent;
+    color: var(--ds-on-active);
+    box-shadow:
+      inset 0 1.5px 0 0 rgba(255, 255, 255, 0.45),
+      inset 0 -12px 20px -12px rgba(0, 0, 0, 0.35),
+      0 10px 22px -12px var(--ds-3d-shadow-far);
+  }
+
+  .slot-input:placeholder-shown::placeholder {
+    color: var(--ds-on-active);
+    font-weight: 700;
+    opacity: 0.85;
+  }
+
+  .slot-input:not(:placeholder-shown) {
+    background: color-mix(in srgb, white 92%, transparent);
+    color: var(--ds-navy);
+  }
+
+  /* משבצת שנבחרה: אותו .glass-active, רק שהטוקנים שלו מוחלפים בקורל -
+     כך כל ההצללות והברק של "דלוק" נשמרים, ורק הצבע מתחלף לאדום */
+  .slot-chosen {
+    --ds-active-from: var(--ds-pal-3);
+    --ds-active-mid: var(--ds-pal-2);
+    --ds-active-to: var(--ds-pal-1);
+    --ds-on-active: #ffffff;
+    --ds-glow: color-mix(in srgb, var(--ds-pal-2) 45%, transparent);
+  }
+
+  /*
+    "לבן, טקסט כחול, מסגרת אדומה" - שלב 4 (ניתוח, טבלאות, תמונת תפקוד),
+    בקשת הלקוחה 2026-11-08. מחליף את מילוי הזכוכית בלבן נקי ואת מסגרת
+    הקשת הדקה (::after) בקו קורל ממשי. !important: כללי .glass-brick
+    במצב בהיר יושבים בספציפיות גבוהה, וזה כלל שחייב לנצח אותם.
+  */
+  .frame-red {
+    background-image: none !important;
+    background-color: color-mix(in srgb, white 96%, transparent) !important;
+    border: 2px solid var(--ds-pal-3) !important;
+    color: var(--ds-navy);
+  }
+
+  .frame-red::after {
+    display: none;
+  }
+
+  /* כותרת אדומה על רקע לבן */
+  .text-red-head {
+    color: var(--ds-pal-2);
+  }
+
+  /* מגש כלים אדום (שלב 4) */
+  .tray-red {
+    background-image: linear-gradient(160deg, var(--ds-pal-3), var(--ds-pal-2) 60%, var(--ds-pal-1)) !important;
+  }
+
+  .tray-red::after {
+    display: none;
+  }
+
   /* המצב הכהה: תגיות ניטרליות-סגלגלות ולא טורקיז מלא */
   :root:not([data-theme="light"]) .glass-chip {
     background-color: rgba(169, 156, 245, 0.12);

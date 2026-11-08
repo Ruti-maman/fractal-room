@@ -25,6 +25,8 @@ interface RoomTexts {
   after_line: string;
   after_bold: string;
   waiting: string;
+  /** הכפתור שמעביר לסרטון הדילמה. */
+  start_button: string;
 }
 
 const ROOM_DEFAULTS: RoomTexts = {
@@ -34,6 +36,7 @@ const ROOM_DEFAULTS: RoomTexts = {
   after_bold: "עכשיו נראה איזו צורה תצליח לעשות שינוי בדפוס.",
   // לפי האפיון: "צוותים" ולא "קבוצות" בהודעת ההמתנה
   waiting: "המערכת ממתינה לכל הצוותים...",
+  start_button: "אנחנו מתחילות, לצפייה בדילמה",
 };
 
 /** טקסטי מסע ההזדהות - כולם ניתנים לעריכה מה-DB (content.identification). */
@@ -690,7 +693,8 @@ function RoomStatusNames({
       kicker="מצב החדר"
       icon="users"
       title="מי בחדר"
-      subtitle={t.intro}
+      // קצת אוויר בין הכותרת לשורת ההסבר (בקשת הלקוחה, 2026-11-08)
+      subtitle={<span className="mt-2 inline-block">{t.intro}</span>}
       background="ripple"
       width="wide"
       compactHeader
@@ -707,7 +711,7 @@ function RoomStatusNames({
           </div>
           {allIdentified ? (
             <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={onNext}>
-              לצפייה בדילמה
+              {t.start_button}
             </GlassButton>
           ) : (
             <span className="glass glass-pill text-ink-2 gap-2.5 px-5 py-2.5 text-base font-bold">
