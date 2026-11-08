@@ -48,7 +48,7 @@ const CYCLE_SECONDS = 9;
  * (הערכים כתובים כאן ולא נקראים מהטוקנים כי SVG gradient מקבל צבע ולא
  * var(), ומכאן הם נצרכים בתוך מחרוזות אנימציה.)
  */
-const PALETTE = ["#c7f5f4", "#a7e9e5", "#84c7c1", "#4e8f8b", "#316768"];
+const PALETTE = ["#f4c7bc", "#f3846e", "#f26a50", "#c8955f", "#283d5b"];
 
 /** גרגרים בזרם - ערכים קבועים ולא אקראיים, שלא יתאפסו בכל רינדור. */
 const GRAINS = [
@@ -116,13 +116,13 @@ function AnimatedHourglass({ className = "h-[34rem] w-auto" }: Props) {
             background:
               "linear-gradient(180deg, var(--ds-glass-strong), transparent 85%)",
             boxShadow:
-              "inset 0 1px 0 0 var(--ds-edge), 0 10px 26px -10px rgba(5, 32, 33, 0.7)",
+              "inset 0 1px 0 0 var(--ds-edge), 0 10px 26px -10px rgba(40, 61, 91, 0.45)",
           }}
         />
         {/* הצל שהחפץ מטיל */}
         <div
           className="-mt-2 h-4 w-[52%] rounded-[50%] blur-md"
-          style={{ background: "rgba(5, 32, 33, 0.45)" }}
+          style={{ background: "rgba(40, 61, 91, 0.3)" }}
         />
       </div>
 

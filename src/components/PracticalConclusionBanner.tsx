@@ -38,14 +38,25 @@ function PracticalConclusionBanner({ workshopId, groupId }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label={`המסקנה המעשית שלנו: ${conclusion}. לחצו להצגה מלאה`}
-        className="glass glass-interactive glass-3d glass-pill max-w-[min(80vw,46rem)] gap-2.5 py-2 ps-4 pe-3"
+        // **הפתרון מוצג בשלמותו, בכל אורך** (דרישת הלקוחה) - קודם הוא נחתך
+        // ב-"..." ונראה רק בלחיצה. עכשיו הוא יורד שורה בתוך הלבנה, וטקסט
+        // ארוך קטן מעט. הלחיצה עדיין פותחת אותו בגדול.
+        className={`glass glass-interactive glass-3d flex max-w-[min(80vw,46rem)] items-start gap-2.5 py-2 ps-4 pe-3 text-start ${
+          conclusion.length > 50 ? "btn-rect" : "glass-pill btn-rect"
+        }`}
       >
-        <Icon name="lightbulb" size={17} className="text-accent-soft flex-none" />
-        <span className="text-ink-3 flex-none text-xs font-bold tracking-wide">
+        <Icon name="lightbulb" size={17} className="text-accent-soft mt-0.5 flex-none" />
+        <span className="text-ink-3 mt-0.5 flex-none text-xs font-bold tracking-wide">
           המסקנה שלנו:
         </span>
-        <span className="text-ink min-w-0 truncate text-base font-bold">{conclusion}</span>
-        <Icon name="chevronDown" size={15} className="text-ink-3 flex-none" />
+        <span
+          className={`text-ink min-w-0 leading-snug font-bold break-words ${
+            conclusion.length > 120 ? "text-xs" : conclusion.length > 60 ? "text-sm" : "text-base"
+          }`}
+        >
+          {conclusion}
+        </span>
+        <Icon name="chevronDown" size={15} className="text-ink-3 mt-0.5 flex-none" />
       </button>
 
       {/* portal ל-body: הכפתור יושב בכותרת המונפשת (transform), ומודאל fixed

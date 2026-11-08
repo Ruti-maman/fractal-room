@@ -18,6 +18,24 @@ const corsHeaders = {
 
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
+/*
+  עברית נקייה: Gemini גלש בפועל באמצע מילה לאות אנגלית ("מהתבוננות לקkה")
+  ולאותיות קנאדה. ניסוח כזה נפסל ומבוקש מחדש, ובכל מקרה לא נשמר כך.
+  (אותו כלל כמו src/lib/hebrewText.ts - Edge Function לא יכולה לייבא משם.)
+*/
+const HEBREW = "א-תװ-״";
+const FOREIGN_SCRIPT = new RegExp(`[^${HEBREW}\\s\\p{P}\\p{S}0-9A-Za-z]`, "gu");
+const LATIN_IN_HEBREW_WORD = new RegExp(`(?<=[${HEBREW}])[A-Za-z]+|[A-Za-z]+(?=[${HEBREW}])`, "g");
+
+function hasMixedScript(text: string): boolean {
+  const t = text.normalize("NFKC");
+  return new RegExp(FOREIGN_SCRIPT.source, "u").test(t) || new RegExp(LATIN_IN_HEBREW_WORD.source).test(t);
+}
+
+function cleanAiHebrew(text: string): string {
+  return text.normalize("NFKC").replace(FOREIGN_SCRIPT, "").replace(LATIN_IN_HEBREW_WORD, "").replace(/\s{2,}/g, " ").trim();
+}
+
 interface ResponseRow {
   group_id: string | null;
   stage_number: number;
@@ -159,6 +177,7 @@ Deno.serve(async (req) => {
         "- המשפט חייב להיות **מסר מעשי**: משהו שמורה יכולה לקחת איתה ולעשות איתו",
         "  משהו כבר מחר בכיתה - לא תיאור של מה שקרה בסדנה ולא הכרזה על סיומה.",
         "- משפט אחד בלבד, עד 25 מילים, עברית תקנית ומדויקת.",
+        "- אותיות עבריות בלבד: אסורה כל אות לועזית (אנגלית או כל כתב אחר), גם לא באמצע מילה.",
         "- לשון רבים, פונה למשתתפות.",
         "- רציני ומכובד. בלי סימני קריאה, בלי סיסמאות שיווקיות, בלי מליצות.",
         "- אסורות המילים: מדהים, מרגש, כל הכבוד, מסע, קסם, מסחרר.",
@@ -175,6 +194,8 @@ Deno.serve(async (req) => {
     /** בדיקת איכות בסיסית - מה שלא עובר אותה נשלח לניסוח חוזר. */
     const isAcceptable = (candidate: string) => {
       if (!candidate) return false;
+      // אות לועזית/כתב זר בתוך העברית ("לקkה") - Gemini גלש באמצע מילה
+      if (hasMixedScript(candidate)) return false;
       if (candidate.length > 220) return false;
       if (candidate.includes("!")) return false;
       // יותר ממשפט אחד: סימן סיום באמצע ואחריו עוד טקסט
@@ -209,10 +230,11 @@ Deno.serve(async (req) => {
     let sentence = "";
     try {
       sentence = await askGemini(false);
-      // ניסיון שני אם המשפט לא עומד בכללים (ארוך מדי, כמה משפטים, מליצה)
-      if (!isAcceptable(sentence)) {
-        const second = await askGemini(true);
-        if (isAcceptable(second)) sentence = second;
+      // עד שני ניסיונות נוספים אם המשפט לא עומד בכללים (ארוך מדי, כמה משפטים,
+      // מליצה, או אות לועזית באמצע מילה)
+      for (let attempt = 0; attempt < 2 && !isAcceptable(sentence); attempt++) {
+        const retry = await askGemini(true);
+        if (isAcceptable(retry) || hasMixedScript(sentence)) sentence = retry;
       }
     } catch (err) {
       return new Response(JSON.stringify({ error: `Gemini החזירה שגיאה: ${String(err)}` }), {
@@ -223,6 +245,8 @@ Deno.serve(async (req) => {
 
     // ניקוי אחרון: מרכאות עוטפות וסימני קריאה שהמודל הוסיף בכל זאת
     sentence = sentence.replace(/^["'\u05f4\u201c\u201d]+|["'\u05f4\u201c\u201d]+$/g, "").replace(/!+/g, "").trim();
+    // \u05d5\u05d0\u05dd \u05d2\u05dd \u05d0\u05d7\u05e8\u05d9 \u05d4\u05e0\u05d9\u05e1\u05d9\u05d5\u05e0\u05d5\u05ea \u05e0\u05e9\u05d0\u05e8\u05d4 \u05d0\u05d5\u05ea \u05dc\u05d5\u05e2\u05d6\u05d9\u05ea - \u05de\u05e1\u05d9\u05e8\u05d9\u05dd \u05d0\u05d5\u05ea\u05d4, \u05dc\u05e2\u05d5\u05dc\u05dd \u05dc\u05d0 \u05e0\u05e9\u05de\u05e8\u05ea
+    sentence = cleanAiHebrew(sentence);
 
     if (!sentence) {
       return new Response(JSON.stringify({ error: "המודל לא החזיר משפט" }), {

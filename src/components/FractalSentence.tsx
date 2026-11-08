@@ -90,9 +90,10 @@ function FractalSentence({ text, className }: { text: string; className?: string
       m.fillStyle = "#000";
       // שורה אחת תמיד (לבקשת הלקוחה - לא לחצות את המשפט), בגודל המרבי שנכנס
       // גובה עד חצי מהלוח ורוחב עד 88% - כך גם ק/ן היורדות וגם הקצוות לא נחתכים
-      let size = h * 0.5;
+      // 0.62 (קודם 0.5) - כתב גדול יותר לבקשת הלקוחה
+      let size = h * 0.62;
       m.font = `800 ${size}px Assistant, sans-serif`;
-      while (m.measureText(text).width > w * 0.88 && size > 12) {
+      while (m.measureText(text).width > w * 0.94 && size > 12) {
         size -= 1;
         m.font = `800 ${size}px Assistant, sans-serif`;
       }

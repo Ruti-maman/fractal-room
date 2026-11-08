@@ -2,6 +2,8 @@ import type { Stage1Content } from "../../types/stage1Content";
 import { requestKioskPermissions } from "../../hooks/useKioskMode";
 import { primeAudio } from "../../lib/audioUnlock";
 import AutoPlayVideo from "../AutoPlayVideo";
+import { SphereText } from "../TextEffects";
+import FractalLogo from "../FractalLogo";
 import { BackgroundLayers } from "../ui/AppBackground";
 import Icon from "../ui/Icon";
 import { GlassButton } from "../ui/Glass";
@@ -17,13 +19,29 @@ interface Props {
  * לבנה, ולא צפים על הרקע - כך הפריט היחיד שעל המסך כבר מלמד את שפת
  * העיצוב של כל הסדנה שאחריו.
  */
-function ContentFrame({ children }: { children: React.ReactNode }) {
+function ContentFrame({
+  children,
+  flush = false,
+}: {
+  children: React.ReactNode;
+  flush?: boolean;
+}) {
   return (
     <div
-      className="glass glass-brick relative flex min-h-[18rem] w-full items-center justify-center overflow-hidden rounded-2xl p-8 sm:min-h-[22rem] sm:p-12"
+      className={
+        // flush - סרטון: ממלא את המסגרת עד הקצה (לבקשת הלקוחה), בלי שוליים
+        // ובלי מסגרת בתוך מסגרת
+        flush
+          ? "glass glass-brick relative flex w-full items-center justify-center overflow-hidden rounded-2xl"
+          : "glass glass-brick relative flex min-h-[18rem] w-full items-center justify-center overflow-hidden rounded-2xl p-8 sm:min-h-[22rem] sm:p-12"
+      }
       style={{ animation: "glass-in var(--ds-dur-slow) var(--ds-ease) both" }}
     >
-      <div className="relative flex w-full items-center justify-center">{children}</div>
+      {/* stretch רק לסרטון (שימלא את הרוחב). טקסט ולוגו - ממורכזים; stretch
+          דחף את בלוק הטקסט (max-w-2xl) לצד ימין של המסגרת */}
+      <div className={`relative flex w-full flex-col justify-center ${flush ? "items-stretch" : "items-center"}`}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -46,16 +64,35 @@ function ScreenContent({ screen }: { screen: Stage1Content["screens"][string] | 
   }
 
   if (screen.type === "logo") {
-    return screen.image_url ? (
-      <img src={screen.image_url} alt="לוגו חדר פרקטל" className="max-h-72 object-contain" />
+    // 2026-11-08 (בקשת הלקוחה): "להוריד את הרקע מאחורי הלוגו". הקובץ
+    // המקורי (/brand/fractal-logo.png) צרוב עם רקע כחול, ולכן במקומו מוצג
+    // הלוגו בווקטור - שקוף, ובצבעי המצב (נייבי בבהיר, לבן בכהה). תמונה
+    // אחרת שהועלתה ל-image_url מוצגת כמו שהיא.
+    const customImage =
+      screen.image_url && !screen.image_url.endsWith("/brand/fractal-logo.png") ? screen.image_url : null;
+    return customImage ? (
+      <img
+        src={customImage}
+        alt="לוגו"
+        className="block max-h-[min(36rem,60vh)] w-full object-contain"
+      />
     ) : (
-      <Awaiting icon="star" label="כאן יופיע הלוגו" />
+      <FractalLogo
+        className="h-[min(36rem,56vh)] w-full"
+        style={{ animation: "pop-in 0.7s var(--ds-ease-spring) both" }}
+      />
     );
   }
 
   if (screen.type === "video") {
     return screen.video_url ? (
-      <AutoPlayVideo src={screen.video_url} className="max-h-[58vh] w-full rounded-xl" />
+      // הגובה = מה שנשאר אחרי הכותרת, מסגרת הזכוכית וכפתור "התחילו" (~27rem).
+      // קודם 58vh קבוע, ובמסך נמוך הסרטון דחף את הכפתור אל מחוץ למסך.
+      <AutoPlayVideo
+        src={screen.video_url}
+        fill
+        className="block h-[min(60vh,calc(100dvh-22rem))] w-full object-cover"
+      />
     ) : (
       <Awaiting icon="film" label="כאן יופיע סרטון הפתיחה" />
     );
@@ -98,27 +135,37 @@ function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
   }
 
   return (
-    <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-8 overflow-hidden px-4 py-8 sm:px-8">
+    // הכותרת והכפתור flex-none - הם אף פעם לא מתכווצים; רק המסגרת שבאמצע
+    // מוותרת על גובה, כך ש"התחילו" תמיד נראה במלואו
+    <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-[min(2rem,3vh)] overflow-hidden px-4 py-[min(2rem,3vh)] sm:px-8">
       <BackgroundLayers variant="dawn" />
 
       <header
-        className="relative flex flex-col items-center gap-2 text-center"
+        className="relative flex flex-none flex-col items-center gap-2 text-center"
         style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
       >
-        <span className="glass glass-chip text-accent-soft gap-2">
-          <Icon name="star" size={15} />
-          ברוכות הבאות
-        </span>
+        {/* "ברוכות הבאות" נבנה מכדור אור מסתובב (אפקט "כדור" שהלקוחה שלחה) */}
+        <SphereText text="ברוכות הבאות" loop className="h-[min(7rem,13vh)] w-[min(40rem,86vw)]" />
       </header>
 
-      <div className="relative w-full max-w-4xl">
-        <ContentFrame>
-          <ScreenContent screen={screen} />
-        </ContentFrame>
+      <div className="relative min-h-0 w-full max-w-4xl flex-[0_1_auto]">
+        {screen?.type === "logo" ? (
+          // הלוגו בלי מסגרת ובלי רקע - ישירות על רקע הדף (בקשת הלקוחה)
+          <div className="relative flex w-full items-center justify-center">
+            <ScreenContent screen={screen} />
+          </div>
+        ) : (
+          <ContentFrame
+            // סרטון ממלא את המסגרת עד הקצה, בלי שוליים
+            flush={screen?.type === "video" && Boolean(screen.video_url)}
+          >
+            <ScreenContent screen={screen} />
+          </ContentFrame>
+        )}
       </div>
 
       <div
-        className="relative flex flex-col items-center gap-4"
+        className="relative flex flex-none flex-col items-center gap-4 pb-2"
         style={{ animation: "fade-up var(--ds-dur-slow) 260ms var(--ds-ease) both" }}
       >
         {/* הילה שנושמת מאחורי הכפתור - מושכת את היד לנקודה הנכונה */}
@@ -134,13 +181,11 @@ function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
             iconAfter="arrowNext"
             onClick={handleStart}
             silent
-            className="px-16 text-2xl"
+            className="glass-btn-brand px-16 text-2xl"
           >
             התחילו
           </GlassButton>
         </div>
-
-        <p className="text-ink-3 text-sm">נגיעה במסך פותחת את הקול לשאר הסדנה</p>
       </div>
     </main>
   );

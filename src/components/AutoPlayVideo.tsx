@@ -38,7 +38,9 @@ function AutoPlayVideo({
   fill = false,
   loop = true,
   controls = true,
-  soundHint = true,
+  // כבוי כברירת מחדל - הלקוחה ביקשה להוריד את שורות ההסבר על הקול מכל
+  // המסכים. נגיעה עדיין מחזירה את הקול, רק בלי הכיתוב.
+  soundHint = false,
   onError,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);

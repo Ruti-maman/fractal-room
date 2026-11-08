@@ -7,6 +7,8 @@ import AutoPlayVideo from "../AutoPlayVideo";
 import StageShell from "../StageShell";
 import ZoomIntro from "../ZoomIntro";
 import FractalSentence from "../FractalSentence";
+import TipBubbles from "../TipBubbles";
+import { LevelBadge } from "../ui/GameTile";
 import Icon from "../ui/Icon";
 import { GlassButton } from "../ui/Glass";
 import { InlineNotice } from "../ui/Feedback";
@@ -25,17 +27,17 @@ interface RoomTexts {
 }
 
 const ROOM_DEFAULTS: RoomTexts = {
-  intro: "התחברנו לחלקים. עכשיו רואים את התמונה.",
+  intro: "התחברנו לחלקים, עכשיו רואים את התמונה.",
   journey_title: "איתנו במסע:",
-  after_line: "כל קבוצה היא צורה אחרת. עכשיו נראה",
-  after_bold: "איזו צורה תצליח לעשות שינוי בדפוס.",
+  after_line: "כל קבוצה היא צורה אחרת,",
+  after_bold: "עכשיו נראה איזו צורה תצליח לעשות שינוי בדפוס.",
   // לפי האפיון: "צוותים" ולא "קבוצות" בהודעת ההמתנה
-  waiting: "המערכת ממתינה לכל הצוותים",
+  waiting: "המערכת ממתינה לכל הצוותים...",
 };
 
 /** טקסטי מסע ההזדהות - כולם ניתנים לעריכה מה-DB (content.identification). */
 interface IdentificationTexts {
-  /** שורת המעבר שמופיעה בפתיחה, מעל "התחלקנה לשולחנות עבודה". */
+  /** שורת המעבר שמופיעה בפתיחה, מעל "התחלקנה לשולחנות עבודה.". */
   shape_line: string;
   tables_title: string;
   tables_text?: string;
@@ -63,11 +65,11 @@ interface Stage2Content {
   (ראו supabase/stage2_identification_texts.sql, שמכניס אותם לתוכנית).
 */
 const IDENTIFICATION_DEFAULTS: IdentificationTexts = {
-  shape_line: "עכשיו משנים צורה, שמים את הפרקטל על השולחן",
-  tables_title: "התחלקנה לשולחנות עבודה",
-  participants_title: "הזינו את פרטי המשתתפות",
-  name_title: "בחרנה שם מקורי, קצר ומייצג לקבוצה",
-  name_bonus: "וצברו עליו ניקוד נוסף",
+  shape_line: "עכשיו משנים צורה, שמים את הפרקטל על השולחן.",
+  tables_title: "התחלקנה לשולחנות עבודה.",
+  participants_title: "הזינו את פרטי המשתתפות.",
+  name_title: "בחרנה שם מקורי, קצר ומייצג לקבוצה,",
+  name_bonus: "וצברו עליו ניקוד נוסף.",
   tips_title: "איך יוצרים שם שלא נשכח?",
   tips: [
     { title: "קצר", text: "מעט מילים, הרבה אופי." },
@@ -76,7 +78,7 @@ const IDENTIFICATION_DEFAULTS: IdentificationTexts = {
     { title: "עם טוויסט", text: "חיבור מפתיע, משחק מילים, קריצה." },
     { title: "בלי הוראות הפעלה", text: "אם צריך להסביר אותו, הוא עוד לא מוכן." },
   ],
-  summary_title: "זו הקבוצה שלנו",
+  summary_title: "הקבוצה שלנו:",
   fractal_title: "כלל הפרקטל",
   fractal_text: "חלק קטן, אבל כבר רואים בו את השלם.",
 };
@@ -95,12 +97,11 @@ interface Props {
 
 /**
  * ----------------------------------------------------------------------------
- * ההזדהות כמסע קצר בשלושה צעדים (לפי הלקוחה)
+ * ההזדהות כמסע קצר בארבעה צעדים (לפי האפיון של הלקוחה)
  * ----------------------------------------------------------------------------
  *   I    התחלקנה לשולחנות עבודה      - הוראה בלבד, בלי הזנה
- *   II   שם הקבוצה והמשתתפות          - **שתי חלוניות נפרדות** על מסך אחד:
- *        בראשונה הטיפים לשם מוצלח + שדה השם, בשנייה הזנת שמות המשתתפות
- *        (בקשת הלקוחה - קודם אלה היו שני צעדים, והטיפים קפצו כפופ-אפים)
+ *   II   הזינו את פרטי המשתתפות      - שדה אחד + תגים (Enter מוסיף)
+ *   III  בחרנה שם לקבוצה             - טיפים ש"קופצים" אחד-אחד + שדה השם
  *   ✓    סיכום                        - השם, המשתתפות ו"כלל הפרקטל"
  *
  * הכול על מסך אחד שמתחלף, בלי גלילה, והשמירה ל-DB קורית רק בסיכום - כך
@@ -111,9 +112,9 @@ interface Props {
  * נסגרת בין שם לשם), נגיעה בתג מחזירה אותו לתיקון, × מסיר. שם שהוקלד
  * ולא נוסף נשמר גם הוא.
  */
-type FormStep = "tables" | "names" | "summary";
-const FORM_STEPS: FormStep[] = ["tables", "names", "summary"];
-const STEP_MARKS = ["I", "II", "✓"];
+type FormStep = "tables" | "participants" | "name" | "summary";
+const FORM_STEPS: FormStep[] = ["tables", "participants", "name", "summary"];
+const STEP_MARKS = ["I", "II", "III", "✓"];
 
 function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: Stage2Content }) {
   const t = { ...IDENTIFICATION_DEFAULTS, ...(content?.identification ?? {}) };
@@ -123,6 +124,8 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
   const [participants, setParticipants] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  /** פופ-אפ הטיפים לשם הקבוצה - נפתח לבד בכניסה לצעד III. */
+  const [tipsOpen, setTipsOpen] = useState(false);
   const draftRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
 
@@ -155,11 +158,12 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
 
   function goTo(next: FormStep) {
     // שם שהוקלד ולא נוסף נכנס לרשימה כשממשיכים - שלא ייעלם מהסיכום
-    if (step === "names" && draft.trim() && !isFull) {
+    if (step === "participants" && draft.trim() && !isFull) {
       setParticipants((current) => [...current, draft.trim()]);
       setDraft("");
     }
     setStep(next);
+    if (next === "name") setTipsOpen(true);
   }
 
   async function handleSave() {
@@ -175,7 +179,9 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
   }
 
   const canContinue =
-    step === "tables" || (step === "names" && name.trim().length > 0 && allNames.length > 0);
+    step === "tables" ||
+    (step === "participants" && allNames.length > 0) ||
+    (step === "name" && name.trim().length > 0);
 
   return (
     <StageShell
@@ -193,44 +199,51 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
       center={false}
       background="ripple"
       width="wide"
+      // "המשך" ו"חזרה" למטה הוסרו (מיותרים - יש חיצים בפינות הכרטיס, לבקשת
+      // הלקוחה). נשאר רק "שמירה והמשך" בסיכום, שהוא פעולה ולא דפדוף.
       actions={
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          {stepIndex > 0 && (
-            <GlassButton icon="arrowBack" onClick={() => setStep(FORM_STEPS[stepIndex - 1])}>
-              חזרה
-            </GlassButton>
-          )}
-          {step === "summary" ? (
-            <GlassButton variant="primary" size="lg" icon="save" onClick={handleSave} loading={saving}>
-              {saving ? "שומר..." : "שמירה והמשך"}
-            </GlassButton>
-          ) : (
-            <GlassButton
-              variant="primary"
-              size="lg"
-              iconAfter="arrowNext"
-              onClick={() => goTo(FORM_STEPS[stepIndex + 1])}
-              disabled={!canContinue}
-            >
-              המשך
-            </GlassButton>
-          )}
-        </div>
+        step === "summary" ? (
+          <GlassButton variant="primary" size="lg" icon="save" onClick={handleSave} loading={saving}>
+            {saving ? "שומר..." : "שמירה והמשך"}
+          </GlassButton>
+        ) : undefined
       }
     >
       <ZoomIntro />
 
-      {/* שורת המעבר - מתחת ל"מי אתן?" ומעל מד הצעדים, בכל הצעדים */}
-      <p className="glass-title mt-2 mb-4 flex-none text-center text-3xl sm:text-4xl">{t.shape_line}</p>
+      {/*
+        "שיקפצו חלוניות פופאפ" (לפי האפיון): בצעד III כל טיפ קופץ כחלונית
+        נפרדת משלו, אחת אחרי השנייה, משני צידי הכרטיס - והן נשארות פתוחות
+        בזמן שבוחרים שם. כל חלונית נסגרת ב-×, והנורה מקפיצה את כולן שוב.
+        portal ל-body: אלמנט fixed בתוך אזור התוכן המונפש נמדד לא נכון (באג 6).
+      */}
+      {/* פופ-אפ הטיפים - נפתח לבד בכניסה לבחירת השם (ראו goTo) */}
+      {step === "name" &&
+        createPortal(
+          <TipBubbles
+            open={tipsOpen}
+            onClose={() => setTipsOpen(false)}
+            title={t.tips_title}
+            tips={t.tips}
+          />,
+          document.body,
+        )}
 
-      {/* מד הצעדים: I · II · III · ✓ */}
-      <ol className="mb-3 flex flex-none items-center justify-center gap-2" aria-label="שלבי ההזדהות">
+      {/* שורת המעבר - מתחת ל"מי אתן?" ומעל מד הצעדים, בכל הצעדים.
+          לבקשת הלקוחה (2026-11-08): צמודה לכותרת (מינוס-מרווח מבטל את
+          הרווח של הכותרת), ובמשקל רגיל - רק "מי אתן?" בבולד. */}
+      <p className="glass-title -mt-2 mb-7 flex-none text-center text-3xl font-normal sm:text-4xl lg:-mt-3">
+        {t.shape_line}
+      </p>
+
+      {/* מד הצעדים: I · II · III · ✓ - עם רווח נדיב מעליו ומתחתיו (לבקשת הלקוחה) */}
+      <ol className="mb-7 flex flex-none items-center justify-center gap-2" aria-label="שלבי ההזדהות">
         {STEP_MARKS.map((mark, i) => (
           <li key={mark} className="flex items-center gap-2">
             <span
               aria-current={i === stepIndex ? "step" : undefined}
               className={cx(
-                "flex h-8 w-8 items-center justify-center rounded-full text-xs font-extrabold transition-all duration-300",
+                "flex h-10 w-10 items-center justify-center text-sm font-extrabold transition-all duration-300",
                 i <= stepIndex ? `bubble bubble--${i + 1}` : "bubble bubble-hollow text-ink-3",
                 i === stepIndex && "scale-110",
               )}
@@ -240,7 +253,7 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
             {i < STEP_MARKS.length - 1 && (
               <span
                 aria-hidden="true"
-                className={cx("h-0.5 w-8 rounded-full", i < stepIndex ? "bg-accent" : "bg-edge")}
+                className={cx("h-0.5 w-10 rounded-full", i < stepIndex ? "bg-accent" : "bg-edge")}
               />
             )}
           </li>
@@ -249,152 +262,169 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
 
       <div
         key={step}
-        // מתכווץ לגובה הפנוי - המסגרת תמיד שלמה; רק התגים גוללים בפנים אם צריך.
-        // בצעד II אין מסגרת חיצונית: שתי החלוניות הן המסגרות בעצמן.
+        // מתכווץ לגובה הפנוי - המסגרת תמיד שלמה; רק התגים גוללים בפנים אם צריך
         className={cx(
-          "flex min-h-0 w-full max-w-5xl flex-col",
-          step !== "names" && "glass glass-brick glass-raised overflow-hidden rounded-2xl p-5 sm:p-6",
+          // pt-14: מקום לחיצי הניווט בפינות העליונות, כדי שלא יעלו על הכותרת
+          "glass glass-brick glass-raised relative flex min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-2xl px-5 pt-14 pb-5 sm:px-6 sm:pb-6",
+          /*
+            "יותר משחק, על מסך מלא" (בקשת הלקוחה, 2026-11-08): הכרטיס ממלא
+            את כל הגובה הפנוי, כמו לוח האריחים בשלב 5, במקום רצועה בשליש
+            העליון. רק מ-1700px: הכרטיס יורד עד התחתית, ובמסך צר יותר הוא
+            היה נוגע במד ההתקדמות ובטיימר שבפינות.
+          */
+          "min-[1700px]:flex-1",
+          step === "tables" && "glass-interactive glass-3d cursor-pointer",
         )}
         style={{ animation: "pop-in var(--ds-dur-slow) var(--ds-ease-spring) both" }}
+        // בצעד I אין מה להזין - נגיעה בכרטיס עצמו מעבירה לצעד הבא (לבקשת
+        // הלקוחה), כמו "המשך"
+        {...(step === "tables"
+          ? {
+              role: "button",
+              tabIndex: 0,
+              "aria-label": `${t.tables_title} - המשך`,
+              onClick: () => goTo("participants"),
+              onKeyDown: (e: React.KeyboardEvent) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  goTo("participants");
+                }
+              },
+            }
+          : {})}
       >
+        {/* חיצי ניווט בתוך הכרטיס (לבקשת הלקוחה): חזרה בצד ימין, המשך בצד
+            שמאל - כמו דפדוף. stopPropagation: בצעד I כל הכרטיס לחיץ. */}
+        {stepIndex > 0 && (
+          <CardArrow
+            dir="back"
+            onClick={(e) => {
+              e.stopPropagation();
+              setStep(FORM_STEPS[stepIndex - 1]);
+            }}
+          />
+        )}
+        {step !== "summary" && (
+          <CardArrow
+            dir="next"
+            disabled={!canContinue}
+            onClick={(e) => {
+              e.stopPropagation();
+              goTo(FORM_STEPS[stepIndex + 1]);
+            }}
+          />
+        )}
+
         {/* ---------- I. שולחנות עבודה ---------- */}
         {step === "tables" && (
-          <div className="flex flex-col items-center gap-4 py-4 text-center">
-            <span className="bubble bubble--1 flex h-20 w-20 items-center justify-center text-3xl font-extrabold">
-              I
-            </span>
-            <p className="text-ink text-4xl font-extrabold sm:text-5xl">{t.tables_title}</p>
+          // מסך "כניסה לשלב" כמו במשחק: תג מעוין גדול וכותרת ענקית באמצע הלוח
+          <div className="flex flex-1 flex-col items-center justify-center gap-6 py-4 text-center">
+            <LevelBadge value="I" label="" size={140} />
+            <p className="text-ink text-4xl font-extrabold sm:text-5xl lg:text-6xl">{t.tables_title}</p>
             {t.tables_text && <p className="text-ink-2 max-w-xl text-lg">{t.tables_text}</p>}
           </div>
         )}
 
-        {/* ---------- II. שם הקבוצה + המשתתפות - שתי חלוניות נפרדות ---------- */}
-        {/*
-          לבקשת הלקוחה: "מחולק לחלוניות נפרדות - בחלונית הראשונה הוראות איך
-          לבחור שם מוצלח ומאפיין לקבוצה עם מקום להקלדת שם, בחלונית השנייה
-          הזנה של שמות הקבוצה". הראשונה מימין (RTL), כמו סדר הקריאה.
-          הטיפים כתובים בתוך החלונית (ולא קופצים כפופ-אפ) - הם ההוראות שלה.
-        */}
-        {step === "names" && (
-          <div className="grid min-h-0 w-full flex-1 grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
-            {/* חלונית 1: איך בוחרים שם + שדה השם */}
-            <section className="glass glass-brick glass-raised flex min-h-0 flex-col gap-3 overflow-hidden rounded-2xl p-5">
-              <h2 className="text-ink flex flex-none items-center gap-3 text-2xl font-extrabold">
-                <span className="bubble bubble--2 flex h-10 w-10 flex-none items-center justify-center text-sm font-extrabold">
-                  1
-                </span>
-                {t.name_title}
+        {/* ---------- II. פרטי המשתתפות ---------- */}
+        {step === "participants" && (
+          <div className="flex min-h-0 flex-col gap-4">
+            <div className="flex flex-none items-center justify-between gap-3">
+              <h2 className="text-ink flex items-center gap-4 text-3xl font-extrabold">
+                <LevelBadge value="II" label="" size={68} className="flex-none" />
+                {t.participants_title}
               </h2>
-              {t.name_bonus && (
-                <p className="text-ink-2 flex flex-none items-center gap-2 text-lg font-bold">
-                  <Icon name="star" size={18} filled className="text-accent" />
-                  {t.name_bonus}
-                </p>
-              )}
+              <span className="text-ink-3 text-sm font-bold tabular-nums">
+                {participants.length} / {MAX_PARTICIPANTS}
+              </span>
+            </div>
 
-              {/* הטיפים - רשימה קומפקטית, שם הטיפ מודגש ואחריו ההסבר */}
-              <div className="glass glass-dim glass-scroll min-h-0 flex-[0_1_auto] overflow-y-auto rounded-xl px-4 py-3">
-                <p className="text-accent-soft mb-1.5 flex items-center gap-2 text-base font-extrabold">
-                  <Icon name="lightbulb" size={17} />
-                  {t.tips_title}
-                </p>
-                <ul className="flex flex-col gap-1">
-                  {t.tips.map((tip, i) => (
-                    <li key={tip.title} className="flex items-start gap-2.5 text-start">
-                      <span
-                        aria-hidden="true"
-                        className={`bubble bubble--${(i % 5) + 1} mt-1.5 h-3 w-3 flex-none`}
-                      />
-                      <span className="text-ink-2 text-base leading-snug">
-                        <b className="text-ink font-extrabold">{tip.title}</b> – {tip.text}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            {isFull ? (
+              <InlineNotice tone="info">
+                הגעתן למספר המשתתפות המרבי בקבוצה ({MAX_PARTICIPANTS}).
+              </InlineNotice>
+            ) : (
+              <input
+                id="participant-draft"
+                ref={draftRef}
+                autoFocus
+                className="glass-input flex-none !min-h-[3.5rem] !text-2xl"
+                placeholder="שם המשתתפת - ו-Enter"
+                aria-label="שם משתתפת"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addParticipant();
+                  }
+                }}
+                enterKeyHint="enter"
+                autoComplete="off"
+              />
+            )}
 
+            {participants.length > 0 ? (
+              <ul className="glass-scroll -m-2 grid min-h-0 grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] content-start gap-x-2 gap-y-1.5 overflow-y-auto p-2">
+                {participants.map((p, i) => (
+                  <ParticipantChip
+                    key={`${i}-${p}`}
+                    index={i}
+                    name={p}
+                    onEdit={() => editParticipant(i)}
+                    onRemove={() => removeParticipant(i)}
+                  />
+                ))}
+              </ul>
+            ) : (
+              <p className="text-ink-3 py-4 text-center text-base">
+                כל שם שתוסיפו יופיע כאן. נגיעה בשם מאפשרת לתקן אותו.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ---------- III. שם הקבוצה (הטיפים בפופ-אפ, ראו למטה) ---------- */}
+        {step === "name" && (
+          <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-5 py-2 text-center">
+            <h2 className="text-ink flex items-center gap-4 text-3xl font-extrabold sm:text-4xl">
+              <LevelBadge value="III" label="" size={76} className="flex-none" />
+              {t.name_title}
+            </h2>
+            {t.name_bonus && (
+              <p className="text-ink-2 flex items-center gap-2 text-2xl font-bold">
+                <Icon name="star" size={22} filled className="text-accent" />
+                {t.name_bonus}
+              </p>
+            )}
+            <div className="flex w-full items-center gap-3">
               <input
                 id="group-name"
                 autoFocus
-                className="glass-input flex-none !min-h-[3.75rem] !text-2xl"
+                className="glass-input !min-h-[4.25rem] !text-3xl"
                 placeholder="שם הקבוצה"
                 aria-label="שם הקבוצה"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => {
-                  // Enter בשם עובר לחלונית השנייה - הזנת המשתתפות
                   if (e.key === "Enter" && name.trim()) {
                     e.preventDefault();
-                    draftRef.current?.focus();
+                    goTo("summary");
                   }
                 }}
                 enterKeyHint="next"
                 autoComplete="off"
               />
-            </section>
-
-            {/* חלונית 2: שמות המשתתפות */}
-            <section className="glass glass-brick glass-raised flex min-h-0 flex-col gap-3 overflow-hidden rounded-2xl p-5">
-              <div className="flex flex-none items-center justify-between gap-3">
-                <h2 className="text-ink flex items-center gap-3 text-2xl font-extrabold">
-                  <span className="bubble bubble--3 flex h-10 w-10 flex-none items-center justify-center text-sm font-extrabold">
-                    2
-                  </span>
-                  {t.participants_title}
-                </h2>
-                <span className="text-ink-3 text-sm font-bold tabular-nums">
-                  {participants.length} / {MAX_PARTICIPANTS}
-                </span>
-              </div>
-
-              {isFull ? (
-                <InlineNotice tone="info">
-                  הגעתן למספר המשתתפות המרבי בקבוצה ({MAX_PARTICIPANTS}).
-                </InlineNotice>
-              ) : (
-                <input
-                  id="participant-draft"
-                  ref={draftRef}
-                  className="glass-input flex-none !min-h-[3.75rem] !text-2xl"
-                  placeholder="שם המשתתפת - ו-Enter"
-                  aria-label="שם משתתפת"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addParticipant();
-                    }
-                  }}
-                  enterKeyHint="enter"
-                  autoComplete="off"
-                />
-              )}
-
-              {participants.length > 0 ? (
-                <ul className="glass-scroll -m-2 grid min-h-0 grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] content-start gap-x-2 gap-y-1.5 overflow-y-auto p-2">
-                  {participants.map((p, i) => (
-                    <ParticipantChip
-                      key={`${i}-${p}`}
-                      index={i}
-                      name={p}
-                      onEdit={() => editParticipant(i)}
-                      onRemove={() => removeParticipant(i)}
-                    />
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-ink-3 py-3 text-center text-base">
-                  כל שם שתוסיפו יופיע כאן. נגיעה בשם מאפשרת לתקן אותו.
-                </p>
-              )}
-            </section>
+              {/* פותח שוב את פופ-אפ הטיפים */}
+              <GlassButton icon="lightbulb" onClick={() => setTipsOpen(true)} className="flex-none">
+                טיפים
+              </GlassButton>
+            </div>
           </div>
         )}
 
         {/* ---------- ✓ סיכום ---------- */}
         {step === "summary" && (
-          <div className="flex min-h-0 flex-1 flex-col items-center gap-3 text-center">
+          <div className="center-safe flex min-h-0 flex-1 flex-col items-center gap-3 text-center">
             <div className="flex flex-col items-center gap-1">
               <span className="text-ink-3 text-lg font-bold">{t.summary_title}</span>
               <p className="glass-title text-5xl">{name.trim()}</p>
@@ -425,15 +455,84 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
             {/* האזור מתכווץ לגובה הפנוי (min-h-0 flex-1) - המשפט אף פעם לא
                 נחתך בשפה התחתונה של הכרטיס, גם במסך נמוך */}
             <div className="flex min-h-0 w-full max-w-4xl flex-[0_1_auto] flex-col items-center gap-1">
-              <span className="text-accent-soft flex flex-none items-center gap-2 text-lg font-extrabold">
+              <span className="text-accent-soft flex flex-none items-center gap-2 text-2xl font-extrabold">
                 {t.fractal_title}
               </span>
-              <FractalSentence text={t.fractal_text} className="h-32 min-h-10 w-full flex-[0_1_auto]" />
+              <FractalSentence text={t.fractal_text} className="h-40 min-h-12 w-full flex-[0_1_auto]" />
             </div>
           </div>
         )}
       </div>
     </StageShell>
+  );
+}
+
+/**
+ * חץ צבעוני בפינה העליונה של הכרטיס - החץ עצמו בגרדיאנט הקשת, בלי עיגול
+ * סביבו (לבקשת הלקוחה). חזרה בפינה הימנית, המשך בשמאלית (RTL - כמו דפדוף).
+ * "המשך" מתנדנד קלות לכיוון ההמשך; כשאי אפשר עוד להמשיך - שקוף ולא זז.
+ */
+function CardArrow({
+  dir,
+  onClick,
+  disabled = false,
+}: {
+  dir: "back" | "next";
+  onClick: (e: React.MouseEvent) => void;
+  disabled?: boolean;
+}) {
+  const next = dir === "next";
+  const gid = `card-arrow-${dir}`;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={next ? "המשך" : "חזרה"}
+      className={cx(
+        // אזור נגיעה גדול (56px) גם כשהחץ עצמו דק
+        "absolute top-2 z-10 flex h-14 w-14 items-center justify-center transition-opacity duration-300",
+        next ? "left-3" : "right-3",
+        disabled && "opacity-30",
+      )}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width={38}
+        height={38}
+        fill="none"
+        strokeWidth={2.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        style={
+          next && !disabled ? { animation: "swipe-sway 1.6s var(--ds-ease) infinite" } : undefined
+        }
+      >
+        <defs>
+          {/* userSpaceOnUse: הקו האופקי של החץ בגובה 0, ובמצב ברירת המחדל
+              (objectBoundingBox) גרדיאנט על קו כזה לא מצויר בכלל */}
+          <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1="24" y1="0" x2="0" y2="24">
+            <stop offset="0%" style={{ stopColor: "var(--ds-rainbow-1)" }} />
+            <stop offset="50%" style={{ stopColor: "var(--ds-rainbow-3)" }} />
+            <stop offset="100%" style={{ stopColor: "var(--ds-rainbow-4)" }} />
+          </linearGradient>
+        </defs>
+        {next ? (
+          // חץ שמאלה = המשך
+          <g stroke={`url(#${gid})`}>
+            <path d="M19 12H5" />
+            <path d="m11 6-6 6 6 6" />
+          </g>
+        ) : (
+          // חץ ימינה = חזרה
+          <g stroke={`url(#${gid})`}>
+            <path d="M5 12h14" />
+            <path d="m13 6 6 6-6 6" />
+          </g>
+        )}
+      </svg>
+    </button>
   );
 }
 
@@ -458,7 +557,7 @@ function ParticipantChip({
         type="button"
         onClick={onEdit}
         title="לתיקון השם"
-        className="flex min-h-10 min-w-0 flex-1 items-center gap-1.5 rounded-full"
+        className="flex min-h-10 min-w-0 flex-1 items-center gap-1.5 btn-rect"
       >
         <span
           aria-hidden="true"
@@ -472,7 +571,7 @@ function ParticipantChip({
         type="button"
         onClick={onRemove}
         aria-label={`הסרת ${name}`}
-        className="text-ink-3 hover:text-ink flex h-9 w-9 flex-none items-center justify-center rounded-full transition-colors"
+        className="text-ink-3 hover:text-ink flex h-9 w-9 flex-none items-center justify-center btn-rect transition-colors"
       >
         <Icon name="close" size={15} />
       </button>

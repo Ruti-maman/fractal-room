@@ -14,6 +14,8 @@ export interface Stage6Content {
   /** הכפתור שעובר למסך הדיון ("בואו נדבר על זה"). */
   start_label?: string;
   tips_title?: string;
+  /** הכפתור שסוגר את פופ-אפ הטיפים (אחריו נכנס כלל הפרקטל). */
+  tips_confirm_label?: string;
   tips?: Tip[];
   fractal_title?: string;
   fractal_text?: string;

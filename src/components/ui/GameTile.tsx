@@ -19,7 +19,7 @@
  *  המפורשת של הלקוחה (סעיף 3 ב-CLAUDE.md).
  */
 
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { cx } from "../../lib/cx";
 import Icon, { type IconName } from "./Icon";
 
@@ -41,7 +41,7 @@ interface BadgeProps {
 }
 
 /**
- * התג העגול עם הטבעת - החתימה הוויזואלית של הרפרנס.
+ * תג המעוין עם המסגרת - החתימה הוויזואלית של הרפרנס (עיגול עד 2026-11-08).
  *
  * הטבעת היא SVG ולא `border`, כי רק כך אפשר למלא אותה חלקית
  * (`strokeDasharray`) ולהשתמש באותו רכיב גם כמד התקדמות.
@@ -54,8 +54,11 @@ export function LevelBadge({
   size = 92,
   className,
 }: BadgeProps) {
-  const r = 44;
-  const circumference = 2 * Math.PI * r;
+  // מסגרת מעוין ולא טבעת (2026-11-08). מתחילה בקודקוד העליון ונעה עם
+  // כיוון השעון; pathLength=100 מחליף את חישוב ההיקף.
+  const r = 46;
+  const diamond = `M50 ${50 - r} L${50 + r} 50 L50 ${50 + r} L${50 - r} 50 Z`;
+  const ringId = `level-ring-${useId().replace(/:/g, "")}`;
 
   return (
     <span
@@ -65,21 +68,28 @@ export function LevelBadge({
       {/* הילה מאחורי התג - מה שגורם לו להיראות מואר ולא מודבק */}
       <span
         aria-hidden="true"
-        className="bg-glow absolute inset-0 rounded-full blur-lg opacity-70"
+        className="bg-glow diamond absolute inset-0 blur-lg opacity-70"
       />
 
-      <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90" aria-hidden="true">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="var(--ds-glass-strong)" strokeWidth="7" />
-        <circle
-          cx="50"
-          cy="50"
-          r={r}
+      <svg viewBox="0 0 100 100" className="absolute inset-0 overflow-visible" aria-hidden="true">
+        {/* הטבעת עוברת מהקורל לנייבי - כמו הדיסקית שבתוכה, ולא בקאמל
+            (בקשת הלקוחה). id ייחודי לכל תג, כי כמה תגים באותו מסך */}
+        <defs>
+          <linearGradient id={ringId} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" style={{ stopColor: "var(--ds-pal-4)" }} />
+            <stop offset="100%" style={{ stopColor: "var(--ds-navy)" }} />
+          </linearGradient>
+        </defs>
+        <path d={diamond} fill="none" stroke="var(--ds-glass-strong)" strokeWidth="6" strokeLinejoin="round" />
+        <path
+          d={diamond}
+          pathLength={100}
           fill="none"
-          stroke="var(--ds-accent-soft)"
-          strokeWidth="7"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - Math.max(0, Math.min(1, progress)))}
+          stroke={`url(#${ringId})`}
+          strokeWidth="6"
+          strokeLinejoin="round"
+          strokeDasharray="100"
+          strokeDashoffset={100 * (1 - Math.max(0, Math.min(1, progress)))}
           style={{
             transition: "stroke-dashoffset 600ms var(--ds-ease-spring)",
             filter: "drop-shadow(0 0 6px var(--ds-glow))",
@@ -92,9 +102,10 @@ export function LevelBadge({
       <span
         className={cx(
           "bubble relative flex flex-col items-center justify-center leading-none",
-          tone && `bubble--${tone}`,
+          // בלי צבע מוגדר - בועת המותג: מעבר מהקורל לנייבי של הלוגו
+          tone ? `bubble--${tone}` : "bubble--brand",
         )}
-        style={{ width: size - 18, height: size - 18 }}
+        style={{ width: size - 14, height: size - 14 }}
       >
         <span className="text-[0.55em] font-bold opacity-75" style={{ fontSize: size * 0.14 }}>
           {label}
@@ -128,8 +139,8 @@ function Scene({ scene }: { scene: TileScene }) {
     >
       <defs>
         <linearGradient id={`sky-${scene}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e8f7f6" />
-          <stop offset="100%" stopColor="#f4f1fd" />
+          <stop offset="0%" stopColor="#fbefeb" />
+          <stop offset="100%" stopColor="#f6eee6" />
         </linearGradient>
       </defs>
 
@@ -137,17 +148,17 @@ function Scene({ scene }: { scene: TileScene }) {
 
       {scene === "peaks" && (
         <>
-          <path d="M0 150 L70 62 L132 150Z" fill="#bfe8e4" opacity="0.9" />
-          <path d="M96 150 L178 44 L262 150Z" fill="#c9d8f6" opacity="0.95" />
-          <path d="M214 150 L286 76 L320 116 L320 150Z" fill="#f3cfdc" opacity="0.9" />
+          <path d="M0 150 L70 62 L132 150Z" fill="#f4c7bc" opacity="0.9" />
+          <path d="M96 150 L178 44 L262 150Z" fill="#c9d1dc" opacity="0.95" />
+          <path d="M214 150 L286 76 L320 116 L320 150Z" fill="#e9cfae" opacity="0.9" />
           <circle cx="248" cy="40" r="17" fill="#ffffff" opacity="0.95" />
         </>
       )}
 
       {scene === "horizon" && (
         <>
-          <circle cx="160" cy="104" r="46" fill="#ffe2c8" opacity="0.95" />
-          <rect y="104" width="320" height="46" fill="#dcefff" />
+          <circle cx="160" cy="104" r="46" fill="#f9d8cc" opacity="0.95" />
+          <rect y="104" width="320" height="46" fill="#e4e9f0" />
           {[0, 1, 2, 3].map((i) => (
             <rect
               key={i}
@@ -155,7 +166,7 @@ function Scene({ scene }: { scene: TileScene }) {
               y={112 + i * 10}
               width="320"
               height="3"
-              fill="#b9b2ea"
+              fill="#9aa8bd"
               opacity={0.65 - i * 0.12}
             />
           ))}
@@ -171,7 +182,7 @@ function Scene({ scene }: { scene: TileScene }) {
               cy="168"
               r={46 + i * 30}
               fill="none"
-              stroke="#b9b2ea"
+              stroke="#9aa8bd"
               strokeWidth="3"
               opacity={0.7 - i * 0.14}
             />
@@ -189,7 +200,7 @@ function Scene({ scene }: { scene: TileScene }) {
               y1="0"
               x2={-40 + i * 90}
               y2="150"
-              stroke="#f3cfdc"
+              stroke="#e9cfae"
               strokeWidth="2"
               opacity="0.65"
             />
@@ -201,7 +212,7 @@ function Scene({ scene }: { scene: TileScene }) {
               y1={58 + i * 26}
               x2="320"
               y2={58 + i * 26}
-              stroke="#f3cfdc"
+              stroke="#e9cfae"
               strokeWidth="2"
               opacity={0.6 - i * 0.1}
             />
@@ -211,7 +222,7 @@ function Scene({ scene }: { scene: TileScene }) {
 
       {scene === "bloom" && (
         <>
-          <circle cx="160" cy="78" r="58" fill="#bfe8e4" opacity="0.8" />
+          <circle cx="160" cy="78" r="58" fill="#f4c7bc" opacity="0.8" />
           {Array.from({ length: 8 }, (_, i) => {
             const a = (i * Math.PI) / 4;
             return (
@@ -221,7 +232,7 @@ function Scene({ scene }: { scene: TileScene }) {
                 y1={78 + Math.sin(a) * 30}
                 x2={160 + Math.cos(a) * 74}
                 y2={78 + Math.sin(a) * 74}
-                stroke="#9fdcd6"
+                stroke="#f39b89"
                 strokeWidth="4"
                 strokeLinecap="round"
                 opacity="0.75"

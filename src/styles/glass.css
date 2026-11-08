@@ -278,14 +278,19 @@
      הצבעים נקבעים ב-`--bubble-*`, כך שאותה בועה משמשת לכל גוון בלי
      להעתיק את כל הגרדיאנטים.
      ====================================================================== */
+  /* בועה בלי צבע מוגדר (למשל תג השלב) - בצבעי מצב "דלוק": נייבי במצב
+     הבהיר (2026-10-25: שהקורל לא ישתלט), קורל במצב הכהה */
   .bubble {
-    --bubble-light: var(--ds-accent-pale);
-    --bubble-mid: var(--ds-accent);
-    --bubble-deep: var(--ds-accent-deeper);
+    --bubble-light: color-mix(in srgb, var(--ds-active-from) 55%, white);
+    --bubble-mid: var(--ds-active-mid);
+    --bubble-deep: var(--ds-active-to);
     --bubble-glow: var(--ds-glow);
 
     position: relative;
-    border-radius: 9999px;
+    /* 2026-11-08: מעוין במקום כדור (בקשת הלקוחה - "העיגולים למעוינים") */
+    border-radius: 0;
+    -webkit-clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
     background-image:
       /* הנצנוץ - קטן, חד, גבוה-שמאלה */
       radial-gradient(
@@ -314,6 +319,28 @@
       0 10px 24px -8px rgba(0, 0, 0, 0.65),
       0 0 34px -6px var(--bubble-glow);
     color: var(--ds-accent-ink);
+  }
+
+  /*
+   * בועת המותג - תג השלב ותגי האפשרויות (LevelBadge): הגוף עובר באלכסון
+   * מהקורל של הלוגו אל הנייבי שלו (בקשת הלקוחה: "מעבר של צבעים בעגול בין
+   * אדום לכחול"). נקודת האמצע כתובה במפורש (#8d5355, ממוצע השניים) ולא
+   * בעזרת "in oklab" - דפדפן ישן בפלזמה לא היה מבין את התחביר.
+   */
+  .bubble.bubble--brand {
+    --bubble-light: var(--ds-pal-4);
+    --bubble-glow: rgba(242, 106, 80, 0.35);
+    background-image:
+      radial-gradient(
+        circle at 31% 26%,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 255, 255, 0.4) 7%,
+        transparent 20%
+      ),
+      radial-gradient(circle at 50% 120%, rgba(255, 255, 255, 0.18) 0%, transparent 45%),
+      linear-gradient(145deg, var(--ds-pal-3) 0%, #c45a4c 26%, #8d5355 50%, #4f4a63 72%, var(--ds-navy) 100%);
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
   /* טבעת האור הדקה סביב הבועה - מה שמפריד אותה מהרקע השחור */
@@ -363,8 +390,10 @@
     --bubble-glow: color-mix(in srgb, var(--ds-bubble-5) 60%, transparent);
   }
 
-  /* בועה שקופה - לקישוט ברקע, בלי גוף מלא */
+  /* בועה שקופה - לקישוט ברקע, בלי גוף מלא.
+     כמעוין, טבעת השפה העגולה נחתכת - ולכן יש מילוי חלש בגוון שמחזיק את הצורה. */
   .bubble-hollow {
+    background-color: color-mix(in srgb, var(--bubble-mid) 22%, transparent);
     background-image:
       radial-gradient(
         circle at 31% 26%,
@@ -450,8 +479,8 @@
       ),
       linear-gradient(
         160deg,
-        rgba(95, 212, 200, 0.07) 0%,
-        rgba(150, 132, 240, 0.07) 50%,
+        rgba(242, 106, 80, 0.07) 0%,
+        rgba(200, 149, 95, 0.07) 50%,
         rgba(240, 143, 176, 0.05) 100%
       );
   }
@@ -488,15 +517,15 @@
      ====================================================================== */
   /* html:root - ספציפיות גבוהה מכלל הבסיס שמופיע מאוחר יותר בקובץ
      (בלי זה הפסים חזרו לטורקיז בלבד) */
+  /* 2026-10-25, פלטת הלקוחה: הכותרות נעות בין הנייבי לקורל של הלוגו */
   html:root .glass-title {
     background-image: linear-gradient(
       100deg,
-      var(--ds-rainbow-1),
-      var(--ds-rainbow-2),
-      var(--ds-rainbow-3),
-      var(--ds-rainbow-4),
-      var(--ds-rainbow-5),
-      var(--ds-rainbow-1)
+      var(--ds-title-from),
+      var(--ds-title-via),
+      var(--ds-title-to),
+      var(--ds-title-via),
+      var(--ds-title-from)
     );
     background-size: 220% auto;
     animation: rainbow-shift 12s linear infinite;
@@ -508,24 +537,24 @@
   html:root .glass-btn-primary {
     background-image:
       linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, transparent 52%),
-      linear-gradient(100deg, var(--ds-rainbow-1) 0%, var(--ds-rainbow-2) 50%, var(--ds-rainbow-3) 100%);
+      linear-gradient(100deg, var(--ds-primary-from) 0%, var(--ds-primary-via) 50%, var(--ds-primary-to) 100%);
     background-size: 100% 100%, 180% 100%;
     color: #ffffff;
-    text-shadow: 0 1px 2px rgba(18, 20, 48, 0.35);
+    text-shadow: 0 1px 2px rgba(40, 61, 91, 0.35);
     animation: rainbow-shift-btn 9s ease-in-out infinite alternate;
   }
 
   /* מסגרת הכרטיסים: קשת מלאה, דקה */
   /* html:root - ספציפיות גבוהה מכלל הבסיס שמופיע מאוחר יותר בקובץ
      (בלי זה הפסים חזרו לטורקיז בלבד) */
+  /* המסגרות בנייבי (לפי הפלטה: "טקסטים ומסגרות"), עם נגיעת קורל באמצע */
   html:root .glass-brick::after {
     background: linear-gradient(
       135deg,
-      var(--ds-rainbow-1),
-      var(--ds-rainbow-2) 25%,
-      var(--ds-rainbow-3) 50%,
-      var(--ds-rainbow-4) 75%,
-      var(--ds-rainbow-5)
+      var(--ds-wood),
+      var(--ds-pal-5) 40%,
+      var(--ds-pal-6) 75%,
+      var(--ds-wood)
     );
     opacity: 0.55;
   }
@@ -533,9 +562,9 @@
   :root[data-theme="light"] .glass-brick {
     background-image: linear-gradient(
       160deg,
-      rgba(14, 156, 147, 0.05) 0%,
-      rgba(115, 104, 201, 0.04) 50%,
-      rgba(229, 127, 160, 0.04) 100%
+      rgba(242, 106, 80, 0.04) 0%,
+      rgba(242, 232, 229, 0.3) 50%,
+      rgba(200, 149, 95, 0.04) 100%
     );
     box-shadow: var(--ds-shadow), var(--ds-inset-top);
   }
@@ -549,17 +578,18 @@
       var(--ds-rainbow-1),
       var(--ds-rainbow-2),
       var(--ds-rainbow-3),
-      var(--ds-rainbow-4)
+      var(--ds-rainbow-4),
+      /* וגם הנייבי בקצה - כל הפלטה בכל פס (בקשת הלקוחה) */
+      var(--ds-rainbow-5)
     );
-    box-shadow: 0 0 14px -2px rgba(115, 104, 201, 0.35);
+    box-shadow: 0 0 14px -2px rgba(242, 106, 80, 0.35);
   }
 
-  /* התגיות הקטנות: כל אחת מקבלת גוון מהקשת דרך nth-child,
-     כמו התגיות הצבעוניות באתר */
+  /* התגיות הקטנות: רקע קאמל בהיר מהפלטה */
   :root[data-theme="light"] .glass-chip {
-    background-color: rgba(14, 156, 147, 0.1);
+    background-color: rgba(200, 149, 95, 0.14);
     color: var(--ds-accent-deep);
-    box-shadow: inset 0 0 0 1px rgba(14, 156, 147, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(200, 149, 95, 0.32);
   }
 
   /* ======================================================================
@@ -623,7 +653,7 @@
     gap: 0.6rem;
     min-height: var(--ds-touch);
     padding-inline: 2rem;
-    border-radius: var(--ds-r-full);
+    border-radius: var(--ds-r-btn);
     font-size: 1.25rem;
     font-weight: 700;
     line-height: 1.2;
@@ -668,16 +698,29 @@
     }
   }
 
-  /* כפתור אייקון עגול - זה ה"כפתור העגול" של לוח הבקרה ברפרנס */
+  /* כפתור אייקון - ריבוע ישר זווית (2026-11-08: כל הכפתורים מלבנים) */
   .glass-icon-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: var(--ds-touch);
     height: var(--ds-touch);
-    border-radius: var(--ds-r-full);
+    border-radius: var(--ds-r-btn);
     flex: none;
   }
+
+  /*
+   * מעוין - מחליף את כל העיגולים בפרויקט (בקשת הלקוחה, 2026-11-08).
+   * clip-path ולא rotate: כך התוכן (מספר, אייקון) נשאר ישר ולא צריך
+   * לסובב אותו חזרה, והאלמנט שומר על אותו גודל בפריסה.
+   */
+  .diamond {
+    border-radius: 0;
+    -webkit-clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  }
+
+
 
   .glass-icon-btn-sm {
     width: var(--ds-touch-sm);
@@ -798,18 +841,18 @@
       linear-gradient(
         90deg,
         rgba(255, 255, 255, 0.28) 0%,
-        rgba(199, 245, 244, 0.13) 1.6%,
+        rgba(242, 232, 229, 0.13) 1.6%,
         transparent 5%,
         transparent 95%,
-        rgba(199, 245, 244, 0.13) 98.4%,
+        rgba(242, 232, 229, 0.13) 98.4%,
         rgba(255, 255, 255, 0.28) 100%
       ),
       linear-gradient(
         180deg,
-        rgba(199, 245, 244, 0.14) 0%,
+        rgba(242, 232, 229, 0.14) 0%,
         transparent 24%,
         transparent 74%,
-        rgba(8, 27, 28, 0.2) 100%
+        rgba(40, 61, 91, 0.12) 100%
       );
   }
 
@@ -1142,9 +1185,11 @@
       -6px -6px 16px -6px var(--ds-3d-halo);
   }
 
-  /* החוגה של הטיימר: דיסק מורם, מואר למעלה-שמאל, כמו כפתור עגול */
+  /* החוגה של הטיימר: מעוין מורם, מואר למעלה-שמאל */
   .timer-dial {
     z-index: 0;
+    -webkit-clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
     background-image:
       radial-gradient(circle at 32% 26%, var(--ds-3d-gloss) 0%, transparent 38%),
       radial-gradient(circle at 40% 35%, transparent 45%, var(--ds-3d-shade) 100%);
@@ -1195,5 +1240,78 @@
     background-color: rgba(169, 156, 245, 0.12);
     color: var(--ds-text);
     box-shadow: inset 0 0 0 1px rgba(169, 156, 245, 0.3);
+  }
+}
+
+/* ----------------------------------------------------------------------
+   בלי "כפתור לבן מתחת לכפתור" (דרישת הלקוחה, 2026-10-19)
+   ----------------------------------------------------------------------
+   כמה דברים יצרו יחד צללית לבנה בצורת כפתור סביב/מתחת לכפתורים:
+     1. מסגרת הזכוכית (::after) - קו בהיר סביב הכפתור הצבעוני.
+     2. קו האור הפנימי (rim) הלבן בשפה העליונה של הכפתור הראשי.
+     3. ה-halo הלבן של הכפתורים הרגילים (-6px -6px), שנקרא כמו כפתור
+        לבן מוזז מתחת לכפתור עצמו.
+     4. פס הברק (::before) היה מלבן עם פינות שלא תואמות לכפתור העגול -
+        פינותיו בצבצו מעבר לקצה. עכשיו הוא בצורת הכפתור.
+   html:root - ספציפיות גבוהה מהכללים המקוריים בשכבה. */
+@layer components {
+  html:root .glass-btn-primary::after {
+    display: none;
+  }
+
+  html:root .glass.glass-3d::before {
+    border-radius: inherit;
+  }
+
+  /* פס הברק על הכפתור הראשי: עדין ורחוק מהשפה, כדי שלא ייקרא כקו לבן
+     סביב הכפתור */
+  html:root .glass-btn-primary.glass-3d::before {
+    inset: 5px 14px 50% 14px;
+    opacity: 0.3;
+  }
+
+  html:root .glass-btn-primary.glass-3d,
+  html:root .glass-btn-primary.glass-3d:hover:not(:disabled) {
+    box-shadow:
+      inset 0 -12px 20px -12px rgba(0, 0, 0, 0.3),
+      0 6px 16px -8px var(--ds-3d-shadow-far),
+      0 0 26px -10px var(--ds-glow);
+  }
+
+  /* פס הברק על כפתור רגיל (לבן): חצי עליון בצורת הכפתור, עם קצה תחתון חד,
+     נקרא כ"כפתור שיושב על כפתור". עכשיו הוא צר, רחוק מהשפות ועדין -
+     כמו בכפתור הראשי. */
+  html:root .glass.glass-3d:not(.glass-btn-primary):not(.glass-active)::before {
+    inset: 4px 16px 55% 16px;
+    opacity: 0.35;
+  }
+
+  html:root .glass.glass-3d:not(.glass-active):not(.glass-btn-primary):not(:active) {
+    box-shadow:
+      inset 0 1px 0 0 var(--ds-3d-rim),
+      inset -6px -8px 18px -10px var(--ds-3d-shade),
+      0 3px 6px -2px var(--ds-3d-shadow-near),
+      0 12px 26px -12px var(--ds-3d-shadow-far);
+  }
+
+  /* כפתור ישר זווית לרכיבים שלא עוברים דרך glass-btn (2026-11-08).
+     html:root - גובר על glass-pill / glass-chip שמוגדרים בשכבה הזו. */
+  html:root .btn-rect {
+    border-radius: var(--ds-r-btn);
+  }
+
+  /*
+   * כפתור בגוון העז של הלוגו - "התחילו" בשלב 1 (בקשת הלקוחה, 2026-11-08).
+   * הקורל של המילה "פרקטל" בלוגו, מלא, בלי המעבר לבורדו-נייבי של הכפתור
+   * הראשי הרגיל. ספציפיות גבוהה מ-`html:root .glass-btn-primary`.
+   */
+  html:root .glass-btn-primary.glass-btn-brand {
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, transparent 50%),
+      linear-gradient(180deg, var(--ds-brand-coral-vivid) 0%, var(--ds-brand-coral-vivid-deep) 100%);
+    background-size: 100% 100%;
+    animation: none;
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(120, 30, 10, 0.45);
   }
 }

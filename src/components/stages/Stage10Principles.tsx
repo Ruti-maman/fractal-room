@@ -1,6 +1,8 @@
 import type { Group } from "../../types/group";
 import { useClosingPrinciple } from "../../hooks/useClosingPrinciple";
 import StageShell from "../StageShell";
+import { InkText } from "../TextEffects";
+import { cleanAiHebrew } from "../../lib/hebrewText";
 import { Spinner } from "../ui/Glass";
 import { InlineNotice } from "../ui/Feedback";
 
@@ -65,10 +67,12 @@ function Stage10Principles({ workshopId, myGroup }: Props) {
           style={{ animation: "glass-in 1.4s 200ms var(--ds-ease) both" }}
         >
 
+          {/* העיקרון נספג לדף כמו דיו (אפקט "דיו" שהלקוחה שלחה), ומתחדד
+              לטקסט נקי. המשפט מוצג בשלמותו בכל אורך - InkText שובר שורות
+              ומקטין את הגופן עד שהכול נכנס. */}
           <blockquote className="relative">
-            <p className="text-ink text-3xl leading-[1.65] font-bold sm:text-4xl">
-              {sentence}
-            </p>
+            {/* cleanAiHebrew: אף פעם לא אות לועזית באמצע מילה עברית (ראו hebrewText.ts) */}
+            <InkText text={cleanAiHebrew(sentence)} className="h-[min(15rem,30vh)] w-full" />
           </blockquote>
 
           <span

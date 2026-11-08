@@ -45,7 +45,7 @@ export function PlayerButton({
       disabled={disabled}
       onClick={onClick}
       className={cx(
-        "relative flex h-14 w-14 items-center justify-center rounded-full text-white transition-colors duration-150 active:scale-90 disabled:opacity-40",
+        "relative flex h-14 w-14 items-center justify-center btn-rect text-white transition-colors duration-150 active:scale-90 disabled:opacity-40",
         active ? "bg-white/20" : "hover:bg-white/12",
       )}
     >
@@ -195,7 +195,7 @@ function ClipPlayer({ src, caption, title }: { src: string; caption?: string; ti
           className="absolute inset-0 flex flex-col items-center justify-center gap-3"
         >
           <span
-            className="glass glass-active flex h-20 w-20 items-center justify-center rounded-full transition-transform duration-150 hover:scale-105"
+            className="glass glass-active flex h-20 w-20 items-center justify-center btn-rect transition-transform duration-150 hover:scale-105"
             style={{ boxShadow: "0 0 40px -4px var(--ds-glow)" }}
           >
             <Icon
@@ -235,7 +235,7 @@ function ClipPlayer({ src, caption, title }: { src: string; caption?: string; ti
             style={{ width: `${progress * 100}%`, boxShadow: "0 0 10px var(--ds-glow)" }}
           />
           <span
-            className="bg-accent absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-md"
+            className="bg-accent absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 diamond shadow-md"
             style={{ left: `${progress * 100}%` }}
           />
         </div>

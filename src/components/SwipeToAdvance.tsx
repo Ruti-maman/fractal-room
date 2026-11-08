@@ -135,7 +135,9 @@ export function SwipeToAdvanceLayer({ swipe, title, hint }: LayerProps) {
     <div
       {...swipe.layerHandlers}
       // z-30: מעל התוכן ורצועת "נבחרו", אבל הסרגל העליון (z-40) נשאר לחיץ
-      className="fixed inset-0 z-30 flex cursor-grab items-center justify-center select-none active:cursor-grabbing"
+      // הרקע מוחשך ומטושטש מאחורי הכרטיס - בלי זה טקסט השמש שמתחת נקרא
+      // דרך הכרטיס והכול התערבב ("שיהיה יותר ברור")
+      className="fixed inset-0 z-30 flex cursor-grab items-center justify-center bg-[var(--ds-scrim)] backdrop-blur-[6px] select-none active:cursor-grabbing"
       // בלי זה הדפדפן באנדרואיד לוקח לעצמו את הגרירה האופקית ושולח pointercancel
       style={{ touchAction: "none" }}
       role="button"
@@ -144,7 +146,11 @@ export function SwipeToAdvanceLayer({ swipe, title, hint }: LayerProps) {
     >
       <div
         className="glass glass-raised pointer-events-none flex flex-col items-center gap-5 rounded-2xl px-10 py-8 text-center"
-        style={{ animation: "pop-in var(--ds-dur) var(--ds-ease-spring) both" }}
+        // כרטיס אטום, לא זכוכית שקופה - הוא חייב להיקרא מעל כל מה שמתחתיו
+        style={{
+          animation: "pop-in var(--ds-dur) var(--ds-ease-spring) both",
+          backgroundColor: "var(--ds-glass-opaque-raised)",
+        }}
       >
         <span className="bubble bubble--1 flex h-16 w-16 items-center justify-center">
           <Icon name="check" size={30} />

@@ -24,7 +24,7 @@ import { LevelBadge } from "../ui/GameTile";
 import { ConclusionInHeader } from "../PracticalConclusionBanner";
 import { GlassButton, Spinner } from "../ui/Glass";
 import { LoadingState, Skeleton } from "../ui/Feedback";
-import StageShell from "../StageShell";
+import { cx } from "../../lib/cx";
 import Stage7Mechanism, { MECHANISM_DEFAULTS, type MechanismTexts } from "./Stage7Mechanism";
 
 const RECORD_SECONDS = 10;
@@ -33,7 +33,7 @@ const MAX_ATTEMPTS = 3;
 const COUNTDOWN_SECONDS = 3;
 
 /** סולם הטורקיז של לבנת הזכוכית - אותם ערכים שמשמשים את שעון החול בשלב 6. */
-const PALETTE = ["#c7f5f4", "#a7e9e5", "#84c7c1", "#6baca6", "#4e8f8b"];
+const PALETTE = ["#f5300f", "#f26a50", "#f3846e", "#c8955f", "#283d5b"];
 
 /**
  * ההוראות מופיעות אחת אחרי השנייה, ורק בסוף נחשפת תיבת ההקלדה - לפי
@@ -229,7 +229,7 @@ function RecordingLens() {
         className="pointer-events-none absolute h-80 w-80 rounded-full"
         style={{
           background:
-            "radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(91,192,235,0.07) 45%, transparent 72%)",
+            "radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(242,106,80,0.07) 45%, transparent 72%)",
         }}
       />
 
@@ -244,7 +244,7 @@ function RecordingLens() {
           </linearGradient>
           <radialGradient id="lens-glass" cx="0.36" cy="0.3" r="0.75">
             <stop offset="0%" stopColor="#ffffff" stopOpacity={0.3} />
-            <stop offset="55%" stopColor="#84c7c1" stopOpacity={0.14} />
+            <stop offset="55%" stopColor="#f3846e" stopOpacity={0.14} />
             <stop offset="100%" stopColor="#000000" stopOpacity={0.35} />
           </radialGradient>
         </defs>
@@ -252,14 +252,14 @@ function RecordingLens() {
         {/* גוף העדשה */}
         <circle cx="100" cy="100" r="62" fill="url(#lens-glass)" stroke="url(#lens-line)" strokeWidth={2.5} />
         <circle cx="100" cy="100" r="46" fill="none" stroke="url(#lens-line)" strokeWidth={1.5} opacity={0.55} />
-        <circle cx="100" cy="100" r="26" fill="#0b1a22" stroke="url(#lens-line)" strokeWidth={2} opacity={0.9} />
+        <circle cx="100" cy="100" r="26" fill="#1b2a40" stroke="url(#lens-line)" strokeWidth={2} opacity={0.9} />
 
         {/* הברקה על הזכוכית */}
         <path d="M74 76 C82 64 100 60 112 64" fill="none" stroke="#ffffff" strokeOpacity={0.5}
           strokeWidth={4} strokeLinecap="round" />
 
         {/* נורית הקלטה */}
-        <circle cx="100" cy="100" r="9" fill="#e4685f"
+        <circle cx="100" cy="100" r="9" fill="#e0381a"
           style={{ transformOrigin: "100px 100px", animation: "rec-pulse 1.6s ease-in-out infinite" }} />
       </svg>
     </div>
@@ -289,7 +289,7 @@ function AttemptDots({ used }: { used: number }) {
       {Array.from({ length: MAX_ATTEMPTS }, (_, i) => (
         <span
           key={i}
-          className={`h-3 w-3 rounded-full border-2 border-record ${i < used ? "bg-record" : "bg-transparent"}`}
+          className={`h-3 w-3 diamond border-2 border-record ${i < used ? "bg-record" : "bg-transparent"}`}
         />
       ))}
     </span>
@@ -320,6 +320,14 @@ function SolutionAndRecord({
   const mechanismTexts = { ...MECHANISM_DEFAULTS, ...content?.mechanism };
   const shapeLines = content?.shape_lines?.length ? content.shape_lines : DEFAULT_SHAPE_LINES;
   const [solution, setSolution] = useState("");
+  // "המשך להקלטה" בלי פתרון - מסגרת התיבה מתריעה (ראו תיבת הפתרון)
+  const [solutionMissing, setSolutionMissing] = useState(false);
+  const [solutionShake, setSolutionShake] = useState(0);
+  const solutionRef = useRef<HTMLTextAreaElement>(null);
+  // key={solutionShake} בונה את התיבה מחדש כדי שהניעור ירוץ שוב - המיקוד אחרי
+  useEffect(() => {
+    if (solutionShake) solutionRef.current?.focus();
+  }, [solutionShake]);
   const [status, setStatus] = useState<"idle" | "recording" | "review" | "uploading" | "error">("idle");
   const [error, setError] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(RECORD_SECONDS);
@@ -340,6 +348,29 @@ function SolutionAndRecord({
   const [expanded, setExpanded] = useState(false);
   const [mirrored, setMirrored] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
+
+  /*
+    גודל תצוגת המצלמה במסך ההקלטה: הכי גדולה שנכנסת באזור שבין הכותרת
+    לכפתורים (16:9), עד 76rem, ולא רחבה מהמרווח שבין מד ההתקדמות לטיימר
+    שבפינות התחתונות (21rem כל אחד) - אחרת הם מכסים את סרגל הנגן.
+    נמדד ב-ResizeObserver ולא בנוסחת CSS קבועה: הנוסחה הניחה גובה כותרת
+    קבוע, ובפועל "שליחה" נדחף מתחת לתחתית המסך ונחתך.
+  */
+  const stageBoxRef = useRef<HTMLDivElement>(null);
+  const [playerWidth, setPlayerWidth] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const box = stageBoxRef.current;
+    if (!box) return;
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const measure = () => {
+      const w = Math.min(box.clientWidth, (box.clientHeight * 16) / 9, 76 * rem, window.innerWidth - 42 * rem);
+      setPlayerWidth(Math.max(22 * rem, Math.floor(w)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    return () => ro.disconnect();
+  });
   // כתוביות חיות תוך כדי הדיבור. רצות רק בזמן הקלטה, ונכבות בשקט אם הדפדפן
   // לא תומך או שהסינון חוסם את שירות הזיהוי (ראו src/hooks/useLiveCaptions.ts).
   const { text: liveCaption, state: captionState } = useLiveCaptions(status === "recording");
@@ -724,7 +755,7 @@ function SolutionAndRecord({
             >
               <span
                 aria-hidden="true"
-                className="glass glass-active flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
+                className="glass glass-active flex h-9 w-9 shrink-0 items-center justify-center diamond text-sm font-extrabold"
               >
                 {i + 1}
               </span>
@@ -745,12 +776,25 @@ function SolutionAndRecord({
             <Icon name="edit" size={15} className="text-accent-soft" />
             הקלידו את הפתרון שגיבשתם
           </label>
+          {/* לחיצה על "המשך" כשהתיבה ריקה מדגישה את המסגרת בטורקיז (ומנערת
+              אותה) במקום לעבור - כמו המסקנה בשלב 4 */}
           <textarea
+            key={solutionShake}
+            ref={solutionRef}
             id="stage7-solution"
-            className="glass-input h-32 w-full resize-none !rounded-2xl py-4 !text-lg"
+            className={cx(
+              "glass-input h-32 w-full resize-none !rounded-2xl py-4 !text-lg",
+              solutionMissing && !solution.trim() && "!border-accent ring-accent/35 !border-2 ring-4",
+            )}
+            style={
+              solutionMissing && !solution.trim()
+                ? { animation: "shake-x 420ms var(--ds-ease) both" }
+                : undefined
+            }
             value={solution}
             onChange={(e) => setSolution(e.target.value)}
-            placeholder="הקלידו כאן..."
+            placeholder={solutionMissing ? "כדי להמשיך, הקלידו כאן קודם את הפתרון..." : "הקלידו כאן..."}
+            aria-invalid={solutionMissing && !solution.trim()}
           />
         </div>
 
@@ -763,8 +807,15 @@ function SolutionAndRecord({
             variant="primary"
             size="lg"
             iconAfter="arrowNext"
-            onClick={handleSaveSolution}
-            disabled={!solution.trim()}
+            // לא disabled: כפתור כבוי לא אומר למה. לחיצה בלי פתרון מתריעה על התיבה
+            onClick={() => {
+              if (!solution.trim()) {
+                setSolutionMissing(true);
+                setSolutionShake((k) => k + 1);
+                return;
+              }
+              handleSaveSolution();
+            }}
           >
             המשך להקלטה
           </GlassButton>
@@ -805,10 +856,14 @@ function SolutionAndRecord({
                 */
                 ...(expanded
                   ? null
-                  // 31rem ולא 25rem: מתחת לכותרת נוספו שתי שורות הסבר, ואחרי
-                  // הקלטה יש שתי שורות (רמז הניסיונות + "שליחה") - בלי המקום
-                  // הזה התוכן היה גבוה מהמסך ותג השלב נחתך למעלה
-                  : { width: "min(68rem, calc(100vw - 42rem), (100dvh - 31rem) * 16 / 9)", minWidth: "22rem" }),
+                  // הרוחב נמדד מהמקום שבאמת פנוי (playerWidth). עד המדידה
+                  // הראשונה - ההערכה הקודמת
+                  : {
+                      width: playerWidth
+                        ? `${playerWidth}px`
+                        : "min(68rem, calc(100vw - 42rem), (100dvh - 31rem) * 16 / 9)",
+                      minWidth: "22rem",
+                    }),
               }}
             />
 
@@ -849,7 +904,7 @@ function SolutionAndRecord({
               // text-white ולא text-ink-2: במצב בהיר ink הוא נייבי, והחיווי
               // נבלע לגמרי ברקע השחור של הנגן
               <div className="pointer-events-none absolute top-5 left-5 flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm font-bold text-white/85">
-                <span className="h-2 w-2 rounded-full bg-ok" style={{ animation: "rec-dot 1.4s ease-in-out infinite" }} />
+                <span className="h-2 w-2 diamond bg-ok" style={{ animation: "rec-dot 1.4s ease-in-out infinite" }} />
                 כתוביות חיות
               </div>
             )}
@@ -866,7 +921,7 @@ function SolutionAndRecord({
                 <div ref={barRef} className="h-full w-0 rounded-full bg-record" />
                 <span
                   ref={knobRef}
-                  className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-record shadow-md transition-opacity duration-200"
+                  className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 diamond bg-record shadow-md transition-opacity duration-200"
                   style={{ left: "0%", opacity: status === "recording" ? 1 : 0 }}
                 />
               </div>
@@ -885,13 +940,13 @@ function SolutionAndRecord({
                   }
                   title={status === "recording" ? "עצירת הקלטה" : "התחלת הקלטה"}
                   aria-label={status === "recording" ? "עצירת הקלטה" : "התחלת הקלטה"}
-                  className="flex h-14 w-14 items-center justify-center rounded-full transition-colors duration-150 hover:bg-white/12 active:scale-90 disabled:opacity-40"
+                  className="flex h-14 w-14 items-center justify-center btn-rect transition-colors duration-150 hover:bg-white/12 active:scale-90 disabled:opacity-40"
                 >
                   {status === "recording" ? (
                     <span className="h-5 w-5 rounded-[3px] bg-white" />
                   ) : (
                     <span
-                      className="h-6 w-6 rounded-full bg-record shadow-[0_0_14px_var(--ds-record-glow)]"
+                      className="h-6 w-6 diamond bg-record shadow-[0_0_14px_var(--ds-record-glow)]"
                       // אחרי הקלטה, כשעוד אפשר לנסות שוב - הכפתור נושם, כדי
                       // שיהיה ברור שדרכו מקליטים מחדש
                       style={status === "review" && attemptsLeft > 0 ? { animation: "rec-dot 1.6s ease-in-out infinite" } : undefined}
@@ -931,7 +986,7 @@ function SolutionAndRecord({
                 {status === "recording" && (
                   <span className="flex items-center gap-2 rounded-full bg-record/20 px-3 py-1 text-sm font-black text-record">
                     <span
-                      className="h-2.5 w-2.5 rounded-full bg-record"
+                      className="h-2.5 w-2.5 diamond bg-record"
                       style={{ animation: "rec-dot 1.1s ease-in-out infinite" }}
                     />
                     REC
@@ -994,6 +1049,9 @@ function SolutionAndRecord({
         }
       `}</style>
 
+      {/* הרקע הקבוע של הסדנה (הבועות הצפות) - חסר היה רק במסך הזה */}
+      <BackgroundLayers variant="deep" />
+
       {/* כתמי אור מטושטשים בפינות - קו העיצוב הקבוע של כל מסכי הסדנה */}
       <div className="pointer-events-none absolute top-[-12%] right-[8%] h-96 w-96 rounded-full bg-glow-soft blur-[110px]" />
       <div className="pointer-events-none absolute bottom-[-16%] left-[6%] h-96 w-96 rounded-full bg-glow-soft blur-[120px]" />
@@ -1014,21 +1072,26 @@ function SolutionAndRecord({
         <FilmStrip edge="bottom" />
       </div>
 
-      <div className="relative flex flex-col items-center gap-3" style={{ animation: "fade-up 0.7s ease-out both" }}>
-        <LevelBadge value={7} progress={0.7} size={88} />
-        <span className="glass glass-chip text-accent-soft gap-2">
-          <Icon name="record" size={15} />
-          הקלטה
-        </span>
-        <ConclusionInHeader />
-        <h1 className="glass-title text-3xl sm:text-4xl">היכונו להקלטה מול המצלמה</h1>
+      {/* כותרת דחוסה (תג קטן יותר, התגית והמסקנה בשורה אחת, ההסבר בשורה
+          אחת) - כל פיקסל שנחסך כאן הולך לתצוגת המצלמה */}
+      <div className="relative flex flex-none flex-col items-center gap-2" style={{ animation: "fade-up 0.7s ease-out both" }}>
+        <LevelBadge value={7} progress={0.7} size={64} />
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <span className="glass glass-chip text-accent-soft gap-2">
+            <Icon name="record" size={15} />
+            הקלטה
+          </span>
+          <ConclusionInHeader />
+        </div>
+        <h1 className="glass-title text-3xl">היכונו להקלטה מול המצלמה</h1>
         <p className="text-ink-2 text-base leading-snug font-bold sm:text-lg">
           הכיני את עצמך להקלטה מול המצלמה
-          <br />
-          <span className="text-ink-3 font-semibold">המסך ייפתח בהקלטה בעוד 3 שניות</span>
+          <span className="text-ink-3 font-semibold"> · המסך ייפתח בהקלטה בעוד 3 שניות</span>
         </p>
       </div>
 
+      {/* כל הגובה שנשאר בין הכותרת לכפתורים - התצוגה ממלאת אותו (ראו playerWidth) */}
+      <div ref={stageBoxRef} className="relative flex min-h-0 w-full flex-1 items-center justify-center">
       <div className="relative" style={{ animation: "fade-up 0.9s 0.15s ease-out both" }}>
         {/* הילת אורורה - אותו מניפת צבעים מסתובבת, מטושטשת מאוד, שגולשת
             מאחורי התצוגה ונושמת אל הרקע. זה מה שנותן את ה"וואו" בלי להוסיף
@@ -1084,6 +1147,7 @@ function SolutionAndRecord({
         {expanded ? createPortal(playerBox, document.body) : playerBox}
 
       </div>
+      </div>
 
       {error && (
         <div className="relative flex max-w-xl flex-col items-center gap-1 rounded-2xl border border-danger/40 bg-danger-fill px-6 py-4">
@@ -1092,7 +1156,7 @@ function SolutionAndRecord({
         </div>
       )}
 
-      <div className="relative" style={{ animation: "fade-up 0.9s 0.3s ease-out both" }}>
+      <div className="relative flex-none" style={{ animation: "fade-up 0.9s 0.3s ease-out both" }}>
         {countdown !== null && (
           <p className="glass glass-pill text-ink gap-2.5 px-6 py-3 text-xl font-extrabold">
             <Icon name="record" size={18} className="text-record" />
@@ -1118,7 +1182,7 @@ function SolutionAndRecord({
             <p className="glass glass-pill text-record gap-2.5 px-6 py-3 text-2xl font-extrabold tabular-nums">
               <span
                 aria-hidden="true"
-                className="bg-record h-3 w-3 rounded-full"
+                className="bg-record h-3 w-3 diamond"
                 style={{ animation: "rec-dot 1.1s ease-in-out infinite" }}
               />
               {lastAttempt ? "ניסיון אחרון · " : ""}מקליט... {secondsLeft}
@@ -1757,7 +1821,6 @@ function SharedViewing({
 function Stage7Simulation({ workshopId, myGroup, allGroups, content, onAdvance }: Props) {
   const { items: media, loading: mediaLoading } = useMedia(workshopId, 7);
   const [myClipReady, setMyClipReady] = useState(false);
-  const allReady = allGroups.every((g) => media.some((m) => m.group_id === g.id));
 
   const myClipExists = media.some((m) => m.group_id === myGroup.id);
 
@@ -1779,77 +1842,9 @@ function Stage7Simulation({ workshopId, myGroup, allGroups, content, onAdvance }
     );
   }
 
-  // מסך ההמתנה להקלטות. קודם הוא היה שורת כותרת ושלוש שורות עם אמוג'י,
-  // וזה המסך שקבוצה שסיימה ראשונה תבהה בו הכי הרבה זמן בכל הסדנה - לכן
-  // הוא מקבל את אותו טיפול כמו שער הסנכרון: מד התקדמות מפורש וכרטיס
-  // לכל קבוצה, כדי שההמתנה תיראה כמו החדר עובד ולא כמו מסך תקוע.
-  if (!allReady) {
-    const sorted = allGroups.slice().sort((a, b) => a.screen_number - b.screen_number);
-    const doneCount = sorted.filter((g) => media.some((m) => m.group_id === g.id)).length;
-
-    return (
-      <StageShell
-        stage={7}
-        kicker="סימולציות"
-        icon="film"
-        title="ממתינים לשאר ההקלטות"
-        subtitle="ההקלטה שלכן נשמרה. הצפייה המשותפת תתחיל כשכל הצוותים יסיימו."
-        background="ripple"
-      >
-        <div className="glass glass-brick mb-8 flex w-full max-w-md flex-col gap-3 rounded-xl p-5">
-          <div className="flex items-baseline justify-between">
-            <span className="text-ink-2 text-sm font-bold">הקלטות שהושלמו</span>
-            <span className="text-accent text-2xl font-extrabold tabular-nums">
-              {doneCount}
-              <span className="text-ink-3 text-base"> / {sorted.length}</span>
-            </span>
-          </div>
-          <div
-            className="glass-slider glass-slider--x h-3"
-            role="progressbar"
-            aria-valuenow={doneCount}
-            aria-valuemin={0}
-            aria-valuemax={sorted.length}
-            style={{
-              ["--fill" as string]:
-                sorted.length > 0 ? (doneCount / sorted.length) * 100 : 0,
-            }}
-          >
-            <span className="glass-slider__fill" />
-          </div>
-        </div>
-
-        <ul className="flex w-full flex-wrap justify-center gap-4">
-          {sorted.map((g, i) => {
-            const done = media.some((m) => m.group_id === g.id);
-            return (
-              <li
-                key={g.id}
-                className="glass glass-brick flex w-56 flex-col items-center gap-3 rounded-xl p-5 text-center"
-                style={{
-                  animation: `glass-in var(--ds-dur-slow) ${140 + i * 110}ms var(--ds-ease) both`,
-                }}
-              >
-                <span
-                  className={done ? "glass glass-icon-btn glass-active" : "glass glass-icon-btn text-ink-3"}
-                  style={done ? undefined : { animation: "soft-pulse 2.2s ease-in-out infinite" }}
-                >
-                  <Icon name={done ? "check" : "record"} size={26} />
-                </span>
-                <span className="text-ink text-lg font-extrabold">
-                  {g.name ?? `מסך ${g.screen_number}`}
-                </span>
-                <span className={done ? "text-ok text-xs font-bold" : "text-ink-3 text-xs font-bold"}>
-                  {done ? "ההקלטה נשמרה" : "מקליט..."}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      </StageShell>
-    );
-  }
-
+  // אין מסך "ממתינים לשאר ההקלטות" נפרד (הוסר לבקשת הלקוחה - כפילות):
+  // אחרי השליחה עוברים ישר לצפייה המשותפת, שבה כל קבוצה שעוד מקליטה
+  // מופיעה כ"מקליט...", ומי שסיימה - עם ✓ והסרטון שלה.
   return (
     <SharedViewing
       workshopId={workshopId}

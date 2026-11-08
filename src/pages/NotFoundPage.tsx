@@ -43,7 +43,7 @@ function NotFoundPage() {
                 to={`/screen/${n}`}
                 className="glass glass-interactive glass-3d flex flex-col items-center gap-1.5 rounded-lg p-4"
               >
-                <span className="glass glass-active flex h-10 w-10 items-center justify-center rounded-full font-extrabold">
+                <span className="glass glass-active flex h-10 w-10 items-center justify-center diamond font-extrabold">
                   {n}
                 </span>
                 <span className="text-sm font-bold">מסך {n}</span>

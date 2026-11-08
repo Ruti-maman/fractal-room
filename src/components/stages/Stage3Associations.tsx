@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import type { Group } from "../../types/group";
 import type { Stage3Content, InspirationItem, Stage3IntroTexts } from "../../types/stage3Content";
 import { useInspirations } from "../../hooks/useInspirations";
@@ -64,7 +64,8 @@ const SUN_MAX_SCALE = 1.25;
 
 /** טבעת הטעינה סביב הליבה - רדיוס והיקף, לחישוב ה-strokeDasharray. */
 const CORE_RING = 128;
-const CORE_CIRC = 2 * Math.PI * CORE_RING;
+/** מסגרת הטעינה סביב הליבה - מעוין שחצי האלכסון שלו CORE_RING (ב-viewBox של 280) */
+const CORE_DIAMOND = `M140 ${140 - CORE_RING} L${140 + CORE_RING} 140 L140 ${140 + CORE_RING} L${140 - CORE_RING} 140 Z`;
 
 interface Props {
   workshopId: string;
@@ -85,6 +86,42 @@ function fillSlots(items: InspirationItem[]) {
 }
 
 /** צ'יפ שמדמה "תעופה" מהקרן שנבחרה אל תוך תיבת ההשראות למטה. */
+/**
+ * טקסט הדילמה בליבת השמש - **בכל אורך** (דרישת הלקוחה: לא להגביל את
+ * הטקסט). העיגול בגודל קבוע, כי כל הקרניים והמשבצות מסודרות סביבו, ולכן
+ * הכתב הוא שמתאים את עצמו: מתחילים מהגודל המלא ומקטינים עד שכל הטקסט
+ * נכנס לעיגול. טקסט קצר נשאר גדול, ארוך - קטן ככל שצריך, ותמיד שלם.
+ */
+function FitText({ text, maxPx }: { text: string; maxPx: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [size, setSize] = useState(maxPx);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const box = el?.parentElement;
+    if (!el || !box) return;
+    let s = maxPx;
+    el.style.fontSize = `${s}px`;
+    // האזור הפנימי של העיגול (בלי הריפוד), ועוד 10% מרווח - פינות המלבן
+    // של הטקסט לא אמורות לגעת בקו העגול
+    const cs = getComputedStyle(box);
+    const innerH = (box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) * 0.9;
+    const innerW = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const fits = () => el.scrollHeight <= innerH && el.scrollWidth <= innerW;
+    while (s > 10 && !fits()) {
+      s -= 1;
+      el.style.fontSize = `${s}px`;
+    }
+    setSize(s);
+  }, [text, maxPx]);
+
+  return (
+    <span ref={ref} className="block font-extrabold leading-snug" style={{ fontSize: size }}>
+      {text}
+    </span>
+  );
+}
+
 function FlyingChipEl({ chip }: { chip: FlyingChip }) {
   const [atTarget, setAtTarget] = useState(false);
 
@@ -231,8 +268,9 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
   }
 
   const intro = { ...INTRO_DEFAULTS, ...(content.intro ?? {}) };
-  // צעד I עד שכל המשבצות סביב השמש מלאות, ואז צעד II (בחירת ארבעה)
-  const allFilled = slots.every((s) => s.text.trim().length > 0);
+  // צעד I עד שכל המשבצות סביב השמש מלאות **או שמתחילים לבחור השראות**
+  // (לבקשת הלקוחה - ברגע שבוחרים, השורה השנייה מודגשת), ואז צעד II
+  const allFilled = slots.every((s) => s.text.trim().length > 0) || selectedCount > 0;
 
   /*
     מסך הפתיחה (לפי האפיון): הטקסט המלא, ובסופו "התחלנו". מקומי לכל
@@ -460,30 +498,23 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                 viewBox="0 0 280 280"
                 // מידות מפורשות ולא רק inset: ל-svg יש גודל טבעי, ועם inset
                 // לבד הדפדפן לא מותח אותו - הטבעת יצאה קטנה ומוזזת הצידה.
-                className="pointer-events-none absolute z-10 -rotate-90"
+                className="pointer-events-none absolute z-10"
                 // maxWidth: ה-preflight של Tailwind מגביל svg ל-100% רוחב - זה מה
                 // שמעך את הטבעת לאליפסה והזיז אותה מהמרכז.
                 style={{ top: -28, left: -28, width: "calc(100% + 56px)", height: "calc(100% + 56px)", maxWidth: "none" }}
                 aria-hidden="true"
               >
-                <circle
-                  cx="140"
-                  cy="140"
-                  r={CORE_RING}
-                  fill="none"
-                  stroke="var(--ds-glass-strong)"
-                  strokeWidth="5"
-                />
-                <circle
-                  cx="140"
-                  cy="140"
-                  r={CORE_RING}
+                {/* מעוין ולא טבעת (2026-11-08). מתחיל בקודקוד העליון ונע עם כיוון השעון */}
+                <path d={CORE_DIAMOND} fill="none" stroke="var(--ds-glass-strong)" strokeWidth="5" strokeLinejoin="round" />
+                <path
+                  d={CORE_DIAMOND}
+                  pathLength={100}
                   fill="none"
                   stroke="var(--ds-accent)"
                   strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeDasharray={CORE_CIRC}
-                  strokeDashoffset={CORE_CIRC * (1 - charge)}
+                  strokeLinejoin="round"
+                  strokeDasharray="100"
+                  strokeDashoffset={100 * (1 - charge)}
                   style={{
                     transition: "stroke-dashoffset 600ms var(--ds-ease-spring)",
                     filter: "drop-shadow(0 0 8px var(--ds-glow))",
@@ -491,20 +522,26 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                 />
               </svg>
 
-              <div
-                className="glass glass-brick relative flex h-80 w-80 items-center justify-center rounded-full p-9 text-center transition-all duration-500"
-                style={{
-                  boxShadow: `var(--ds-shadow-lg), 0 0 ${40 + charge * 70}px -6px var(--ds-glow), var(--ds-inset-top)`,
-                }}
-              >
-                <span
-                  className={cx(
-                    "font-extrabold leading-snug",
-                    content.dilemma_text ? "text-2xl" : "text-3xl",
-                  )}
-                >
-                  {content.dilemma_text || "הדילמה שלנו"}
-                </span>
+              {/* הליבה - מעוין (2026-11-08). המעוין עצמו הוא ריבוע זכוכית מסובב
+                  ב-45 מעלות, והטקסט יושב מעליו בשכבה נפרדת שלא מסתובבת. אזור
+                  הטקסט (12.5rem x 7rem) הוא המלבן הגדול שנכנס בתוך המעוין. */}
+              <div className="relative flex h-80 w-80 items-center justify-center text-center">
+                <div
+                  aria-hidden="true"
+                  className="glass glass-brick absolute rounded-none transition-all duration-500"
+                  style={{
+                    width: "70.7%",
+                    height: "70.7%",
+                    transform: "rotate(45deg)",
+                    boxShadow: `var(--ds-shadow-lg), 0 0 ${40 + charge * 70}px -6px var(--ds-glow), var(--ds-inset-top)`,
+                  }}
+                />
+                <div className="relative flex h-28 w-[12.5rem] items-center justify-center">
+                  <FitText
+                    text={content.dilemma_text || "הדילמה שלנו"}
+                    maxPx={content.dilemma_text ? 24 : 30}
+                  />
+                </div>
               </div>
             </div>
 
@@ -565,12 +602,18 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                   type="button"
                   aria-pressed={isSelected}
                   className={cx(
-                    "glass glass-interactive glass-3d w-full rounded-[2rem] px-4 py-4 text-center leading-snug font-bold",
-                    // עד 4 שורות במשבצת; הטקסט המלא נראה בעריכה
-                    "line-clamp-4",
-                    // טקסט ארוך קטן מעט, כדי שהמשבצת לא תתארך לגובה ותעלה על השכנות
-                    // בלי הגבלת אורך (לבקשת הלקוחה) - טקסט ארוך פשוט קטן בהדרגה
-                    item.text.length > 90 ? "text-sm" : item.text.length > 40 ? "text-base" : "text-lg",
+                    "glass glass-interactive glass-3d btn-rect w-full px-4 py-4 text-center leading-snug font-bold",
+                    // **ההשראה מוצגת בשלמותה, בכל אורך** (דרישת הלקוחה) - בלי
+                    // line-clamp ובלי "...". טקסט ארוך קטן בהדרגה, כדי שהמשבצת
+                    // לא תתארך לגובה ותעלה על השכנות.
+                    "break-words",
+                    item.text.length > 160
+                      ? "text-xs"
+                      : item.text.length > 90
+                        ? "text-sm"
+                        : item.text.length > 40
+                          ? "text-base"
+                          : "text-lg",
                     isSelected && "glass-active",
                   )}
                   onClick={(e) => toggleSelected(i, e)}
@@ -583,7 +626,7 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                     aria-label="עריכת ההשראה"
                     title="עריכה"
                     onClick={() => setEditingIndex(i)}
-                    className="glass glass-raised text-ink-2 hover:text-ink absolute -top-2 -left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full"
+                    className="glass glass-raised text-ink-2 hover:text-ink absolute -top-2 -left-2 z-10 flex h-9 w-9 items-center justify-center btn-rect"
                   >
                     <Icon name="edit" size={15} />
                   </button>

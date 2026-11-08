@@ -1,5 +1,6 @@
 import { useTopInspirations } from "../hooks/useTopInspirations";
 import Icon from "./ui/Icon";
+import MarqueeText from "./MarqueeText";
 
 interface Props {
   workshopId: string;
@@ -31,10 +32,15 @@ function InspirationsLadder({ workshopId }: Props) {
 
   if (loading || items.length === 0) return null;
 
+  /*
+    **כל השראה נקראת בשלמותה, בכל אורך, בגודל כתב קבוע** (דרישת הלקוחה):
+    השראה ארוכה מהשורה זזה לאט הלוך וחזור (MarqueeText) - בלי "..." ובלי
+    להקטין את הכתב, והסולם נשאר באותו גובה.
+  */
   return (
     <aside
       aria-label="סולם ההשראות שנבחרו"
-      className="glass glass-brick glass-raised pointer-events-none fixed top-24 left-4 z-20 hidden w-[10.5rem] flex-col gap-2 rounded-xl p-3 lg:flex"
+      className="glass glass-brick glass-raised pointer-events-none fixed top-24 left-4 z-20 hidden w-[11.5rem] flex-col gap-2 rounded-xl p-3 lg:flex"
       style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
     >
       <div className="text-ink-3 flex items-center gap-1.5 px-1 text-[11px] font-bold tracking-wide">
@@ -58,11 +64,11 @@ function InspirationsLadder({ workshopId }: Props) {
           >
             <span
               aria-hidden="true"
-              className={`bubble bubble--${(i % 5) + 1} flex h-5 w-5 flex-none items-center justify-center text-[10px] font-extrabold`}
+              className={`bubble bubble--${(i % 5) + 1} flex h-7 w-7 flex-none items-center justify-center text-[11px] font-extrabold`}
             >
               {i + 1}
             </span>
-            <span className="truncate text-[13px] font-bold">{item.text}</span>
+            <MarqueeText text={item.text} className="flex-1 text-[13px] font-bold" />
           </li>
         ))}
       </ol>

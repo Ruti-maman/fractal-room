@@ -74,7 +74,7 @@ function TipPopups({
               type="button"
               aria-label={`סגירת הטיפ ${tip.title}`}
               onClick={() => onClose(i)}
-              className="text-ink-3 hover:text-ink -me-1 flex h-8 w-8 flex-none items-center justify-center rounded-full"
+              className="text-ink-3 hover:text-ink -me-1 flex h-8 w-8 flex-none items-center justify-center btn-rect"
             >
               <Icon name="close" size={15} />
             </button>

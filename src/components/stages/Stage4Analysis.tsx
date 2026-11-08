@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { Group } from "../../types/group";
+import { cleanAiHebrew } from "../../lib/hebrewText";
 import type { Stage4Content, Stage4IntroTexts } from "../../types/stage4Content";
 import StageShell from "../StageShell";
 import StageIntro from "../StageIntro";
@@ -69,6 +70,13 @@ const CHAR_FILL_PADDING_PX = 3;
 // כדי שכל אות שהאצבע "עברה מעליה" בדרך תיצבע בפועל, לא רק נקודת הקצה.
 const DRAG_SAMPLE_STEP_PX = 6;
 
+/**
+ * כמה זמן היד צריכה לעמוד במקום באמצע הדגשה כדי שפופ-אפ התיוג יקפוץ
+ * (בלי להרים את האצבע), וכמה תזוזה עדיין נחשבת "רעד" ולא המשך הדגשה.
+ */
+const DWELL_MS = 700;
+const DWELL_JITTER_PX = 5;
+
 /*
  * ============================================================================
  *  ארגז הכלים: מרקרים ומחק
@@ -122,7 +130,7 @@ function ToolButton({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className="glass glass-interactive glass-3d glass-pill flex w-full min-w-[9.5rem] items-center gap-3 py-2 ps-2 pe-5 transition-all duration-300"
+      className="glass glass-interactive glass-3d glass-pill btn-rect flex w-full min-w-[9.5rem] items-center gap-3 py-2 ps-2 pe-5 transition-all duration-300"
       style={
         active
           ? {
@@ -135,7 +143,7 @@ function ToolButton({
     >
       <span
         aria-hidden="true"
-        className="flex h-11 w-11 flex-none items-center justify-center rounded-full text-white"
+        className="flex h-11 w-11 flex-none items-center justify-center diamond text-white"
         style={{
           background: `radial-gradient(circle at 32% 26%, color-mix(in srgb, ${color} 45%, white) 0%, ${color} 50%, color-mix(in srgb, ${color} 65%, #0b2a2a) 100%)`,
           boxShadow: `inset 0 -3px 6px -2px rgba(0,0,0,0.25), inset 0 2px 3px rgba(255,255,255,0.6), 0 4px 10px -3px color-mix(in srgb, ${color} 70%, transparent)`,
@@ -226,19 +234,6 @@ interface CharCell {
   index: number;
 }
 
-/**
- * מסירה תווים מכתב זר מניסוח ה-AI. Gemini "גלש" בפועל באמצע מילה לאותיות
- * קנאדה, והניסוח המשובש כבר נשמר ב-DB. ה-Edge Function מונעת את זה מעכשיו
- * (ומבקשת ניסוח חדש), וזו רשת ביטחון לשורות שנשמרו לפני התיקון.
- */
-function stripForeignScript(text: string): string {
-  return text
-    .normalize("NFKC")
-    .replace(/[^א-תװ-״\s\p{P}\p{S}0-9A-Za-z]/gu, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
-
 /** קטע שסומן זה עתה בגרירה, וממתין לבחירת קטגוריה (עוד לא נשמר כ-TaggedPhrase). */
 interface PendingPhrase {
   color: "green" | "red";
@@ -259,10 +254,25 @@ function CategoryPopup({
   onChoose: (category: string) => void;
   onCancel: () => void;
 }) {
+  /*
+    במסך מגע, אחרי הרמת האצבע הדפדפן שולח "click" באותה נקודה - ועד אז
+    הפופ-אפ כבר נפתח מתחת לאצבע, כך שהקליק נחת על הרקע הכהה וסגר אותו מיד.
+    הקבוצה ראתה הבהוב (או כלום) ונאלצה לגעת שוב. לכן חצי השנייה הראשונה
+    אחרי הפתיחה מתעלמת מסגירה. הכפתורים עצמם (הקטגוריות) לא מושפעים.
+  */
+  const openedAt = useRef(Date.now());
+  const tooSoon = () => Date.now() - openedAt.current < 500;
+  const guardedCancel = () => {
+    if (!tooSoon()) onCancel();
+  };
+  // אותו קליק-רפאים עלול לנחות על כפתור קטגוריה ולתייג בטעות
+  const guardedChoose = (category: string) => {
+    if (!tooSoon()) onChoose(category);
+  };
   return (
     <GlassModal
       open
-      onClose={onCancel}
+      onClose={guardedCancel}
       tone={pending.color === "green" ? "ok" : "warn"}
       icon="marker"
       title={pending.color === "green" ? "סימנתן חוזקה" : "סימנתן חסם"}
@@ -280,7 +290,7 @@ function CategoryPopup({
       ) : (
         <div className="mt-5 flex flex-wrap justify-center gap-3">
           {categories.map((category) => (
-            <GlassButton key={category} size="sm" onClick={() => onChoose(category)}>
+            <GlassButton key={category} size="sm" onClick={() => guardedChoose(category)}>
               {category}
             </GlassButton>
           ))}
@@ -321,7 +331,7 @@ function FramedCategoryLabel({ text }: { text: string; color: "green" | "red" })
   return <span className="text-ink text-lg font-extrabold">{text}</span>;
 }
 
-/** טור אחד בטבלת הסנכרון (שקף 7) - חוזקות או חסמים, כל שורה מחולקת לנתון עצמו (מימין) ולמונח המקצועי (משמאל, מודגש). */
+/** טור אחד בטבלת הסנכרון (שקף 7) - חוזקות או חסמים, כל שורה מחולקת למונח המקצועי (מימין, מודגש) ולנתון עצמו (משמאל). */
 function PhraseColumn({
   title,
   color,
@@ -332,8 +342,16 @@ function PhraseColumn({
   phrases: TaggedPhrase[];
 }) {
   const styles = PHRASE_COLUMN_STYLES[color];
+  // קיבוץ לפי תחום: כל תחום מופיע פעם אחת, וכל המשפטים שתויגו בו מתחתיו.
+  // סדר התחומים - לפי הפעם הראשונה שסומן בהם, כדי שהטבלה תלך עם הטקסט.
+  const groups: { category: string; items: TaggedPhrase[] }[] = [];
+  for (const p of phrases) {
+    const group = groups.find((g) => g.category === p.category);
+    if (group) group.items.push(p);
+    else groups.push({ category: p.category, items: [p] });
+  }
   return (
-    <div className="glass glass-brick glass-raised flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
+    <div className="glass glass-brick glass-raised flex max-h-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
       {/* כותרת הטור: נקייה, על הלבן של הכרטיס, עם קו דק מתחתיה */}
       <div
         className={cx(
@@ -351,26 +369,47 @@ function PhraseColumn({
       {phrases.length === 0 ? (
         <p className="text-ink-3 px-5 py-8 text-center text-sm">עדיין לא סומן כאן כלום</p>
       ) : (
-        <div className="glass-scroll min-h-0 flex-1 overflow-y-auto">
+        // mx/mb: המסגרת הצבעונית של הכרטיס (::after) יושבת מתחת לתוכן -
+        // בלי הרווח הזה הרקע של שורת הכותרות הקבועה כיסה אותה והמסגרת
+        // נראתה חתוכה. rounded-b: שורות שגוללות לא בולטות מהפינות המעוגלות.
+        <div className="glass-scroll mx-0.5 mb-0.5 min-h-0 flex-1 overflow-y-auto rounded-b-2xl">
         <table className="w-full border-collapse text-right">
           <thead>
             <tr className="text-ink-3 text-sm">
-              {/* קודם הנתון (המשפט מהטקסט) ואחריו המונח המקצועי - לבקשת הלקוחה */}
-              <th className="border-edge-dim border-b px-4 py-2 font-extrabold">נתון</th>
-              <th className="border-edge-dim border-b px-4 py-2 font-extrabold">מונח מקצועי</th>
+              {/* המונח המקצועי מימין (נקרא ראשון, טור קצר ואחיד שקל לסרוק) והנתון
+                  - המשפט מהטקסט - משמאלו. אושר ע"י המפתחת, 2026-10-20. */}
+              {/* sticky: שורת הכותרות נשארת קבועה כשהשורות גוללות מתחתיה */}
+              <th className="border-edge-dim bg-bg-solid sticky top-0 z-10 border-b px-4 py-2 font-extrabold">
+                מונח מקצועי
+              </th>
+              <th className="border-edge-dim bg-bg-solid sticky top-0 z-10 border-b px-4 py-2 font-extrabold">
+                נתון
+              </th>
             </tr>
           </thead>
           <tbody>
-            {phrases.map((p) => (
-              <tr key={p.id} className="border-edge-dim border-b last:border-b-0">
-                <td className="text-ink px-4 py-3.5 align-middle text-lg leading-snug">
-                  {p.text}
-                </td>
-                <td className="px-4 py-3.5 whitespace-nowrap align-middle">
-                  <FramedCategoryLabel text={p.category} color={color} />
-                </td>
-              </tr>
-            ))}
+            {groups.map((g) =>
+              g.items.map((p, i) => (
+                <tr
+                  key={p.id}
+                  // קו מפריד רק בין תחומים; בתוך תחום - קו עדין בין המשפטים בלבד
+                  className={cx(
+                    i === g.items.length - 1 ? "border-edge-dim border-b" : "border-edge-dim/40 border-b border-dashed",
+                    "last:border-b-0",
+                  )}
+                >
+                  {i === 0 && (
+                    <td rowSpan={g.items.length} className="px-4 py-3.5 align-top whitespace-nowrap">
+                      {/* נצמד מתחת לשורת הכותרות בגלילה, עד שהתחום הבא דוחף אותו */}
+                      <div className="sticky top-14">
+                        <FramedCategoryLabel text={g.category} color={color} />
+                      </div>
+                    </td>
+                  )}
+                  <td className="text-ink px-4 py-3.5 align-middle text-lg leading-snug">{p.text}</td>
+                </tr>
+              )),
+            )}
           </tbody>
         </table>
         </div>
@@ -441,7 +480,23 @@ function FunctioningPictureStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupConclusion]);
 
+  // אי אפשר לעבור הלאה בלי מסקנה: לחיצה על "המשך" כשהתיבה ריקה מדגישה את
+  // מסגרת התיבה בטורקיז (ומנערת אותה) במקום לעבור - דרישת הלקוחה.
+  const [conclusionMissing, setConclusionMissing] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
+  const conclusionRef = useRef<HTMLTextAreaElement>(null);
+  // key={shakeKey} בונה את התיבה מחדש כדי שהניעור ירוץ שוב בכל לחיצה -
+  // ולכן המיקוד (שפותח גם את המקלדת) נעשה רק אחרי הבנייה
+  useEffect(() => {
+    if (shakeKey) conclusionRef.current?.focus();
+  }, [shakeKey]);
+
   async function handleAdvance() {
+    if (!groupConclusion.trim()) {
+      setConclusionMissing(true);
+      setShakeKey((k) => k + 1);
+      return;
+    }
     setAdvancing(true);
     await saveGroupConclusion(groupConclusion);
     onAdvance();
@@ -514,7 +569,7 @@ function FunctioningPictureStep({
           {/* שני המשפטים שה-AI ניסח - ממוספרים כלבנים נפרדות, כדי שיהיה
               ברור שאלו שתי אמירות ולא פסקה אחת ארוכה. */}
           <ol className="grid gap-4 lg:grid-cols-2">
-            {[result.sentence1, result.sentence2].map(stripForeignScript).map((sentence, i) => (
+            {[result.sentence1, result.sentence2].map(cleanAiHebrew).map((sentence, i) => (
               <li
                 key={i}
                 className="glass glass-brick glass-raised flex items-start gap-4 rounded-2xl p-6"
@@ -524,7 +579,7 @@ function FunctioningPictureStep({
               >
                 <span
                   aria-hidden="true"
-                  className="glass glass-active flex h-9 w-9 flex-none items-center justify-center rounded-full text-sm font-extrabold"
+                  className="glass glass-active flex h-9 w-9 flex-none items-center justify-center diamond text-sm font-extrabold"
                 >
                   {i + 1}
                 </span>
@@ -545,12 +600,24 @@ function FunctioningPictureStep({
               על סמך ההבנות למעלה - כתבו מסקנה מעשית שתלווה את כל השלבים הבאים
             </label>
             <textarea
+              key={shakeKey}
+              ref={conclusionRef}
               id="group-conclusion"
-              className="glass-input h-24 w-full resize-none !rounded-xl py-4 !text-xl"
+              className={cx(
+                "glass-input h-24 w-full resize-none !rounded-xl py-4 !text-xl",
+                conclusionMissing && !groupConclusion.trim() && "!border-accent ring-accent/35 !border-2 ring-4",
+              )}
+              style={
+                conclusionMissing && !groupConclusion.trim()
+                  ? { animation: "shake-x 420ms var(--ds-ease) both" }
+                  : undefined
+              }
               rows={2}
               value={groupConclusion}
               onChange={(e) => setGroupConclusion(e.target.value)}
-              placeholder="הקלידו כאן..."
+              // ההסבר בתוך התיבה ולא בשורה נוספת מתחתיה - המסך כבר מלא עד הסוף
+              placeholder={conclusionMissing ? "כדי להמשיך, כתבו כאן קודם מסקנה מעשית..." : "הקלידו כאן..."}
+              aria-invalid={conclusionMissing && !groupConclusion.trim()}
             />
           </div>
         </div>
@@ -720,6 +787,10 @@ function Stage4Marking({
   const touchedIndicesRef = useRef<Set<number>>(new Set());
   const lastClientPointRef = useRef<{ x: number; y: number } | null>(null);
   const lastCharIndexRef = useRef<number | null>(null);
+  /** סיום הגרירה (אותה פונקציה של הרמת האצבע) - נקרא גם כשהיד נעצרת. */
+  const finishDragRef = useRef<() => void>(() => {});
+  const dwellTimerRef = useRef<number | null>(null);
+  const capturedPointerRef = useRef<number | null>(null);
   const paperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   /** האזור הפנוי לדף (בין הכותרת לכפתור) - לפיו נקבע גודל הגופן. */
@@ -908,8 +979,22 @@ function Stage4Marking({
 
   useEffect(() => {
     function handleWindowPointerUp() {
+      if (dwellTimerRef.current !== null) {
+        window.clearTimeout(dwellTimerRef.current);
+        dwellTimerRef.current = null;
+      }
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
+      // משחררת את הלכידה מיד: כל עוד הדף "מחזיק" את העכבר, הסמן נשאר טוש
+      // גם מעל הפופ-אפ (כשהוא קופץ מעצירת היד והכפתור עדיין לחוץ).
+      if (capturedPointerRef.current !== null) {
+        try {
+          paperRef.current?.releasePointerCapture?.(capturedPointerRef.current);
+        } catch {
+          // הלכידה כבר שוחררה
+        }
+        capturedPointerRef.current = null;
+      }
       lastClientPointRef.current = null;
       lastCharIndexRef.current = null;
       const tool = dragToolRef.current;
@@ -1064,8 +1149,17 @@ function Stage4Marking({
       // שנגמר תו אחד לפני הנקודה יכלול אותה.
       setPendingPhrase({ color: tool, startIndex: start, endIndex: end, text: textForRange(start, end) });
     }
-    window.addEventListener("pointerup", handleWindowPointerUp);
-    return () => window.removeEventListener("pointerup", handleWindowPointerUp);
+    // capture + pointercancel: סוף גרירה שלא הגיע כ-pointerup רגיל (הדפדפן
+    // ביטל את המגע, או שחרור מחוץ לדף) השאיר את הגרירה "פתוחה", והפופ-אפ
+    // קפץ רק בלחיצה הבאה. עכשיו כל סיום של המגע סוגר את הגרירה ומקפיץ אותו.
+    finishDragRef.current = handleWindowPointerUp;
+    window.addEventListener("pointerup", handleWindowPointerUp, true);
+    window.addEventListener("pointercancel", handleWindowPointerUp, true);
+    return () => {
+      if (dwellTimerRef.current !== null) window.clearTimeout(dwellTimerRef.current);
+      window.removeEventListener("pointerup", handleWindowPointerUp, true);
+      window.removeEventListener("pointercancel", handleWindowPointerUp, true);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1167,6 +1261,13 @@ function Stage4Marking({
 
   function handlePaperPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     isDraggingRef.current = true;
+    // הדף ממשיך לקבל את המגע עד ההרמה, גם אם האצבע/העכבר יצאו ממנו
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+      capturedPointerRef.current = e.pointerId;
+    } catch {
+      // דפדפן ישן בלי pointer capture - מאזין החלון עדיין תופס את ההרמה
+    }
     dragToolRef.current = activeToolRef.current;
     touchedIndicesRef.current = new Set();
     cacheCharRects();
@@ -1187,6 +1288,18 @@ function Stage4Marking({
       updateCharAt(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t, tool);
     }
     lastClientPointRef.current = to;
+
+    // דרישת הלקוחה: הפופ-אפ קופץ ברגע שהיד **נעצרת**, גם בלי להרים אותה.
+    // כל תזוזה אמיתית (לא רעד קטן של אצבע) מאפסת את השעון; עצירה של
+    // DWELL_MS מסיימת את הגרירה בדיוק כמו הרמה. ההרמה שתבוא אחר כך
+    // כבר לא עושה כלום (isDraggingRef כבוי).
+    if (dist >= DWELL_JITTER_PX || dwellTimerRef.current === null) {
+      if (dwellTimerRef.current !== null) window.clearTimeout(dwellTimerRef.current);
+      dwellTimerRef.current = window.setTimeout(() => {
+        dwellTimerRef.current = null;
+        if (isDraggingRef.current && touchedIndicesRef.current.size > 0) finishDragRef.current();
+      }, DWELL_MS);
+    }
   }
 
   if (loading) {
@@ -1207,7 +1320,7 @@ function Stage4Marking({
         compactHeader
         icon="ladder"
         title="מערכת אפיון אוטומטית"
-        subtitle="המערכת ריכזה עבורכן את הנתונים עפ״י הסימונים שלכן. נשאר לכן לוודא שכולנו באותה צורה."
+        subtitle="המערכת ריכזה עבורכן את הנתונים עפ״י הסימונים שלכן, נשאר לכן לוודא שכולנו באותה צורה."
         background="quiet"
         width="wide"
         actions={
@@ -1221,7 +1334,9 @@ function Stage4Marking({
           </GlassButton>
         }
       >
-        <div className="flex min-h-0 w-full flex-col gap-6 lg:flex-row lg:items-start">
+        {/* flex-1 + max-h-full בכרטיסים: הכרטיס לא גבוה מהאזור, הכותרת שלו
+            נשארת במקום ורק השורות גוללות בתוכו (קודם כל האזור נגלל והכותרת נחתכה). */}
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-6 lg:flex-row lg:items-start">
           <PhraseColumn title="חוזקות שזוהו" color="green" phrases={strengths} />
           <PhraseColumn title="חסמים שזוהו" color="red" phrases={blockers} />
         </div>
@@ -1328,7 +1443,7 @@ function Stage4Marking({
           ref={paperRef}
           className="relative w-full rounded-xl p-6 lg:p-8"
           style={{
-            background: "linear-gradient(180deg, #f8fffd 0%, #e9f7f4 100%)",
+            background: "linear-gradient(180deg, #fffcfa 0%, #f8efea 100%)",
             boxShadow: "inset 0 2px 20px -8px rgba(8, 48, 45, 0.35)",
             touchAction: "none",
             // סמן העכבר עצמו הופך למכחול בצבע הכלי הפעיל - כדי שיהיה ברור על מה
@@ -1345,7 +1460,7 @@ function Stage4Marking({
               חדות וקריאות במלואן, גם כשהרקע הצבוע מתחתן מלא/חזק ולא שקוף. */}
           <p
             ref={paperTextRef}
-            className="relative z-10 leading-loose text-[#08302d] select-none"
+            className="relative z-10 leading-loose text-[#283d5b] select-none"
             style={{ fontSize: `${paperFontPx}px` }}
           >
             {wordGroups.map((chars, wi) => (

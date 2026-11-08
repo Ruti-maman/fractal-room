@@ -52,12 +52,21 @@ const MAX_ATTEMPTS = 3;
  */
 const FOREIGN_SCRIPT = /[^א-תװ-״\s\p{P}\p{S}0-9A-Za-z]/gu;
 
+/** אות לטינית שצמודה לאות עברית - באמצע מילה עברית ("לקkה"). גם זה פסול. */
+const LATIN_IN_HEBREW_WORD = /(?<=[א-תװ-״])[A-Za-z]+|[A-Za-z]+(?=[א-תװ-״])/g;
+
 function hasForeignScript(text: string): boolean {
-  return new RegExp(FOREIGN_SCRIPT.source, "u").test(text.normalize("NFKC"));
+  const t = text.normalize("NFKC");
+  return new RegExp(FOREIGN_SCRIPT.source, "u").test(t) || new RegExp(LATIN_IN_HEBREW_WORD.source).test(t);
 }
 
 function stripForeignScript(text: string): string {
-  return text.normalize("NFKC").replace(FOREIGN_SCRIPT, "").replace(/\s{2,}/g, " ").trim();
+  return text
+    .normalize("NFKC")
+    .replace(FOREIGN_SCRIPT, "")
+    .replace(LATIN_IN_HEBREW_WORD, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 async function askGemini(prompt: string): Promise<FunctioningPictureData> {

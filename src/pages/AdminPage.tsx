@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { startNewWorkshop } from "../lib/workshopActions";
+import { exportWorkshopData, type ExportFormat } from "../lib/exportWorkshop";
 import { useLiteEffects } from "../hooks/useTheme";
 import { setTapSoundEnabled, tapSoundEnabled } from "../lib/tapFeedback";
 import { BackgroundLayers } from "../components/ui/AppBackground";
@@ -34,6 +35,22 @@ function AdminPage() {
   const { lite, setLite } = useLiteEffects();
   const [tapSound, setTapSound] = useState(tapSoundEnabled);
   const toast = useToast();
+  const [exporting, setExporting] = useState<ExportFormat | null>(null);
+  // "סדנה חדשה" מוחקת הכול - אחרי ייצוא מוצלח מסמנים את זה, כדי שהאישור
+  // יוכל להזכיר אם עוד לא יוצא כלום בביקור הזה בדף.
+  const [exportedThisVisit, setExportedThisVisit] = useState(false);
+
+  async function handleExport(format: ExportFormat) {
+    setExporting(format);
+    const { error, count } = await exportWorkshopData(format);
+    setExporting(null);
+    if (error) {
+      toast(`הייצוא נכשל: ${error}`, { tone: "danger" });
+      return;
+    }
+    setExportedThisVisit(true);
+    toast(`הקובץ ירד (${count} פריטים)`, { tone: "ok" });
+  }
 
   async function handleConfirm() {
     setWorking(true);
@@ -75,6 +92,50 @@ function AdminPage() {
           <h1 className="glass-title text-5xl">חדר פרקטל</h1>
           <p className="text-ink-2 text-lg">הפעלת סדנה והגדרות המסכים בחדר</p>
         </header>
+
+        {/* --- ייצוא נתונים --- לפני "סדנה חדשה", כי זה מה שעושים קודם */}
+        <section
+          className="glass glass-brick glass-card relative overflow-hidden"
+          style={{ animation: "glass-in var(--ds-dur-slow) 60ms var(--ds-ease) both" }}
+        >
+          <div className="flex flex-col gap-4 text-center">
+            <div className="glass glass-icon-btn glass-icon-btn-lg text-accent-soft mx-auto">
+              <Icon name="download" size={30} />
+            </div>
+            <h2 className="text-ink text-2xl font-extrabold">ייצוא נתוני הסדנה</h2>
+            <p className="text-ink-2 leading-relaxed">
+              כל מה שהקבוצות הזינו: שמות, משתתפות, השראות, סימונים, מסקנות,
+              פתרונות, דירוגים וקישורים להקלטות.
+            </p>
+
+            <div className="mt-2 flex flex-wrap justify-center gap-3">
+              <GlassButton
+                variant="primary"
+                size="lg"
+                icon="download"
+                onClick={() => handleExport("csv")}
+                loading={exporting === "csv"}
+                disabled={exporting !== null}
+              >
+                טבלה לאקסל
+              </GlassButton>
+              <GlassButton
+                variant="glass"
+                size="lg"
+                icon="save"
+                onClick={() => handleExport("json")}
+                loading={exporting === "json"}
+                disabled={exporting !== null}
+              >
+                גיבוי מלא
+              </GlassButton>
+            </div>
+            <p className="text-ink-3 text-sm leading-relaxed">
+              הטבלה נפתחת באקסל או ב-Google Sheets. הגיבוי המלא שומר את הנתונים
+              הגולמיים, למקרה שיהיה צורך לשחזר או לנתח אותם.
+            </p>
+          </div>
+        </section>
 
         {/* --- סדנה חדשה --- */}
         <section
@@ -206,7 +267,11 @@ function AdminPage() {
         open={confirmOpen}
         tone="danger"
         title="לפתוח סדנה חדשה?"
-        description="שלושת המסכים יתאפסו לשלב 1, וכל הנתונים של ההפעלות הקודמות יימחקו לצמיתות."
+        description={
+          exportedThisVisit
+            ? "שלושת המסכים יתאפסו לשלב 1, וכל הנתונים של ההפעלות הקודמות יימחקו לצמיתות."
+            : "שלושת המסכים יתאפסו לשלב 1, וכל הנתונים של ההפעלות הקודמות יימחקו לצמיתות. עוד לא ייצאתן את הנתונים - אם זו הייתה סדנה אמיתית, כדאי לבטל ולייצא קודם."
+        }
         confirmLabel="כן, לפתוח סדנה חדשה"
         cancelLabel="ביטול"
         onConfirm={handleConfirm}

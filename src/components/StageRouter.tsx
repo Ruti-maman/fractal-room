@@ -214,13 +214,17 @@ function StageRouter({
         content={stage.content as unknown as Stage7Content}
         onAdvance={onAdvance}
       />
-    ) : stage.stage_number === 8 ? (
+    ) : stage.stage_number === 8 || stage.stage_number === 9 ? (
+      // שלב 8 - טקסט המסר; שלב 9 - הכרזת המנצחת וטקסט הסיום (לבקשת הלקוחה)
       <Stage8Winner
+        key={stage.stage_number}
         workshopId={workshopId}
         myGroup={myGroup}
         allGroups={allGroups}
         content={stage.content as unknown as Stage8Content}
         onAdvance={onAdvance}
+        part={stage.stage_number === 9 ? "winner" : "reflection"}
+        stageNumber={stage.stage_number}
       />
     ) : stage.stage_number === 10 ? (
       <Stage10Principles workshopId={workshopId} myGroup={myGroup} />
@@ -234,9 +238,9 @@ function StageRouter({
     );
 
   // סולם ההשראות מוצג מכאן, גלובלית לכל קומפוננטות השלב (לא כפול בכל אחת
-  // בנפרד) - לפי בקשת הלקוחה: משלב 4 (שקף 6) ועד סוף הסדנה. שלב 9 מוחרג כי
-  // הוא לא מוצג על המסך בכלל (שאלון שממולא מאחורי הקלעים, ראו content שלו).
-  const showInspirationsLadder = stage.stage_number >= 4 && stage.stage_number !== 9;
+  // בנפרד) - לפי בקשת הלקוחה: משלב 4 (שקף 6) ועד סוף הסדנה, כולל שלב 9
+  // (הכרזת המנצחת - קודם שלב 9 היה שאלון נסתר, והוחרג מכאן).
+  const showInspirationsLadder = stage.stage_number >= 4;
 
   // "מסקנה מעשית" (תמונת התפקוד שנוסחה ב-AI בשלב 4) מלווה את כל השלבים
   // הבאים - החל משלב 5 ואילך, לא בשלב 4 עצמו (שם היא מוצגת בתוך המסך

@@ -99,7 +99,7 @@ function GroupBadge({ myGroup, screenNumber }: { myGroup: Group; screenNumber: n
         onClick={() => setOpen(true)}
         aria-expanded={open}
         aria-label={`${myGroup.name ?? `מסך ${screenNumber}`} - הצגת המשתתפות`}
-        className="glass glass-raised glass-pill gap-3 py-2.5 ps-3.5 pe-5 text-start"
+        className="glass glass-raised glass-pill btn-rect gap-3 py-2.5 ps-3.5 pe-5 text-start"
       >
         <span
           aria-hidden="true"
@@ -178,7 +178,7 @@ export function BackButton({ onClick }: { onClick: () => void }) {
       type="button"
       title="חזרה לשלב הקודם"
       onClick={onClick}
-      className="glass glass-interactive glass-3d glass-pill text-ink-2 hover:text-ink gap-2 px-4 py-2 text-sm font-bold"
+      className="glass glass-interactive glass-3d glass-pill btn-rect text-ink-2 hover:text-ink gap-2 px-4 py-2 text-sm font-bold"
     >
       <Icon name="arrowBack" size={16} />
       <span className="hidden sm:inline">חזרה לשלב הקודם</span>

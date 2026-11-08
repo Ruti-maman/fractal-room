@@ -26,7 +26,7 @@ import LightTrails from "./LightTrails";
  * האווירות האפשריות.
  *  deep      - ברירת המחדל: מים עמוקים עם אדוות אור.
  *  dawn      - אור שעולה מלמטה, גרגרים רבים. לפתיחה.
- *  ripple    - דגש על האדוות והבועות. למסכי הזדהות והמתנה.
+ *  ripple    - דגש על האדוות. למסכי הזדהות והמתנה.
  *  radiant   - קרניים שיוצאות ממרכז המסך. לשמש האסוציאציות.
  *  quiet     - כמעט ריק. למסכים שבהם התוכן צריך את כל תשומת הלב.
  *  tide      - גלי אור אופקיים שזורמים. לדיון ולפתרונות.
@@ -60,42 +60,11 @@ const MOTES = Array.from({ length: 12 }, (_, i) => ({
   delay: Math.round(seeded(i, 27.3) * 14),
 }));
 
-const BUBBLES = Array.from({ length: 10 }, (_, i) => ({
-  left: Math.round(seeded(i, 33.7) * 92) + 4,
-  size: 8 + Math.round(seeded(i, 61.3) * 26),
-  duration: 22 + Math.round(seeded(i, 17.9) * 20),
-  delay: Math.round(seeded(i, 55.1) * 24),
-  sway: Math.round(seeded(i, 88.2) * 60 - 30),
-}));
-
 /*
- * בועות מרחפות. כל אחת בעומק אחר (`depth`: 0 רחוק, 1 קרוב), וזה מה
- * ששולט בגודל, בחדות ובעוצמת הנצנוץ - כך שהחלל נקרא כעמוק ולא כאוסף
- * עיגולים על רקע.
- *
- * החליפו ריבועים מעוגלים שנראו כמו לבנים מרחפות, ואת הענפים הבוטניים
- * שהיו פה קודם: שניהם היו "חפצים" על הדף. בועה היא קלילה, היא שייכת
- * לחלל, והיא גם החומר השני של המערכת (ראו .bubble ב-glass.css).
+ * הכדורים המרחפים (ORBS) והבועות העולות (BUBBLES) שהיו כאן הוסרו מכל
+ * הפרויקט לבקשת הלקוחה (2026-10-25). הרקע נשען עכשיו על כתמי האור,
+ * שבילי האור, וגרגרי האור הזעירים.
  */
-const ORBS = Array.from({ length: 12 }, (_, i) => {
-  const depth = 0.18 + seeded(i, 51.3) * 0.8;
-  return {
-    depth,
-    // מרוכזות בשוליים הימניים והשמאליים, רחוק ממרכז המסך
-    left: i % 2 === 0 ? 2 + seeded(i, 19.1) * 16 : 82 + seeded(i, 23.7) * 15,
-    top: 8 + seeded(i, 67.5) * 78,
-    size: Math.round(30 + depth * 96),
-    // תנועה מורגשת שנותנת למסך "חיים" של משחק, אבל רכה (ease-in-out,
-    // הלוך-ושוב): 10-18 שניות לכיוון, עד כ-140px לרוחב ו-160px לגובה.
-    duration: 10 + Math.round(seeded(i, 88.9) * 8),
-    // delay שלילי: כל בועה מתחילה באמצע המסלול שלה, ולא כולן יחד מאפס
-    delay: -Math.round(seeded(i, 35.2) * 12),
-    dx: Math.round(seeded(i, 72.4) * 280 - 140),
-    dy: Math.round(seeded(i, 44.8) * 320 - 160),
-    spinFrom: Math.round(seeded(i, 15.6) * 16 - 8),
-    spinTo: Math.round(seeded(i, 91.2) * 18 - 6),
-  };
-});
 
 const STARS = Array.from({ length: 46 }, (_, i) => ({
   left: Math.round(seeded(i, 21.4) * 98) + 1,
@@ -158,24 +127,6 @@ export function BackgroundLayers({ variant = "deep" }: Pick<Props, "variant">) {
           />
         ))}
 
-      {/* בועות שעולות - אווירות מימיות */}
-      {(variant === "ripple" || variant === "tide") &&
-        BUBBLES.map((bubble, i) => (
-          <span
-            key={i}
-            className="bg-bubble"
-            style={{
-              insetInlineStart: `${bubble.left}%`,
-              bottom: "-8%",
-              width: bubble.size,
-              height: bubble.size,
-              ["--sway" as string]: `${bubble.sway}px`,
-              animationDuration: `${bubble.duration}s`,
-              animationDelay: `${bubble.delay}s`,
-            }}
-          />
-        ))}
-
       {/* גרגרי אור צפים - הכי הרבה בפתיחה, בכלל לא במסך שקט */}
       {!quiet &&
         MOTES.slice(0, variant === "dawn" ? MOTES.length : 7).map((mote, i) => (
@@ -193,29 +144,7 @@ export function BackgroundLayers({ variant = "deep" }: Pick<Props, "variant">) {
           />
         ))}
 
-      {/* הכדורים מופיעים בכל המסכים, כולל השקטים (שלב 4) - לבקשת הלקוחה */}
-      {ORBS.map((orb, i) => (
-          <span
-            key={i}
-            className={`bubble bubble--${(i % 5) + 1} absolute`}
-            style={{
-              insetInlineStart: `${orb.left}%`,
-              top: `${orb.top}%`,
-              width: orb.size,
-              height: orb.size,
-              ["--depth" as string]: orb.depth,
-              opacity: 0.35 + orb.depth * 0.5,
-              filter: `blur(${(1 - orb.depth) * 1.8}px)`,
-              ["--dx" as string]: `${orb.dx}px`,
-              ["--dy" as string]: `${orb.dy}px`,
-              ["--spin-from" as string]: `${orb.spinFrom}deg`,
-              ["--spin-to" as string]: `${orb.spinTo}deg`,
-              // השם והחזרה הלוך-ושוב: קודם היו כאן רק duration ו-delay, בלי
-              // animation-name - והבועות עמדו במקום.
-              animation: `orb-drift ${orb.duration}s ease-in-out ${orb.delay}s infinite alternate`,
-            }}
-          />
-        ))}
+      {/* אין יותר כדורים/בועות מרחפים ברקע - הוסרו מכל הפרויקט לבקשת הלקוחה */}
 
       {/* הכהיית קצוות - ממקדת את העין פנימה */}
       <div className="bg-vignette" />

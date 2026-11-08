@@ -52,6 +52,8 @@ interface Props {
   onConfirm?: () => void;
   confirmLoading?: boolean;
   cancelLabel?: string;
+  /** בלי כפתור "סגירה" בתחתית - כשכפתור האישור כבר סוגר (מונע כפילות). ה-× נשאר. */
+  hideCancel?: boolean;
   onClose?: () => void;
   /** false = אי אפשר לסגור ברקע/Escape. לפעולות הרסניות ולמצבי חובה. */
   dismissable?: boolean;
@@ -73,6 +75,7 @@ function GlassModal({
   onConfirm,
   confirmLoading = false,
   cancelLabel = "סגירה",
+  hideCancel = false,
   onClose,
   dismissable = true,
   className,
@@ -199,7 +202,7 @@ function GlassModal({
 
         {(confirmLabel || onClose) && (
           <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
-            {onClose && (
+            {onClose && !hideCancel && (
               <GlassButton onClick={onClose} block className="sm:w-auto">
                 {cancelLabel}
               </GlassButton>

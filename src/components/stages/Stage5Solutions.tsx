@@ -55,17 +55,23 @@ function AnswerMark({ ok }: { ok: boolean }) {
       className="relative mx-auto mb-7 flex h-28 w-28 items-center justify-center"
       style={ok ? undefined : { animation: "shake-x 0.5s ease-in-out" }}
     >
-      {/* טבעות שמתפרצות - רק בתשובה נכונה */}
+      {/* מסגרות מעוין שמתפרצות - רק בתשובה נכונה. ריבוע מסובב ב-45 מעלות
+          בעטיפה נפרדת, כי האנימציה עצמה דורסת את ה-transform של האלמנט */}
       {ok &&
         [0, 1, 2].map((i) => (
           <span
             key={i}
             aria-hidden="true"
-            className="border-accent absolute inset-0 rounded-full border-2"
-            style={{
-              animation: `ring-out 1.1s ${i * 180}ms var(--ds-ease) both`,
-            }}
-          />
+            className="absolute inset-[15%]"
+            style={{ transform: "rotate(45deg)" }}
+          >
+            <span
+              className="border-accent absolute inset-0 border-2"
+              style={{
+                animation: `ring-out 1.1s ${i * 180}ms var(--ds-ease) both`,
+              }}
+            />
+          </span>
         ))}
 
       {/* הילה רכה מאחורי הסימן */}
@@ -81,7 +87,7 @@ function AnswerMark({ ok }: { ok: boolean }) {
       {/* העיגול עצמו */}
       <span
         className={cx(
-          "glass relative flex h-24 w-24 items-center justify-center rounded-full",
+          "glass relative flex h-24 w-24 items-center justify-center diamond",
           ok ? "glass-active" : "text-danger",
         )}
         style={{
@@ -199,9 +205,10 @@ function Stage5Solutions({ content, onAdvance }: Props) {
            */
           confirmLabel={chosen?.correct ? "המשך" : "ננסה שוב"}
           onConfirm={chosen?.correct ? onAdvance : () => setChosen(null)}
-          onClose={chosen?.correct ? undefined : () => setChosen(null)}
-          cancelLabel="סגירה"
-          dismissable={!chosen?.correct}
+          // בלי "סגירה" ובלי ×: שניהם עשו בדיוק מה ש"ננסה שוב" עושה, ושני
+          // כפתורים עם אותה פעולה רק מבלבלים (דרישת הלקוחה)
+          onClose={undefined}
+          dismissable={false}
         >
           {/* הכותרת כתובה על כפתור הבחירה, וכאן - הטקסט הרץ (לבקשת הלקוחה) */}
           <p className="text-accent-soft mb-3 text-xl font-extrabold">{chosen?.label}</p>

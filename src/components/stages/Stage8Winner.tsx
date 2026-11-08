@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { GlassButton } from "../ui/Glass";
+import SandText from "../SandText";
 import { normalizeVotes, useRatings } from "../../hooks/useRatings";
 import type { Group } from "../../types/group";
 import { BackgroundLayers } from "../ui/AppBackground";
@@ -54,6 +55,16 @@ interface Props {
   allGroups: Group[];
   content?: Stage8Content;
   onAdvance: () => void;
+  /**
+   * איזה חלק מוצג (דרישת הלקוחה: "הניצחון אמור להיות שלב 9"):
+   *   reflection - שלב 8: "הגענו לשלב הגמר...", והכפתור "ויש לנו גם מנצחות"
+   *                עובר לשלב 9.
+   *   winner     - שלב 9: הכרזת המנצחת, ואחריה "זה נחמד לנצח בסימולטור...",
+   *                ומשם לשלב 10 (העיקרון שה-AI מנסח).
+   */
+  part?: "reflection" | "winner";
+  /** מספר השלב לתג העגול. */
+  stageNumber?: number;
 }
 
 /*
@@ -89,7 +100,7 @@ interface Props {
  * 60 פתיתים זה מספיק לתחושת חגיגה בלי להעמיס על הפלזמות (סעיף 2
  * ב-CLAUDE.md - דפדפן שעשוי להיות ישן).
  */
-const SHARD_COLORS = ["#c7f5f4", "#a7e9e5", "#84c7c1", "#4e8f8b", "#ffffff"];
+const SHARD_COLORS = ["#f5300f", "#f26a50", "#f4c7bc", "#c8955f", "#283d5b"];
 
 const CONFETTI = Array.from({ length: 60 }, (_, i) => {
   const rand = (seed: number) => (Math.sin(i * seed) + 1) / 2;
@@ -146,15 +157,15 @@ function GlassTrophy() {
       <defs>
         {/* גוף הזכוכית - בהיר למעלה, מתעבה כלפי מטה */}
         <linearGradient id="tr-body" x1="0" y1="0" x2="0.3" y2="1">
-          <stop offset="0%" stopColor="#e6fdfc" stopOpacity={0.95} />
-          <stop offset="35%" stopColor="#a7e9e5" stopOpacity={0.85} />
-          <stop offset="75%" stopColor="#84c7c1" stopOpacity={0.8} />
-          <stop offset="100%" stopColor="#4e8f8b" stopOpacity={0.9} />
+          <stop offset="0%" stopColor="#fbe9e4" stopOpacity={0.95} />
+          <stop offset="35%" stopColor="#f4c7bc" stopOpacity={0.9} />
+          <stop offset="75%" stopColor="#f3846e" stopOpacity={0.9} />
+          <stop offset="100%" stopColor="#e8462a" stopOpacity={0.95} />
         </linearGradient>
         {/* הקצה העבה - הבסיס והשפה */}
         <linearGradient id="tr-edge" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#c7f5f4" />
-          <stop offset="100%" stopColor="#316768" />
+          <stop offset="0%" stopColor="#d8aa78" />
+          <stop offset="100%" stopColor="#a46f3d" />
         </linearGradient>
         {/* הברק על הזכוכית */}
         <linearGradient id="tr-spec" x1="0" y1="0" x2="1" y2="1">
@@ -191,7 +202,7 @@ function GlassTrophy() {
         rx="26"
         ry="4"
         fill="none"
-        stroke="#e6fdfc"
+        stroke="#fbe9e4"
         strokeWidth="1.2"
         opacity="0.55"
       />
@@ -199,18 +210,18 @@ function GlassTrophy() {
       {/* ברק ספקולרי על הדופן */}
       <path d="M38 20c-3 15-1 28 8 37-11-5-17-21-14-37z" fill="url(#tr-spec)" />
       {/* פס שבירה בקצה הימני, כמו בלבנה */}
-      <path d="M84 20c1 14 0 25-5 33" stroke="#e6fdfc" strokeWidth="1.5" fill="none" opacity="0.4" />
+      <path d="M84 20c1 14 0 25-5 33" stroke="#fbe9e4" strokeWidth="1.5" fill="none" opacity="0.4" />
 
       {/* רגל ובסיס */}
       <rect x="54" y="72" width="12" height="20" fill="url(#tr-edge)" opacity="0.9" />
       <rect x="40" y="92" width="40" height="9" rx="3" fill="url(#tr-body)" />
       <rect x="32" y="101" width="56" height="13" rx="4" fill="url(#tr-edge)" opacity="0.95" />
-      <rect x="34" y="102.5" width="52" height="3" rx="1.5" fill="#e6fdfc" opacity="0.4" />
+      <rect x="34" y="102.5" width="52" height="3" rx="1.5" fill="#fbe9e4" opacity="0.4" />
 
       {/* כוכב חרוט בזכוכית */}
       <path
         d="M60 30l4.2 8.5 9.4 1.4-6.8 6.6 1.6 9.3-8.4-4.4-8.4 4.4 1.6-9.3-6.8-6.6 9.4-1.4z"
-        fill="#f4feff"
+        fill="#ffffff"
         opacity="0.75"
       />
     </svg>
@@ -238,6 +249,8 @@ function LinesCard({ lines }: { lines: Line[] }) {
     <div className="glass glass-brick glass-raised relative flex w-full max-w-3xl flex-col items-center gap-[0.6vh] rounded-2xl px-10 py-[2.6vh] text-center">
       {lines.map((line, i) => {
         const last = i === lines.length - 1;
+        // השורה המסכמת ("כי מה שחוזר בקטן — בסוף נראה בגדול") - טקסט רגיל
+        // בגרדיאנט הקשת. אפקט ה"נוף" (קווי אופק) הוסר לבקשת הלקוחה.
         return (
           <p
             key={i}
@@ -268,9 +281,17 @@ function LinesCard({ lines }: { lines: Line[] }) {
 */
 type Phase = "reflection" | "winner" | "closing";
 
-function Stage8Winner({ workshopId, myGroup, allGroups, content }: Props) {
+function Stage8Winner({
+  workshopId,
+  myGroup,
+  allGroups,
+  content,
+  onAdvance,
+  part = "reflection",
+  stageNumber = 8,
+}: Props) {
   const { rows } = useRatings(workshopId, myGroup.id);
-  const [phase, setPhase] = useState<Phase>("reflection");
+  const [phase, setPhase] = useState<Phase>(part === "winner" ? "winner" : "reflection");
   const t = {
     kicker: content?.kicker || DEFAULTS.kicker,
     kicker_sub: content?.kicker_sub || DEFAULTS.kicker_sub,
@@ -327,7 +348,7 @@ function Stage8Winner({ workshopId, myGroup, allGroups, content }: Props) {
       className="relative flex flex-none flex-col items-center gap-2"
       style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
     >
-      <LevelBadge value={8} progress={0.8} size={88} />
+      <LevelBadge value={stageNumber} progress={stageNumber / 10} size={88} />
       <div className="flex flex-wrap items-center justify-center gap-3">
         <span className="glass glass-chip text-accent-soft gap-2">
           <Icon name="trophy" size={15} />
@@ -345,12 +366,15 @@ function Stage8Winner({ workshopId, myGroup, allGroups, content }: Props) {
       <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-[2vh] overflow-hidden px-6 pt-20 pb-8 text-center">
         <BackgroundLayers variant="night" />
         {header}
-        <LinesCard key={phase} lines={isReflection ? t.reflection_lines : t.closing_lines} />
-        {isReflection && (
-          <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={() => setPhase("winner")}>
-            {t.winners_label}
-          </GlassButton>
-        )}
+        <LinesCard
+          key={phase}
+          lines={isReflection ? t.reflection_lines : t.closing_lines}
+        />
+        {/* שלב 8: "ויש לנו גם מנצחות" עובר לשלב 9 (ההכרזה).
+            שלב 9, אחרי טקסט הסיום: "להמשך" עובר לשלב 10. */}
+        <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={onAdvance}>
+          {isReflection ? t.winners_label : "להמשך"}
+        </GlassButton>
       </main>
     );
   }
@@ -395,7 +419,7 @@ function Stage8Winner({ workshopId, myGroup, allGroups, content }: Props) {
           className="pointer-events-none absolute hidden h-[26rem] w-[26rem] opacity-50 motion-safe:block"
           style={{
             background:
-              "conic-gradient(from 0deg, rgba(199,245,244,0.5) 0deg, transparent 22deg, rgba(167,233,229,0.4) 45deg, transparent 67deg, rgba(199,245,244,0.45) 90deg, transparent 112deg, rgba(167,233,229,0.4) 135deg, transparent 157deg, rgba(199,245,244,0.45) 180deg, transparent 202deg, rgba(167,233,229,0.4) 225deg, transparent 247deg, rgba(199,245,244,0.45) 270deg, transparent 292deg, rgba(167,233,229,0.4) 315deg, transparent 337deg)",
+              "conic-gradient(from 0deg, rgba(242,106,80,0.4) 0deg, transparent 22deg, rgba(200,149,95,0.35) 45deg, transparent 67deg, rgba(242,106,80,0.35) 90deg, transparent 112deg, rgba(200,149,95,0.35) 135deg, transparent 157deg, rgba(242,106,80,0.35) 180deg, transparent 202deg, rgba(200,149,95,0.35) 225deg, transparent 247deg, rgba(242,106,80,0.35) 270deg, transparent 292deg, rgba(200,149,95,0.35) 315deg, transparent 337deg)",
             maskImage: "radial-gradient(circle, #000 18%, rgba(0,0,0,0.5) 45%, transparent 72%)",
             WebkitMaskImage:
               "radial-gradient(circle, #000 18%, rgba(0,0,0,0.5) 45%, transparent 72%)",
@@ -444,15 +468,13 @@ function Stage8Winner({ workshopId, myGroup, allGroups, content }: Props) {
       {winner && hasVotes ? (
         <div className="relative flex flex-col items-center gap-2">
           <p className="text-ink-3 text-base font-bold">הקבוצה המנצחת</p>
-          <h1
-            className="glass-title text-5xl sm:text-6xl"
-            style={{
-              textShadow: "0 0 50px var(--ds-glow-soft)",
-              animation: "winner-in 0.9s 0.2s var(--ds-ease-spring) both",
-            }}
-          >
-            {winner.group.name ?? `מסך ${winner.group.screen_number}`}
-          </h1>
+          {/* שם המנצחת נשפך כחול מלמעלה (SandText) - לבקשת הלקוחה, מאפקט
+              "חול" שהיא שלחה. ה-h1 נשאר לקוראי מסך. */}
+          <h1 className="sr-only">{winner.group.name ?? `מסך ${winner.group.screen_number}`}</h1>
+          <SandText
+            text={winner.group.name ?? `מסך ${winner.group.screen_number}`}
+            className="h-[min(9rem,15vh)] w-[min(64rem,80vw)]"
+          />
           {/* מספר הכוכבים ו"להמשך" באותה שורה - כל שורה שנחסכת כאן היא
               מקום לפודיום, שאחרת נחתך בתחתית המסך */}
           <div className="mt-1 flex flex-wrap items-center justify-center gap-3">

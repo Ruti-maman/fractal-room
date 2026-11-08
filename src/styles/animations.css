@@ -260,6 +260,93 @@
   }
 }
 
+/* חלוניות הטיפים בשלב 2 (TipBubbles): קפיצה פנימה עם קפיץ - גדלה מעבר
+   לגודל ומתיישבת, כמו בועה שצצה - וריחוף עדין אחר כך. */
+/* צ'אט הטיפים בשלב 6: שלוש נקודות "מקלידה..." קופצות בתורן */
+@keyframes chat-typing {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+/* בועת צ'אט נכנסת מהצד שלה (--from: כיוון ההחלקה) וגדלה מהזנב */
+@keyframes chat-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--from, 0)) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes tip-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) translateY(30px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.06) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* השביל בפופ-אפ הטיפים (TipBubbles): נחשף מימין לשמאל, לאורך המסלול */
+@keyframes tips-trail {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes tip-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-0.6deg);
+  }
+}
+
+/* פס הזמן מתחת לטיפ הפעיל בשלב 2 (NameTipsSpotlight) */
+@keyframes tip-progress {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* טקסט ארוך בסולם ההשראות (MarqueeText) - זז הלוך וחזור כדי לחשוף את סופו.
+   ב-RTL הטקסט מתחיל מימין, וסופו נסתר משמאל - לכן זז ימינה. 15%/85%
+   הם עצירה קצרה בכל קצה. */
+@keyframes marquee-rtl {
+  0%,
+  15% {
+    transform: translateX(0);
+  }
+  85%,
+  100% {
+    transform: translateX(var(--marquee-distance));
+  }
+}
+
 /* ה-V הגדול במסך ההמתנה לשלב 8 (BigCheck): הבזק אור שרץ לאורך הקו,
    והילה צבעונית שנושמת. ההבזק מתחיל מחוץ לקו (18) ויוצא מצדו השני (-140). */
 @keyframes check-shine {
@@ -280,11 +367,11 @@
 @keyframes check-glow {
   0%,
   100% {
-    filter: drop-shadow(0 0 6px rgba(115, 104, 201, 0.35));
+    filter: drop-shadow(0 0 6px rgba(40, 61, 91, 0.3));
     transform: scale(1);
   }
   50% {
-    filter: drop-shadow(0 0 18px rgba(14, 156, 147, 0.6));
+    filter: drop-shadow(0 0 18px rgba(242, 106, 80, 0.6));
     transform: scale(1.05);
   }
 }

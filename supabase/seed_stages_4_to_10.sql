@@ -37,10 +37,14 @@ select id, 8, 'shared', true, null,
   '{"description": "כאן תהיה הצבעה שיתופית ודירוג בכוכבים, עם הכרזת הקבוצה המנצחת ואפקט קולי."}'::jsonb
 from programs where name = 'תוכנית לדוגמה'
 union all
-select id, 9, 'independent', false, null,
-  '{"description": "שלב אופציונלי: שאלון סיכום שממולא מאחורי הקלעים (לא מוצג על המסך) - רק אם לא נצליח לייצא את כל הסדנה."}'::jsonb
+-- שלב 8 = טקסט המסר ("הגענו לשלב הגמר"), שלב 9 = הכרזת המנצחת וטקסט הסיום
+-- (דרישת הלקוחה, 2026-10-19). שניהם מוצגים ב-Stage8Winner (part לפי המספר).
+select id, 9, 'independent', false, 10,
+  '{}'::jsonb
 from programs where name = 'תוכנית לדוגמה'
 union all
-select id, 10, 'shared', true, null,
+-- עצמאי ובלי שער סנכרון (דרישת הלקוחה): מסך ההמתנה כאן היה כפילות של זה
+-- שבשלב 8. כל הצוותים כבר עברו את שער שלב 8, כך שהנתונים של כולן קיימים.
+select id, 10, 'independent', false, 10,
   '{}'::jsonb  -- Stage10Principles לא קורא content בכלל, העקרונות נשמרים ב-responses.
 from programs where name = 'תוכנית לדוגמה';

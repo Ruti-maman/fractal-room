@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Stage6Content, Stage6Line } from "../../types/stage6Content";
 import type { Group } from "../../types/group";
 import { useDiscussionStart } from "../../hooks/useDiscussionStart";
 import StageShell from "../StageShell";
 import Timer from "../Timer";
-import TipPopups, { type Tip, type TipSlot } from "../TipPopups";
+import type { Tip } from "../TipPopups";
+import TipChat from "../TipChat";
 import FractalSentence from "../FractalSentence";
 import { GlassButton } from "../ui/Glass";
 import { cx } from "../../lib/cx";
@@ -18,8 +19,9 @@ import { cx } from "../../lib/cx";
  *  שני מסכים, לפי התסריט של הלקוחה:
  *
  *  1. **הוראות** - כרטיס עם השאלה, הזמן והתוצר הנדרש, "כלל הפרקטל" באותו
- *     עיצוב כמו בשלב 2 (FractalSentence), וחמשת הטיפים לדיון טוב בחלוניות
- *     שקופצות משני הצדדים (TipPopups, כמו בשלב 2). הכפתור "בואו נדבר על זה"
+ *     עיצוב כמו בשלב 2 (FractalSentence), וחמשת הטיפים לדיון טוב בפופ-אפ
+ *     בצורת צ'אט של דיון (TipChat). הפרקטל נכנס רק אחרי שסוגרים
+ *     את הפופ-אפ, לא במקביל (דרישת הלקוחה). הכפתור "בואו נדבר על זה"
  *     עובר למסך הדיון.
  *  2. **דיון** - טבעת טיימר גדולה במרכז, 10 דקות לעריכת הדיון.
  *
@@ -54,24 +56,15 @@ const DEFAULT_TIPS: Tip[] = [
 const DEFAULTS = {
   start_label: "בואו נדבר על זה",
   tips_title: "טיפים לדיון טוב",
+  tips_confirm_label: "הבנו!",
   fractal_title: "כלל הפרקטל",
   fractal_text: "תשובה טובה לא סוגרת את הדיון. היא פותחת עוד שכבה.",
   discussion_minutes: 10,
   discussion_label: "זמן לעריכת הדיון",
 };
 
-/*
-  מיקומי החלוניות בשלב הזה: בצד שמאל יושב סולם ההשראות (למעלה) ומד
-  ההתקדמות (למטה), ולכן שתי החלוניות השמאליות נכנסות ביניהם. בצד ימין -
-  מתחת לתג הקבוצה ומעל הטיימר.
-*/
-const STAGE6_TIP_SLOTS: TipSlot[] = [
-  { side: "right", top: "26%" },
-  { side: "left", top: "42%" },
-  { side: "right", top: "42%" },
-  { side: "left", top: "58%" },
-  { side: "right", top: "58%" },
-];
+/** גודל תיבת משפט הפרקטל - משותף למשפט עצמו ולמקום ששומר לו עד שהוא נכנס. */
+const FRACTAL_BOX = "h-[min(8rem,13vh)] min-h-10 w-full flex-[0_1_auto]";
 
 interface Props {
   workshopId: string;
@@ -82,11 +75,40 @@ interface Props {
 
 function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
   const { startedAt, loading, start } = useDiscussionStart(workshopId, myGroup.id);
-  const [hiddenTips, setHiddenTips] = useState<number[]>([]);
-
   const t = { ...DEFAULTS, ...content };
   const intro = content.intro_lines?.length ? content.intro_lines : DEFAULT_INTRO;
   const tips = content.tips?.length ? content.tips : DEFAULT_TIPS;
+
+  // דרישת הלקוחה: קודם הטיפים בחלונית פופ-אפ (צ'אט של דיון),
+  // ורק כשסוגרים אותה נכנס כלל הפרקטל - לא במקביל.
+  const [tipsOpen, setTipsOpen] = useState(false);
+  const [fractalReady, setFractalReady] = useState(false);
+  useEffect(() => {
+    if (loading || startedAt) return;
+    // רגע קצר לפני הקפיצה, כדי שהשאלה בכרטיס תספיק להיראות מאחור
+    const id = window.setTimeout(() => setTipsOpen(true), 900);
+    return () => window.clearTimeout(id);
+  }, [loading, startedAt]);
+
+  function closeTips() {
+    setTipsOpen(false);
+    setFractalReady(true);
+  }
+
+  /* הפופ-אפ ב-portal: StageShell מונפש ב-transform, ו-fixed בתוך הורה עם
+     transform נמדד ביחס להורה ולא לחלון (באג 6 ב-CLAUDE.md). משותף לשני
+     המסכים - אפשר לפתוח אותו שוב גם באמצע הדיון. */
+  const tipsPopup = createPortal(
+    <TipChat open={tipsOpen} onClose={closeTips} title={t.tips_title} tips={tips} confirmLabel={t.tips_confirm_label} />,
+    document.body,
+  );
+
+  // פותח שוב את הטיפים אחרי שנסגרו (דרישת הלקוחה)
+  const tipsButton = (
+    <GlassButton size="lg" icon="lightbulb" onClick={() => setTipsOpen(true)}>
+      {t.tips_title}
+    </GlassButton>
+  );
 
   // עד שידוע אם הדיון כבר התחיל - לא מציגות אף מסך, כדי שרענון באמצע
   // הדיון לא יהבהב לרגע את מסך ההוראות
@@ -104,11 +126,15 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
         clipContent={false}
         width="normal"
         actions={
-          <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={onAdvance}>
-            סיימנו את הדיון
-          </GlassButton>
+          <>
+            {tipsButton}
+            <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={onAdvance}>
+              סיימנו את הדיון
+            </GlassButton>
+          </>
         }
       >
+        {tipsPopup}
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-5">
           {/* השאלה נשארת מול העיניים לאורך כל הדיון */}
           <p className="text-ink max-w-3xl text-center text-2xl leading-snug font-extrabold sm:text-3xl">
@@ -136,24 +162,16 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
       clipContent={false}
       width="normal"
       actions={
-        <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={start}>
-          {t.start_label}
-        </GlassButton>
+        <>
+          {/* מופיע רק אחרי הסגירה הראשונה - לפני כן הפופ-אפ עוד בדרך */}
+          {fractalReady && tipsButton}
+          <GlassButton variant="primary" size="lg" iconAfter="arrowNext" onClick={start}>
+            {t.start_label}
+          </GlassButton>
+        </>
       }
     >
-      {/* החלוניות ב-portal: StageShell מונפש ב-transform, ו-fixed בתוך
-          הורה עם transform נמדד ביחס להורה ולא לחלון (באג 6 ב-CLAUDE.md) */}
-      {createPortal(
-        <TipPopups
-          title={t.tips_title}
-          tips={tips}
-          hidden={hiddenTips}
-          onClose={(i) => setHiddenTips((prev) => [...prev, i])}
-          slots={STAGE6_TIP_SLOTS}
-          titleTop="13%"
-        />,
-        document.body,
-      )}
+      {tipsPopup}
 
       <div className="glass glass-brick glass-raised flex min-h-0 w-full max-w-3xl flex-[0_1_auto] flex-col items-center gap-[0.6vh] rounded-2xl px-10 py-[2.4vh] text-center">
         {intro.map((line, i) => (
@@ -169,12 +187,24 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
           </p>
         ))}
 
-        {/* כלל הפרקטל - באותו עיצוב כמו בסיכום שלב 2 */}
+        {/* כלל הפרקטל - באותו עיצוב כמו בסיכום שלב 2. מופיע רק אחרי שכל
+            חלוניות הטיפים קפצו, ולא במקביל אליהן (דרישת הלקוחה). המקום שלו
+            שמור מההתחלה (invisible), כדי שהכרטיס לא יקפוץ כשהוא נכנס. */}
         <div className="mt-[1vh] flex min-h-0 w-full flex-[0_1_auto] flex-col items-center gap-1">
-          <span className="text-accent-soft flex flex-none items-center gap-2 text-lg font-extrabold">
+          <span
+            className={cx(
+              "text-accent-soft flex flex-none items-center gap-2 text-lg font-extrabold",
+              !fractalReady && "invisible",
+            )}
+            style={fractalReady ? { animation: "fade-up 0.5s var(--ds-ease) both" } : undefined}
+          >
             {t.fractal_title}
           </span>
-          <FractalSentence text={t.fractal_text} className="h-[min(8rem,13vh)] min-h-10 w-full flex-[0_1_auto]" />
+          {fractalReady ? (
+            <FractalSentence text={t.fractal_text} className={FRACTAL_BOX} />
+          ) : (
+            <div aria-hidden="true" className={FRACTAL_BOX} />
+          )}
         </div>
       </div>
     </StageShell>

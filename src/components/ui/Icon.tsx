@@ -110,6 +110,7 @@ const PATHS = {
   ],
   save: ["M5 4h11l3 3v13H5z", "M8 4v5h7V4", "M8 20v-6h8v6"],
   edit: ["m5 19 2-4 9-9 3 3-9 9z", "M4 21h6"],
+  download: ["M12 4v11", "m7 10 5 5 5-5", "M5 20h14"],
 } as const;
 
 export type IconName = keyof typeof PATHS;
