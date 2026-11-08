@@ -261,15 +261,36 @@ function Stage5Solutions({ content, onAdvance }: Props) {
               footer={
                 <span className="flex items-center gap-2">
                   לבחירה
-                  <Icon name="arrowNext" size={16} />
+                  <span style={{ animation: "swipe-sway 1.6s var(--ds-ease) infinite" }}>
+                    <Icon name="arrowNext" size={16} />
+                  </span>
                 </span>
               }
               style={{
                 animation: `glass-in var(--ds-dur-slow) ${i * 90}ms var(--ds-ease) both`,
               }}
             >
-              <p className="text-ink text-xl leading-snug font-bold sm:text-2xl">
-                {opt.label}
+              {/* "קצת יותר משחקי בטקסט" (בקשת הלקוחה, 2026-11-08): כל מילה
+                  קופצת פנימה עם הטיה, בגרדיאנט של הכותרות. אותו דבר בדיוק בכל
+                  ארבעת האריחים - שום אריח לא "בולט" יותר (הכלל הפדגוגי למעלה) */}
+              <p className="text-2xl leading-snug sm:text-3xl" aria-label={opt.label}>
+                {opt.label.split(" ").map((word, w) => (
+                  // glass-title על כל מילה ולא על הפסקה: גרדיאנט שנחתך לפי
+                  // הטקסט לא מגיע למילים שזזות בנפרד (transform)
+                  <span
+                    key={w}
+                    aria-hidden="true"
+                    className="glass-title mx-[0.13em] inline-block"
+                    style={
+                      {
+                        "--word-tilt": `${w % 2 === 0 ? -9 : 9}deg`,
+                        animation: `word-pop 0.55s ${0.25 + i * 0.09 + w * 0.08}s var(--ds-ease-spring) both`,
+                      } as React.CSSProperties
+                    }
+                  >
+                    {word}
+                  </span>
+                ))}
               </p>
             </GameTile>
           </li>

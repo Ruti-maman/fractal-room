@@ -6,13 +6,12 @@ import type { Group } from "../../types/group";
 import AutoPlayVideo from "../AutoPlayVideo";
 import StageShell from "../StageShell";
 import ZoomIntro from "../ZoomIntro";
-import FractalSentence from "../FractalSentence";
+import FractalFullscreen from "../FractalFullscreen";
 import TipBubbles from "../TipBubbles";
 import { LevelBadge } from "../ui/GameTile";
 import Icon from "../ui/Icon";
 import { GlassButton } from "../ui/Glass";
 import { InlineNotice } from "../ui/Feedback";
-import { BackgroundLayers } from "../ui/AppBackground";
 import { cx } from "../../lib/cx";
 import { playPop } from "../../lib/tapFeedback";
 
@@ -270,30 +269,9 @@ function IdentificationForm({
       {/* "כלל הפרקטל" על כל המסך: המשפט נבנה מאותיות פ-ר-ק-ט-ל קטנות, בלי
           להפוך לכתב מלא, ובסוף הבנייה עוברים לבד למסך הבא (לבקשת הלקוחה).
           portal ל-body: שכבה fixed בתוך המעבר המונפש נמדדת לא נכון (באג 6). */}
-      {celebration === "fractal" &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[70] flex flex-col items-center px-8 pt-16 pb-10"
-            style={{
-              // אטום: השכבות הדקורטיביות שקופות, ובלי רקע מלא המסך הקודם נראה מבעד
-              background: "linear-gradient(160deg, var(--ds-bg-from), var(--ds-bg-via), var(--ds-bg-to))",
-              animation: "page-fade var(--ds-dur-slow) var(--ds-ease) both",
-            }}
-          >
-            <BackgroundLayers variant="night" />
-            <h2 className="glass-title relative flex-none text-5xl lg:text-6xl">{t.fractal_title}</h2>
-            <FractalSentence
-              text={t.fractal_text}
-              letters="פרקטל"
-              solid={false}
-              grain={6}
-              once
-              onDone={onCelebrationEnd}
-              className="relative min-h-0 w-full flex-1"
-            />
-          </div>,
-          document.body,
-        )}
+      {celebration === "fractal" && (
+        <FractalFullscreen title={t.fractal_title} text={t.fractal_text} onDone={onCelebrationEnd} />
+      )}
 
       {/*
         "שיקפצו חלוניות פופאפ" (לפי האפיון): בצעד III כל טיפ קופץ כחלונית

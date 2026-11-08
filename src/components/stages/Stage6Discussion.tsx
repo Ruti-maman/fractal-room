@@ -7,7 +7,7 @@ import StageShell from "../StageShell";
 import Timer from "../Timer";
 import type { Tip } from "../TipPopups";
 import TipChat from "../TipChat";
-import FractalSentence from "../FractalSentence";
+import FractalFullscreen from "../FractalFullscreen";
 import { GlassButton } from "../ui/Glass";
 import { cx } from "../../lib/cx";
 
@@ -63,9 +63,6 @@ const DEFAULTS = {
   discussion_label: "זמן לעריכת הדיון",
 };
 
-/** גודל תיבת משפט הפרקטל - משותף למשפט עצמו ולמקום ששומר לו עד שהוא נכנס. */
-const FRACTAL_BOX = "h-[min(8rem,13vh)] min-h-10 w-full flex-[0_1_auto]";
-
 interface Props {
   workshopId: string;
   myGroup: Group;
@@ -83,6 +80,8 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
   // ורק כשסוגרים אותה נכנס כלל הפרקטל - לא במקביל.
   const [tipsOpen, setTipsOpen] = useState(false);
   const [fractalReady, setFractalReady] = useState(false);
+  /** כלל הפרקטל על מסך מלא - פעם אחת, אחרי הסגירה הראשונה של הטיפים. */
+  const [fractalShowing, setFractalShowing] = useState(false);
   useEffect(() => {
     if (loading || startedAt) return;
     // רגע קצר לפני הקפיצה, כדי שהשאלה בכרטיס תספיק להיראות מאחור
@@ -92,6 +91,9 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
 
   function closeTips() {
     setTipsOpen(false);
+    // "כלל הפרקטל על מסך מלא" (בקשת הלקוחה, 2026-11-08) - רק בפעם הראשונה;
+    // פתיחה חוזרת של הטיפים לא מריצה אותו שוב
+    if (!fractalReady && !startedAt) setFractalShowing(true);
     setFractalReady(true);
   }
 
@@ -172,6 +174,13 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
       }
     >
       {tipsPopup}
+      {fractalShowing && (
+        <FractalFullscreen
+          title={t.fractal_title}
+          text={t.fractal_text}
+          onDone={() => setFractalShowing(false)}
+        />
+      )}
 
       <div className="glass glass-brick glass-raised flex min-h-0 w-full max-w-3xl flex-[0_1_auto] flex-col items-center gap-[0.6vh] rounded-2xl px-10 py-[2.4vh] text-center">
         {intro.map((line, i) => (
@@ -187,25 +196,8 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
           </p>
         ))}
 
-        {/* כלל הפרקטל - באותו עיצוב כמו בסיכום שלב 2. מופיע רק אחרי שכל
-            חלוניות הטיפים קפצו, ולא במקביל אליהן (דרישת הלקוחה). המקום שלו
-            שמור מההתחלה (invisible), כדי שהכרטיס לא יקפוץ כשהוא נכנס. */}
-        <div className="mt-[1vh] flex min-h-0 w-full flex-[0_1_auto] flex-col items-center gap-1">
-          <span
-            className={cx(
-              "text-accent-soft flex flex-none items-center gap-2 text-lg font-extrabold",
-              !fractalReady && "invisible",
-            )}
-            style={fractalReady ? { animation: "fade-up 0.5s var(--ds-ease) both" } : undefined}
-          >
-            {t.fractal_title}
-          </span>
-          {fractalReady ? (
-            <FractalSentence text={t.fractal_text} className={FRACTAL_BOX} />
-          ) : (
-            <div aria-hidden="true" className={FRACTAL_BOX} />
-          )}
-        </div>
+        {/* כלל הפרקטל עבר למסך מלא (FractalFullscreen למעלה), שמופיע אחרי
+            סגירת הטיפים - ולא במקביל אליהם (דרישת הלקוחה) */}
       </div>
     </StageShell>
   );

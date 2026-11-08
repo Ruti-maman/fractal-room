@@ -79,7 +79,8 @@ function TipChat({
       onConfirm={onClose}
       hideCancel
       dismissable={false}
-      className="!max-w-4xl"
+      // רקע צ'אט עכשווי ובועות לבנות (בקשת הלקוחה, 2026-11-08) - ראו .chat-surface
+      className="chat-surface !max-w-4xl"
     >
       {/* כל הבועות במקומן מההתחלה (שקופות עד שהן "נשלחות") - כך החלון
           בגודלו הסופי מהרגע הראשון, ולא גדל וקופץ עם כל הודעה חדשה */}
@@ -111,8 +112,12 @@ function TipChat({
               {isTyping && (
                 <div
                   aria-label="מקלידה..."
-                  className={`glass glass-raised absolute bottom-0 flex items-center gap-1.5 px-5 py-4 ${start ? "start-[4.25rem]" : "end-[4.25rem]"}`}
-                  style={{ borderRadius: "var(--ds-r-md)", animation: "chat-in 0.3s var(--ds-ease) both" }}
+                  className={`absolute bottom-0 flex items-center gap-1.5 px-5 py-4 ${start ? "start-[4.25rem]" : "end-[4.25rem]"}`}
+                  style={{
+                    background: "var(--chat-bubble-bg, var(--ds-glass-opaque-raised))",
+                    borderRadius: "var(--ds-r-md)",
+                    animation: "chat-in 0.3s var(--ds-ease) both",
+                  }}
                 >
                   {[0, 1, 2].map((d) => (
                     <span
@@ -131,9 +136,10 @@ function TipChat({
                 style={{
                   ["--from" as string]: start ? "24px" : "-24px",
                   animation: visible ? "chat-in 0.45s var(--ds-ease-spring) both" : undefined,
-                  background: "var(--ds-glass-opaque-raised)",
-                  border: `2px solid var(--ds-bubble-${n})`,
-                  boxShadow: `0 8px 22px -12px var(--ds-bubble-${n})`,
+                  // בועה לבנה ואטומה, בלי מסגרת צבעונית - הצבע של הדוברת
+                  // נשאר בכותרת הטיפ ובמעוין הממוספר
+                  background: "var(--chat-bubble-bg, var(--ds-glass-opaque-raised))",
+                  boxShadow: "0 10px 24px -10px rgba(0, 0, 0, 0.45)",
                   // הפינה התחתונה שממנה יוצא הזנב - כמעט ישרה, כמו בבועת דיבור
                   borderRadius: start
                     ? "var(--ds-r-lg) var(--ds-r-lg) var(--ds-r-xs) var(--ds-r-lg)"
@@ -155,13 +161,9 @@ function TipChat({
                   }}
                 >
                   {/* המילוי נכנס 4px לתוך הבועה ומכסה את קו המסגרת בנקודת החיבור */}
-                  <path d="M-4 0 L0 0 L15 16 L0 11 L-4 11 Z" style={{ fill: "var(--ds-glass-opaque-raised)" }} />
                   <path
-                    d="M0 0 L15 16 L0 11"
-                    strokeWidth={2}
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                    style={{ fill: "none", stroke: `var(--ds-bubble-${n})` }}
+                    d="M-4 0 L0 0 L15 16 L0 11 L-4 11 Z"
+                    style={{ fill: "var(--chat-bubble-bg, var(--ds-glass-opaque-raised))" }}
                   />
                 </svg>
                 <p className="text-xl leading-snug font-extrabold" style={{ color: `var(--ds-bubble-${n})` }}>

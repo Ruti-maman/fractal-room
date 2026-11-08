@@ -1307,6 +1307,56 @@
     display: none;
   }
 
+  /*
+    "רקע עכשווי, בלוני דיבור בלבן" - פופ-אפ הטיפים לדיון (שלב 6), בקשת
+    הלקוחה 2026-11-08. כמו מסך צ'אט באפליקציה: נייבי עמוק עם רשת נקודות
+    עדינה והילת קורל, והבועות לבנות ואטומות מעליו.
+  */
+  .chat-surface {
+    --chat-bubble-bg: #ffffff;
+    background-color: var(--ds-navy) !important;
+    background-image:
+      radial-gradient(circle, color-mix(in srgb, white 14%, transparent) 1.2px, transparent 1.7px),
+      radial-gradient(60% 50% at 85% 0%, color-mix(in srgb, var(--ds-pal-3) 38%, transparent), transparent 70%),
+      radial-gradient(55% 45% at 10% 100%, color-mix(in srgb, var(--ds-wood) 30%, transparent), transparent 70%),
+      linear-gradient(165deg, color-mix(in srgb, var(--ds-navy) 80%, white), var(--ds-navy) 55%, color-mix(in srgb, var(--ds-navy) 75%, black)) !important;
+    background-size: 22px 22px, auto, auto, auto !important;
+  }
+
+  .chat-surface::after {
+    display: none;
+  }
+
+  /*
+    שורת התגית + המסקנה בכותרת השלב: שני טורים שווים, כל פריט נצמד לאמצע,
+    כך שהרווח ביניהם נופל בדיוק מתחת לתג השלב (בקשת הלקוחה, 2026-11-08).
+    רק כשיש שני פריטים (:has) - תגית לבדה נשארת ממורכזת. דפדפן בלי :has
+    מקבל את השורה הממורכזת הרגילה, שגם היא תקינה.
+  */
+  @supports selector(:has(a)) {
+    /* !important: ה-utility `flex` של Tailwind (שכבת utilities) גובר על השכבה הזו */
+    .header-pair:has(> :nth-child(2)) {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr;
+      width: 100%;
+    }
+
+    /* RTL: הטור הראשון מימין, ו-end שלו הוא הקצה השמאלי - לכיוון האמצע */
+    .header-pair:has(> :nth-child(2)) > :first-child {
+      justify-self: end;
+    }
+
+    .header-pair:has(> :nth-child(2)) > :nth-child(2) {
+      justify-self: start;
+    }
+  }
+
+  .chat-surface .glass-title {
+    background-image: none;
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+  }
+
   /* המצב הכהה: תגיות ניטרליות-סגלגלות ולא טורקיז מלא */
   :root:not([data-theme="light"]) .glass-chip {
     background-color: rgba(169, 156, 245, 0.12);

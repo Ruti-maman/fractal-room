@@ -153,7 +153,9 @@ function StageShell({
             )}
 
             {/* התגית והמסקנה המעשית באותה שורה, מעל הכותרת */}
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            {/* header-pair: כשיש גם מסקנה, הרווח בין התגית למסקנה יושב בדיוק
+                באמצע, מתחת לתג השלב (בקשת הלקוחה, 2026-11-08) - ראו glass.css */}
+            <div className="header-pair flex flex-wrap items-center justify-center gap-3">
               {kicker && (
                 <span className="glass glass-chip text-accent-soft gap-2">
                   {icon && <Icon name={icon} size={15} />}
