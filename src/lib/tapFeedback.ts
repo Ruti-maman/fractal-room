@@ -131,6 +131,39 @@ export function playWhoosh() {
 }
 
 /**
+ * "פופ" קצרצר של חלונית שקופצת (טיפים לשם הקבוצה, שלב 2) - שני צלילים
+ * עולים ורכים, כמו בועה שנפתחת. כרבע שנייה בסך הכול.
+ */
+export function playPop() {
+  if (!tapSoundEnabled()) return;
+  const ctx = getContext();
+  if (!ctx) return;
+  if (ctx.state === "suspended") ctx.resume().catch(() => {});
+
+  try {
+    const now = ctx.currentTime;
+    [
+      { at: 0, from: 520, to: 780 },
+      { at: 0.09, from: 780, to: 1170 },
+    ].forEach(({ at, from, to }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(from, now + at);
+      osc.frequency.exponentialRampToValueAtTime(to, now + at + 0.06);
+      gain.gain.setValueAtTime(0.0001, now + at);
+      gain.gain.exponentialRampToValueAtTime(0.09, now + at + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.16);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + at);
+      osc.stop(now + at + 0.18);
+    });
+  } catch {
+    // בלי צליל - לא עוצרים שום זרימה בגללו
+  }
+}
+
+/**
  * רטט קצר, איפה שהמכשיר תומך. על פלזמת אנדרואיד זה בדרך כלל לא יעשה
  * כלום, ועל טאבלט/טלפון זה מוסיף הרבה - ולכן זה נקרא בלי תנאי ובלי
  * להיכשל כשאין תמיכה.

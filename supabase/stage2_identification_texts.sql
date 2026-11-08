@@ -26,6 +26,8 @@ set content = content || jsonb_build_object(
       jsonb_build_object('title', 'בלי הוראות הפעלה', 'text', 'אם צריך להסביר אותו, הוא עוד לא מוכן.')
     ),
     'summary_title', 'הקבוצה שלנו:',
+    'built_line', 'אתן כבר חלק מהצורה, בניתן לכן פרקטל.',
+    'created_line', 'הקבוצה נוצרה בהצלחה',
     'fractal_title', 'כלל הפרקטל',
     'fractal_text', 'חלק קטן, אבל כבר רואים בו את השלם.'
   )

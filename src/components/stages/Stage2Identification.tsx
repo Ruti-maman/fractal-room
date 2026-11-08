@@ -12,8 +12,9 @@ import { LevelBadge } from "../ui/GameTile";
 import Icon from "../ui/Icon";
 import { GlassButton } from "../ui/Glass";
 import { InlineNotice } from "../ui/Feedback";
-import { useToast } from "../ui/Toast";
+import { BackgroundLayers } from "../ui/AppBackground";
 import { cx } from "../../lib/cx";
+import { playPop } from "../../lib/tapFeedback";
 
 const MAX_PARTICIPANTS = 15;
 
@@ -47,6 +48,10 @@ interface IdentificationTexts {
   tips_title: string;
   tips: { title: string; text: string }[];
   summary_title: string;
+  /** המשפט במסך הסיכום (IV), מתחת לשם ולמשתתפות. */
+  built_line: string;
+  /** מופיע אחרי "שמירה והמשך", לפני "כלל הפרקטל" במסך מלא. */
+  created_line: string;
   fractal_title: string;
   fractal_text: string;
 }
@@ -79,6 +84,8 @@ const IDENTIFICATION_DEFAULTS: IdentificationTexts = {
     { title: "בלי הוראות הפעלה", text: "אם צריך להסביר אותו, הוא עוד לא מוכן." },
   ],
   summary_title: "הקבוצה שלנו:",
+  built_line: "אתן כבר חלק מהצורה, בניתן לכן פרקטל.",
+  created_line: "הקבוצה נוצרה בהצלחה",
   fractal_title: "כלל הפרקטל",
   fractal_text: "חלק קטן, אבל כבר רואים בו את השלם.",
 };
@@ -116,7 +123,21 @@ type FormStep = "tables" | "participants" | "name" | "summary";
 const FORM_STEPS: FormStep[] = ["tables", "participants", "name", "summary"];
 const STEP_MARKS = ["I", "II", "III", "✓"];
 
-function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: Stage2Content }) {
+/** כמה זמן "הקבוצה נוצרה בהצלחה" נשאר על המסך לפני "כלל הפרקטל". */
+const CREATED_MS = 1800;
+
+function IdentificationForm({
+  myGroup,
+  content,
+  onSaved,
+  onCelebrationEnd,
+}: {
+  myGroup: Group;
+  content?: Stage2Content;
+  /** נקרא רגע לפני הכתיבה למסד, כדי שההורה ישאיר את הטופס עד סוף החגיגה. */
+  onSaved: () => void;
+  onCelebrationEnd: () => void;
+}) {
   const t = { ...IDENTIFICATION_DEFAULTS, ...(content?.identification ?? {}) };
 
   const [step, setStep] = useState<FormStep>("tables");
@@ -124,10 +145,25 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
   const [participants, setParticipants] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
-  /** פופ-אפ הטיפים לשם הקבוצה - נפתח לבד בכניסה לצעד III. */
+  /**
+   * אחרי השמירה: "created" - הודעת ההצלחה בכרטיס; "fractal" - כלל הפרקטל
+   * על כל המסך, ובסופו עוברים לבד למסך הבא (לבקשת הלקוחה).
+   */
+  const [celebration, setCelebration] = useState<"none" | "created" | "fractal">("none");
+  /**
+   * פופ-אפ הטיפים לשם הקבוצה - קופץ ברגע שנוגעים בשדה השם כדי להתחיל
+   * לכתוב (לבקשת הלקוחה, 2026-11-08), ולא בכניסה לצעד. פעם אחת בלבד:
+   * כשהפופ-אפ נסגר, המיקוד חוזר לשדה, ובלי הדגל הוא היה קופץ שוב.
+   */
   const [tipsOpen, setTipsOpen] = useState(false);
+  const tipsShownRef = useRef(false);
   const draftRef = useRef<HTMLInputElement>(null);
-  const toast = useToast();
+
+  function openTips() {
+    tipsShownRef.current = true;
+    setTipsOpen(true);
+    playPop();
+  }
 
   const stepIndex = FORM_STEPS.indexOf(step);
   const isFull = participants.length >= MAX_PARTICIPANTS;
@@ -163,19 +199,24 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
       setDraft("");
     }
     setStep(next);
-    if (next === "name") setTipsOpen(true);
   }
 
   async function handleSave() {
-    if (!name.trim()) return;
+    if (!name.trim() || saving || celebration !== "none") return;
     setSaving(true);
-    await supabase.from("groups").update({ name: name.trim() }).eq("id", myGroup.id).then();
+    // קודם מודיעים להורה: ברגע שהשם נכתב למסד, Stage2Identification היה
+    // מחליף את הטופס במסך "מי בחדר" - באמצע ההודעה ו"כלל הפרקטל"
+    onSaved();
+    // משתתפות לפני השם: השם הוא מה שמעביר את כל המסכים ל"מי בחדר", ושם
+    // הקבוצה צריכה להופיע כבר עם המשתתפות שלה
     const rows = allNames.map((p) => ({ group_id: myGroup.id, name: p }));
     if (rows.length > 0) {
       await supabase.from("participants").insert(rows).then();
     }
+    await supabase.from("groups").update({ name: name.trim() }).eq("id", myGroup.id).then();
     setSaving(false);
-    toast(`נרשמתן כ"${name.trim()}"`, { tone: "ok", icon: "users" });
+    setCelebration("created");
+    window.setTimeout(() => setCelebration("fractal"), CREATED_MS);
   }
 
   const canContinue =
@@ -202,14 +243,54 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
       // "המשך" ו"חזרה" למטה הוסרו (מיותרים - יש חיצים בפינות הכרטיס, לבקשת
       // הלקוחה). נשאר רק "שמירה והמשך" בסיכום, שהוא פעולה ולא דפדוף.
       actions={
-        step === "summary" ? (
+        step !== "summary" ? undefined : celebration === "none" ? (
           <GlassButton variant="primary" size="lg" icon="save" onClick={handleSave} loading={saving}>
             {saving ? "שומר..." : "שמירה והמשך"}
           </GlassButton>
-        ) : undefined
+        ) : (
+          // הכפתור מתחלף בהודעת ההצלחה באותו מקום - כך אי אפשר ללחוץ פעמיים
+          <span
+            role="status"
+            className="glass glass-raised btn-rect text-ink flex min-h-16 items-center gap-3 px-8 text-2xl font-extrabold"
+            style={{ animation: "pop-in 0.5s var(--ds-ease-spring) both" }}
+          >
+            <span className="bubble bubble--1 flex h-10 w-10 items-center justify-center">
+              <Icon name="check" size={22} />
+            </span>
+            {t.created_line}
+          </span>
+        )
       }
     >
       <ZoomIntro />
+
+      {/* "כלל הפרקטל" על כל המסך: המשפט נבנה מאותיות פ-ר-ק-ט-ל קטנות, בלי
+          להפוך לכתב מלא, ובסוף הבנייה עוברים לבד למסך הבא (לבקשת הלקוחה).
+          portal ל-body: שכבה fixed בתוך המעבר המונפש נמדדת לא נכון (באג 6). */}
+      {celebration === "fractal" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[70] flex flex-col items-center px-8 pt-16 pb-10"
+            style={{
+              // אטום: השכבות הדקורטיביות שקופות, ובלי רקע מלא המסך הקודם נראה מבעד
+              background: "linear-gradient(160deg, var(--ds-bg-from), var(--ds-bg-via), var(--ds-bg-to))",
+              animation: "page-fade var(--ds-dur-slow) var(--ds-ease) both",
+            }}
+          >
+            <BackgroundLayers variant="night" />
+            <h2 className="glass-title relative flex-none text-5xl lg:text-6xl">{t.fractal_title}</h2>
+            <FractalSentence
+              text={t.fractal_text}
+              letters="פרקטל"
+              solid={false}
+              grain={6}
+              once
+              onDone={onCelebrationEnd}
+              className="relative min-h-0 w-full flex-1"
+            />
+          </div>,
+          document.body,
+        )}
 
       {/*
         "שיקפצו חלוניות פופאפ" (לפי האפיון): בצעד III כל טיפ קופץ כחלונית
@@ -222,7 +303,11 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
         createPortal(
           <TipBubbles
             open={tipsOpen}
-            onClose={() => setTipsOpen(false)}
+            onClose={() => {
+              setTipsOpen(false);
+              // חוזרים לשדה, כדי שאפשר יהיה להמשיך להקליד מיד
+              window.setTimeout(() => document.getElementById("group-name")?.focus(), 50);
+            }}
             title={t.tips_title}
             tips={t.tips}
           />,
@@ -397,13 +482,17 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
               </p>
             )}
             <div className="flex w-full items-center gap-3">
+              {/* בלי autoFocus: הפופ-אפ קופץ בנגיעה בשדה, ומיקוד אוטומטי היה
+                  מקפיץ אותו כבר בכניסה לצעד */}
               <input
                 id="group-name"
-                autoFocus
                 className="glass-input !min-h-[4.25rem] !text-3xl"
                 placeholder="שם הקבוצה"
                 aria-label="שם הקבוצה"
                 value={name}
+                onFocus={() => {
+                  if (!tipsShownRef.current) openTips();
+                }}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && name.trim()) {
@@ -415,7 +504,7 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
                 autoComplete="off"
               />
               {/* פותח שוב את פופ-אפ הטיפים */}
-              <GlassButton icon="lightbulb" onClick={() => setTipsOpen(true)} className="flex-none">
+              <GlassButton icon="lightbulb" onClick={openTips} className="flex-none">
                 טיפים
               </GlassButton>
             </div>
@@ -450,16 +539,14 @@ function IdentificationForm({ myGroup, content }: { myGroup: Group; content?: St
               </ul>
             )}
 
-            {/* כלל הפרקטל - המשפט נבנה מאותיות קטנות שמסתחררות במערבולת,
-                כמו ה-G בסרטון של הלקוחה (ראו FractalSentence) */}
-            {/* האזור מתכווץ לגובה הפנוי (min-h-0 flex-1) - המשפט אף פעם לא
-                נחתך בשפה התחתונה של הכרטיס, גם במסך נמוך */}
-            <div className="flex min-h-0 w-full max-w-4xl flex-[0_1_auto] flex-col items-center gap-1">
-              <span className="text-accent-soft flex flex-none items-center gap-2 text-2xl font-extrabold">
-                {t.fractal_title}
-              </span>
-              <FractalSentence text={t.fractal_text} className="h-40 min-h-12 w-full flex-[0_1_auto]" />
-            </div>
+            {/* "כלל הפרקטל" עבר למסך מלא אחרי השמירה (ראו celebration). כאן
+                נשאר המשפט שסוגר את ההזדהות. */}
+            <p
+              className="glass-title mt-6 max-w-4xl text-4xl lg:text-5xl"
+              style={{ animation: "fade-up 0.7s 0.4s var(--ds-ease) both" }}
+            >
+              {t.built_line}
+            </p>
           </div>
         )}
       </div>
@@ -802,8 +889,19 @@ function RoomStatus({
 }
 
 function Stage2Identification({ myGroup, allGroups, content, onAdvance }: Props) {
-  if (!myGroup.name) {
-    return <IdentificationForm myGroup={myGroup} content={content} />;
+  // אחרי השמירה הטופס נשאר על המסך עד סוף "כלל הפרקטל", גם כשהשם כבר
+  // הגיע מהמסד. רענון באמצע מדלג ישר ל"מי בחדר" - וזה בסדר, הכול כבר שמור.
+  const [celebrating, setCelebrating] = useState(false);
+
+  if (!myGroup.name || celebrating) {
+    return (
+      <IdentificationForm
+        myGroup={myGroup}
+        content={content}
+        onSaved={() => setCelebrating(true)}
+        onCelebrationEnd={() => setCelebrating(false)}
+      />
+    );
   }
   return <RoomStatus allGroups={allGroups} content={content} onAdvance={onAdvance} />;
 }
