@@ -1,0 +1,17 @@
+# הגדרות הפריסה ל-Netlify (האתר הסטטי של הסדנה).
+# משתני הסביבה VITE_SUPABASE_URL ו-VITE_SUPABASE_ANON_KEY מוגדרים בדשבורד של
+# Netlify (Site configuration → Environment variables), לא כאן.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+# ניתוב SPA: כל כתובת (/screen/1, /admin...) חוזרת ל-index.html, ו-React Router
+# בוחר את המסך. בלי זה רענון של מסך בחדר מחזיר 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

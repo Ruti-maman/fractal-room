@@ -430,7 +430,9 @@ media            id, workshop_id, group_id, stage_number, url, created_at
 
 רשימה זו תישלח לחברת הסינון לאישור. **כל דומיין חדש שנוסף לפרויקט חייב להיכנס לכאן.**
 
-- [ ] דומיין האתר: _טרם נקבע_
+- [ ] דומיין האתר: `*.netlify.app` (הכתובת המדויקת נקבעת ביצירת האתר ב-Netlify;
+      הוחלט 2026-11-10: Netlify בתוכנית החינמית, בלי דומיין ממותג. הגדרות
+      ה-build ב-`netlify.toml`)
 - [ ] `zbgsishvublrwfzhiail.supabase.co` (HTTPS) - REST API, Storage, Auth
 - [ ] `wss://zbgsishvublrwfzhiail.supabase.co` (Realtime)
 
