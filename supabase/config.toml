@@ -1,0 +1,3 @@
+# הגדרות ה-CLI של Supabase. project_id הוא ה-ref של הפרויקט בענן (Vizhnitz
+# Fractal Room), ומשמש את `npx supabase functions deploy` לפריסת ה-Edge Functions.
+project_id = "zbgsishvublrwfzhiail"
