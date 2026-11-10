@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "../../lib/supabase";
 import { useParticipants } from "../../hooks/useParticipants";
@@ -7,13 +7,19 @@ import AutoPlayVideo from "../AutoPlayVideo";
 import StageShell from "../StageShell";
 import ZoomIntro from "../ZoomIntro";
 import FractalFullscreen from "../FractalFullscreen";
+import { BackgroundLayers } from "../ui/AppBackground";
 import TipBubbles from "../TipBubbles";
 import { LevelBadge } from "../ui/GameTile";
 import Icon from "../ui/Icon";
 import { GlassButton } from "../ui/Glass";
 import { InlineNotice } from "../ui/Feedback";
 import { cx } from "../../lib/cx";
-import { playPop } from "../../lib/tapFeedback";
+import { playChime, playPop, playSuccess, playWhoosh } from "../../lib/tapFeedback";
+
+/* עוצמות הצלילים בהזדהות - "יותר בקול ויותר דרמטי" (בקשת הלקוחה, 2026-11-08).
+   עוברות דרך מדחס ב-tapFeedback, כך שגם בעוצמה הזו אין עיוות. */
+const SOUND_STEP = 0.5;
+const SOUND_POP = 0.32;
 
 const MAX_PARTICIPANTS = 15;
 
@@ -125,6 +131,79 @@ type FormStep = "tables" | "participants" | "name" | "summary";
 const FORM_STEPS: FormStep[] = ["tables", "participants", "name", "summary"];
 const STEP_MARKS = ["I", "II", "III", "✓"];
 
+/* ==========================================================================
+   אפקטים למסך המלא של ההזדהות (בקשת הלקוחה, 2026-11-08: "תצוגה מעניינת,
+   אפקט מרהיב, רעיון יצירתי ומגוון") - לכל צעד אפקט משלו
+   ========================================================================== */
+
+/** מילים שקופצות פנימה אחת-אחת עם הטיה. */
+function PopWords({ text, delay = 0, className }: { text: string; delay?: number; className?: string }) {
+  return (
+    <span className={className} aria-label={text}>
+      {text.split(" ").map((word, i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          className="mx-[0.12em] inline-block"
+          style={
+            {
+              "--word-tilt": `${i % 2 === 0 ? -3 : 3}deg`,
+              animation: `word-pop 0.55s ${delay + i * 0.09}s var(--ds-ease-spring) both`,
+            } as React.CSSProperties
+          }
+        >
+          {word}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * קטע תוכן שנכנס בזה אחר זה (בקשת הלקוחה, 2026-11-08: "אפקט של החלונות
+ * שמופיעות, כמו הטיפים" - ואחר כך "בלי מסגרות" ו"לא עד כדי בלאגן"): בלי
+ * לבנה ובלי מסגרת, רק החלקה קצרה פנימה, כל קטע מכיוון משלו, לפי delay.
+ */
+function Win({
+  delay = 0,
+  from = "up",
+  className,
+  bodyClassName,
+  children,
+}: {
+  delay?: number;
+  from?: "up" | "down" | "left" | "right";
+  className?: string;
+  bodyClassName?: string;
+  children: ReactNode;
+}) {
+  // תנועה קצרה ועדינה (בקשת הלקוחה: "מעניין, אבל לא עד כדי בלאגן") -
+  // מחליק פנימה מקרוב, בלי מעוף מקצה המסך ובלי סיבוב חזק
+  const fx = from === "left" ? "-6vw" : from === "right" ? "6vw" : "0px";
+  const fy = from === "up" ? "-5vh" : from === "down" ? "5vh" : "0px";
+  const fr = "0deg";
+  /*
+    **בלי מסגרות** (בקשת הלקוחה, 2026-11-08: "סגנון אחר, בלי מסגרות"): אין
+    לבנת זכוכית ואין פס חלון - התוכן עצמו עף פנימה ונוחת, ישר על הרקע.
+    נשארה רק התנועה: כל "חלון" מגיע מכיוון משלו, בזה אחר זה.
+  */
+  return (
+    <div
+      className={cx("relative flex flex-col", className)}
+      style={
+        {
+          "--fx": fx,
+          "--fy": fy,
+          "--fr": fr,
+          animation: `glide-in 0.7s ${delay}s var(--ds-ease) both`,
+        } as React.CSSProperties
+      }
+    >
+      <div className={cx("flex flex-col px-2 py-2", bodyClassName)}>{children}</div>
+    </div>
+  );
+}
+
 /** כמה זמן "הקבוצה נוצרה בהצלחה" נשאר על המסך לפני "כלל הפרקטל". */
 const CREATED_MS = 1800;
 
@@ -160,12 +239,27 @@ function IdentificationForm({
   const [tipsOpen, setTipsOpen] = useState(false);
   const tipsShownRef = useRef(false);
   const draftRef = useRef<HTMLInputElement>(null);
+  /*
+    בכניסה הראשונה הלוגו מתפזר מעל המסך (ZoomIntro) כשנייה וחצי - אפקטי צעד
+    I מתחילים אחריו, כדי שלא יקרו מתחת ללוגו. בחזרה לצעד I - בלי השהיה.
+  */
+  const [firstEntry, setFirstEntry] = useState(true);
+  const introOffset = firstEntry && step === "tables" ? 1.1 : 0;
 
   function openTips() {
     tipsShownRef.current = true;
     setTipsOpen(true);
-    playPop();
+    playPop(SOUND_POP);
   }
+
+  // מסך הסיכום: צלצול ברגע ששם הקבוצה סיים להופיע אות-אחר-אות
+  useEffect(() => {
+    if (step !== "summary") return;
+    const id = window.setTimeout(playChime, (0.3 + name.trim().length * 0.06 + 0.4) * 1000);
+    return () => window.clearTimeout(id);
+    // name לא בתלויות: בסיכום השם כבר סופי, ולא רוצים צלצול נוסף
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   const stepIndex = FORM_STEPS.indexOf(step);
   const isFull = participants.length >= MAX_PARTICIPANTS;
@@ -178,6 +272,7 @@ function IdentificationForm({
     setParticipants((current) => [...current, draft.trim()]);
     setDraft("");
     draftRef.current?.focus();
+    playPop(SOUND_POP);
   }
 
   function removeParticipant(index: number) {
@@ -200,7 +295,9 @@ function IdentificationForm({
       setParticipants((current) => [...current, draft.trim()]);
       setDraft("");
     }
+    setFirstEntry(false);
     setStep(next);
+    playWhoosh(SOUND_STEP, true);
   }
 
   async function handleSave() {
@@ -218,6 +315,7 @@ function IdentificationForm({
     await supabase.from("groups").update({ name: name.trim() }).eq("id", myGroup.id).then();
     setSaving(false);
     setCelebration("created");
+    playSuccess();
     window.setTimeout(() => setCelebration("fractal"), CREATED_MS);
   }
 
@@ -226,45 +324,67 @@ function IdentificationForm({
     (step === "participants" && allNames.length > 0) ||
     (step === "name" && name.trim().length > 0);
 
-  return (
-    <StageShell
-      stage={2}
-      kicker="הזדהות"
-      icon="users"
-      title="מי אתן?"
-      // "הגדלנו זום" לא נכתב - הוא קורה: הכתב בשלב הזה גדול מהרגיל,
-      // והמסך נפתח בצלילה לפרקטל (ZoomIntro)
-      compactHeader
-      // הכרטיס צר מהרווח שבין מד ההתקדמות לטיימר, אז הרצועה התחתונה פנויה
-      tightBottom
-      // התוכן מתחיל מיד מתחת ל"מי אתן?" - במרכוז אנכי נפער רווח גדול
-      // בין הכותרת לשורת "עכשיו משנים צורה" (במסך מלא/נעול, שהוא גבוה יותר)
-      center={false}
-      background="ripple"
-      width="wide"
-      // "המשך" ו"חזרה" למטה הוסרו (מיותרים - יש חיצים בפינות הכרטיס, לבקשת
-      // הלקוחה). נשאר רק "שמירה והמשך" בסיכום, שהוא פעולה ולא דפדוף.
-      actions={
-        step !== "summary" ? undefined : celebration === "none" ? (
-          <GlassButton variant="primary" size="lg" icon="save" onClick={handleSave} loading={saving}>
-            {saving ? "שומר..." : "שמירה והמשך"}
-          </GlassButton>
-        ) : (
-          // הכפתור מתחלף בהודעת ההצלחה באותו מקום - כך אי אפשר ללחוץ פעמיים
-          <span
-            role="status"
-            className="glass glass-raised btn-rect text-ink flex min-h-16 items-center gap-3 px-8 text-2xl font-extrabold"
-            style={{ animation: "pop-in 0.5s var(--ds-ease-spring) both" }}
-          >
-            <span className="bubble bubble--1 flex h-10 w-10 items-center justify-center">
-              <Icon name="check" size={22} />
-            </span>
-            {t.created_line}
-          </span>
-        )
-      }
+  // "המשך" ו"חזרה" למטה הוסרו (מיותרים - יש חיצים בצידי המסך, לבקשת
+  // הלקוחה). נשאר רק "שמירה והמשך" בסיכום, שהוא פעולה ולא דפדוף.
+  const actions =
+    step !== "summary" ? null : celebration === "none" ? (
+      <GlassButton variant="primary" size="lg" icon="save" onClick={handleSave} loading={saving}>
+        {saving ? "שומר..." : "שמירה והמשך"}
+      </GlassButton>
+    ) : (
+      // הכפתור מתחלף בהודעת ההצלחה באותו מקום - כך אי אפשר ללחוץ פעמיים
+      <span
+        role="status"
+        className="glass glass-raised btn-rect text-ink flex min-h-16 items-center gap-3 px-8 text-2xl font-extrabold"
+        style={{ animation: "pop-in 0.5s var(--ds-ease-spring) both" }}
+      >
+        <span className="bubble bubble--1 flex h-10 w-10 items-center justify-center">
+          <Icon name="check" size={22} />
+        </span>
+        {t.created_line}
+      </span>
+    );
+
+  /*
+    ==========================================================================
+    מסך מלא ממש (בקשת הלקוחה, 2026-11-08: "מסך מלא מלא ממש, לא רק יותר
+    גדול", "שיופיע בצורה מעניינת")
+    ==========================================================================
+    ההזדהות היא שכבה על **כל** המסך - בלי כרטיס, ומעל הסרגל העליון, מד
+    ההתקדמות והטיימר, כמו מסך כניסה לשלב במשחק. הטיימר ממשיך לרוץ מאחור
+    (StageRouter) ועדיין מעביר לבד בסוף הזמן. כל צעד נכנס ב"פיצוץ פרקטל":
+    מעוינים מתרחבים מהמרכז, ספרת הצעד ענקית ושקופה ברקע, והתוכן קופץ פנימה.
+    portal ל-body: שכבה fixed בתוך המעבר המונפש של השלב נמדדת לא נכון (באג 6).
+  */
+  return createPortal(
+    <div
+      className={cx(
+        "fixed inset-0 z-[45] flex flex-col items-center overflow-hidden px-6 pb-[3vh]",
+        // הכותרת ומד הצעדים יורדים מהקצה העליון (בקשת הלקוחה 2026-11-08) -
+        // בכל הצעדים. בסיכום כל העמוד ממורכז, אז שם נשאר הריווח הרגיל.
+        step === "summary" ? "pt-[3vh]" : "pt-[10vh]",
+        // בסיכום כל העמוד יורד לאמצע הגובה (בקשת הלקוחה 2026-11-08), עם
+        // אותם רווחים בדיוק. safe: אם התוכן גבוה מהמסך הוא נצמד למעלה ולא נחתך
+        step === "summary" && "justify-center-safe",
+      )}
+      style={{
+        background: "linear-gradient(160deg, var(--ds-bg-from), var(--ds-bg-via), var(--ds-bg-to))",
+        animation: "page-fade var(--ds-dur-slow) var(--ds-ease) both",
+      }}
     >
-      <ZoomIntro />
+      <BackgroundLayers variant="ripple" />
+      {/* בפתיחה הלוגו נוחת ומתפזר לריבועים (בקשת הלקוחה) */}
+      <ZoomIntro mode="shatter" />
+
+      {/* "מי אתן?" בבולד, והשורה שמתחתיה רגילה וצמודה אליה */}
+      <header className="relative flex flex-none flex-col items-center text-center">
+        {/* ריווח מרווח יותר בין שורות הכותרת (בקשת הלקוחה 2026-11-08) */}
+        <span className="glass glass-chip text-accent-soft mb-[2.2vh] gap-2">
+          <Icon name="users" size={15} />
+          הזדהות
+        </span>
+        <h1 className="glass-title text-5xl lg:text-6xl">מי אתן?</h1>
+      </header>
 
       {/* "כלל הפרקטל" על כל המסך: המשפט נבנה מאותיות פ-ר-ק-ט-ל קטנות, בלי
           להפוך לכתב מלא, ובסוף הבנייה עוברים לבד למסך הבא (לבקשת הלקוחה).
@@ -298,19 +418,23 @@ function IdentificationForm({
       {/* שורת המעבר - מתחת ל"מי אתן?" ומעל מד הצעדים, בכל הצעדים.
           לבקשת הלקוחה (2026-11-08): צמודה לכותרת (מינוס-מרווח מבטל את
           הרווח של הכותרת), ובמשקל רגיל - רק "מי אתן?" בבולד. */}
-      <p className="glass-title -mt-2 mb-7 flex-none text-center text-3xl font-normal sm:text-4xl lg:-mt-3">
+      <p className="glass-title relative mt-[1.6vh] mb-[3.5vh] flex-none text-center text-3xl font-normal sm:text-4xl">
         {t.shape_line}
       </p>
 
       {/* מד הצעדים: I · II · III · ✓ - עם רווח נדיב מעליו ומתחתיו (לבקשת הלקוחה) */}
-      <ol className="mb-7 flex flex-none items-center justify-center gap-2" aria-label="שלבי ההזדהות">
+      <ol className="relative flex flex-none items-center justify-center gap-2" aria-label="שלבי ההזדהות">
         {STEP_MARKS.map((mark, i) => (
           <li key={mark} className="flex items-center gap-2">
             <span
               aria-current={i === stepIndex ? "step" : undefined}
               className={cx(
                 "flex h-10 w-10 items-center justify-center text-sm font-extrabold transition-all duration-300",
-                i <= stepIndex ? `bubble bubble--${i + 1}` : "bubble bubble-hollow text-ink-3",
+                // בלי חום (בקשת הלקוחה, 2026-11-08): רק שני צבעי הלוגו -
+                // קורל ונייבי לסירוגין, ולא סולם הבועות שהשלישי בו קאמל
+                i <= stepIndex
+                  ? `bubble ${i % 2 === 0 ? "bubble--1" : "bubble--2"}`
+                  : "bubble bubble-hollow text-ink-3",
                 i === stepIndex && "scale-110",
               )}
             >
@@ -319,29 +443,24 @@ function IdentificationForm({
             {i < STEP_MARKS.length - 1 && (
               <span
                 aria-hidden="true"
-                className={cx("h-0.5 w-10 rounded-full", i < stepIndex ? "bg-accent" : "bg-edge")}
+                className={cx("h-0.5 w-10 rounded-full", i < stepIndex ? "bg-pal-3" : "bg-edge")}
               />
             )}
           </li>
         ))}
       </ol>
 
+      {/* זירת הצעד - כל השטח שנשאר עד תחתית המסך. px-28: מקום לחיצים
+          הגדולים שבצדדים */}
       <div
         key={step}
-        // מתכווץ לגובה הפנוי - המסגרת תמיד שלמה; רק התגים גוללים בפנים אם צריך
         className={cx(
-          // pt-14: מקום לחיצי הניווט בפינות העליונות, כדי שלא יעלו על הכותרת
-          "glass glass-brick glass-raised relative flex min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-2xl px-5 pt-14 pb-5 sm:px-6 sm:pb-6",
-          /*
-            "יותר משחק, על מסך מלא" (בקשת הלקוחה, 2026-11-08): הכרטיס ממלא
-            את כל הגובה הפנוי, כמו לוח האריחים בשלב 5, במקום רצועה בשליש
-            העליון. רק מ-1700px: הכרטיס יורד עד התחתית, ובמסך צר יותר הוא
-            היה נוגע במד ההתקדמות ובטיימר שבפינות.
-          */
-          "min-[1700px]:flex-1",
-          step === "tables" && "glass-interactive glass-3d cursor-pointer",
+          "relative flex min-h-0 w-full max-w-7xl flex-col px-28 py-[2vh]",
+          // בסיכום הזירה לא נמתחת עד תחתית המסך - כך "שמירה והמשך" עולה
+          // ויושב מתחת לתוכן (בקשת הלקוחה 2026-11-08), ולא בתחתית המסך
+          step === "summary" ? "flex-none" : "flex-1",
+          step === "tables" && "cursor-pointer",
         )}
-        style={{ animation: "pop-in var(--ds-dur-slow) var(--ds-ease-spring) both" }}
         // בצעד I אין מה להזין - נגיעה בכרטיס עצמו מעבירה לצעד הבא (לבקשת
         // הלקוחה), כמו "המשך"
         {...(step === "tables"
@@ -367,6 +486,7 @@ function IdentificationForm({
             onClick={(e) => {
               e.stopPropagation();
               setStep(FORM_STEPS[stepIndex - 1]);
+              playWhoosh(SOUND_STEP, true);
             }}
           />
         )}
@@ -381,29 +501,67 @@ function IdentificationForm({
           />
         )}
 
+        {/* (ספרת צעד ענקית ברקע נוסתה והוסרה, 2026-11-08: ספרות רומיות
+            גדולות נקראו כ"פסים" לא ברורים מאחורי הטקסט - בקשת הלקוחה) */}
+
+        {/* (פיצוץ המעוינים בכל מעבר הוסר - "לא עד כדי בלאגן", בקשת הלקוחה.
+            כל צעד נכנס ברכות, והתוכן שלו מחליק פנימה חלק אחרי חלק - ראו Win) */}
+        <div className="relative flex min-h-0 flex-1 flex-col">
         {/* ---------- I. שולחנות עבודה ---------- */}
         {step === "tables" && (
           // מסך "כניסה לשלב" כמו במשחק: תג מעוין גדול וכותרת ענקית באמצע הלוח
           <div className="flex flex-1 flex-col items-center justify-center gap-6 py-4 text-center">
-            <LevelBadge value="I" label="" size={140} />
-            <p className="text-ink text-4xl font-extrabold sm:text-5xl lg:text-6xl">{t.tables_title}</p>
+            {/* הפרקטל מתחבר סביב התג - מעוינים עפים מקצוות המסך */}
+            {/* התג מופיע, ואחריו ההוראה מחליקה פנימה מלמטה - רגוע ונקי */}
+            <span
+              className="relative inline-block"
+              style={{ animation: `bounce-in 0.6s ${introOffset + 0.1}s var(--ds-ease-spring) both` }}
+            >
+              <LevelBadge value="I" label="" size={160} />
+            </span>
+            <Win delay={introOffset + 0.45} from="down" bodyClassName="items-center gap-3 px-12 py-6">
+              <PopWords
+                text={t.tables_title}
+                delay={introOffset + 0.6}
+                className="text-ink text-5xl font-extrabold lg:text-6xl"
+              />
+              <span
+                className="text-ink-3 flex items-center gap-2 text-lg font-bold"
+                style={{ animation: `fade-up 0.6s ${introOffset + 1.3}s var(--ds-ease) both` }}
+              >
+                <Icon name="arrowNext" size={18} />
+                נגעו במסך כדי להמשיך
+              </span>
+            </Win>
             {t.tables_text && <p className="text-ink-2 max-w-xl text-lg">{t.tables_text}</p>}
           </div>
         )}
 
         {/* ---------- II. פרטי המשתתפות ---------- */}
         {step === "participants" && (
-          <div className="flex min-h-0 flex-col gap-4">
-            <div className="flex flex-none items-center justify-between gap-3">
-              <h2 className="text-ink flex items-center gap-4 text-3xl font-extrabold">
-                <LevelBadge value="II" label="" size={68} className="flex-none" />
-                {t.participants_title}
+          // ממורכז בגובה הלוח (center-safe: כשהתגים רבים, נצמד למעלה וגולל)
+          // שני חלונות שקופצים: הכותרת עם המונה (מימין), ואחריו חלון ההזנה
+          // והשמות (משמאל)
+          <div className="center-safe flex min-h-0 flex-1 flex-col gap-5">
+            <Win from="right" delay={0.15} className="flex-none">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-ink flex items-center gap-4 text-4xl font-extrabold">
+                <LevelBadge value="II" label="" size={76} className="flex-none" />
+                <PopWords text={t.participants_title} delay={0.5} />
               </h2>
-              <span className="text-ink-3 text-sm font-bold tabular-nums">
-                {participants.length} / {MAX_PARTICIPANTS}
+              {/* המונה "נדלק" בכל הוספה (key משתנה = האנימציה רצה מחדש) */}
+              <span
+                key={participants.length}
+                className="bubble bubble--1 flex h-16 w-16 flex-none items-center justify-center text-xl font-extrabold tabular-nums"
+                style={{ animation: "bounce-in 0.5s var(--ds-ease-spring) both" }}
+                aria-label={`${participants.length} מתוך ${MAX_PARTICIPANTS}`}
+              >
+                {participants.length}
               </span>
             </div>
+            </Win>
 
+            <Win from="left" delay={0.5} className="min-h-0" bodyClassName="min-h-0 gap-4">
             {isFull ? (
               <InlineNotice tone="info">
                 הגעתן למספר המשתתפות המרבי בקבוצה ({MAX_PARTICIPANTS}).
@@ -442,26 +600,33 @@ function IdentificationForm({
                 ))}
               </ul>
             ) : (
-              <p className="text-ink-3 py-4 text-center text-base">
+              <p className="text-ink-3 py-2 text-center text-base">
                 כל שם שתוסיפו יופיע כאן. נגיעה בשם מאפשרת לתקן אותו.
               </p>
             )}
+            </Win>
           </div>
         )}
 
         {/* ---------- III. שם הקבוצה (הטיפים בפופ-אפ, ראו למטה) ---------- */}
         {step === "name" && (
-          <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-5 py-2 text-center">
-            <h2 className="text-ink flex items-center gap-4 text-3xl font-extrabold sm:text-4xl">
-              <LevelBadge value="III" label="" size={76} className="flex-none" />
-              {t.name_title}
-            </h2>
+          // שלושה חלונות שקופצים בזה אחר זה: ההוראה, הבונוס, ושדה השם
+          <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-stretch justify-center gap-4 py-2 text-center">
+            <Win from="up" delay={0.15} bodyClassName="items-center">
+              <h2 className="text-ink flex items-center gap-4 text-4xl font-extrabold">
+                <LevelBadge value="III" label="" size={84} className="flex-none" />
+                <PopWords text={t.name_title} delay={0.5} />
+              </h2>
+            </Win>
             {t.name_bonus && (
-              <p className="text-ink-2 flex items-center gap-2 text-2xl font-bold">
-                <Icon name="star" size={22} filled className="text-accent" />
+              <Win from="right" delay={0.6} className="self-center" bodyClassName="items-center py-3">
+              <p className="text-ink-2 relative flex items-center gap-2 text-2xl font-bold">
+                <Icon name="star" size={26} filled className="text-pal-3" />
                 {t.name_bonus}
               </p>
+              </Win>
             )}
+            <Win from="left" delay={1.0}>
             <div className="flex w-full items-center gap-3">
               {/* בלי autoFocus: הפופ-אפ קופץ בנגיעה בשדה, ומיקוד אוטומטי היה
                   מקפיץ אותו כבר בכניסה לצעד */}
@@ -489,28 +654,68 @@ function IdentificationForm({
                 טיפים
               </GlassButton>
             </div>
+            </Win>
           </div>
         )}
 
         {/* ---------- ✓ סיכום ---------- */}
         {step === "summary" && (
-          <div className="center-safe flex min-h-0 flex-1 flex-col items-center gap-3 text-center">
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-ink-3 text-lg font-bold">{t.summary_title}</span>
-              <p className="glass-title text-5xl">{name.trim()}</p>
+          // שלושה חלונות: שם הקבוצה (נוחת אות-אחר-אות), המשתתפות, ומשפט הסיום
+          // צמוד למעלה ולא ממורכז (בקשת הלקוחה 2026-11-08): הרווח בין מד
+          // הצעדים ל"הקבוצה שלנו" שווה לרווח שבין שורת המעבר למד הצעדים
+          // (py-[2vh] של הזירה + py-5 של החלון = 2vh+1.25rem; ה-margin מוריד
+          // אותו בדיוק ל-3.5vh, כמו mb-[3.5vh] של שורת המעבר)
+          <div
+            className="flex min-h-0 flex-1 flex-col items-center gap-4 text-center"
+            style={{ marginTop: "calc(1.5vh - 1.25rem)" }}
+          >
+            <Win from="up" delay={0.1} bodyClassName="items-center px-14 py-5">
+            <div className="relative flex flex-col items-center gap-1">
+              <span className="text-ink-3 text-xl font-bold">{t.summary_title}</span>
+              {/* שם הקבוצה מופיע אות-אחר-אות, בעלייה קצרה ורכה. הצבע על כל
+                  אות (ולא גרדיאנט על המשפט) - אותיות שזזות בנפרד לא מקבלות
+                  צבע שנחתך לפי הטקסט של ההורה */}
+              <p className="relative text-6xl font-extrabold lg:text-7xl" aria-label={name.trim()}>
+                {Array.from(name.trim()).map((ch, i) => (
+                  <span
+                    key={i}
+                    aria-hidden="true"
+                    className="text-pal-3 inline-block whitespace-pre"
+                    style={
+                      {
+                        "--fx": "0px",
+                        "--fy": "0.5em",
+                        animation: `glide-in 0.5s ${0.3 + i * 0.06}s var(--ds-ease) both`,
+                      } as React.CSSProperties
+                    }
+                  >
+                    {ch}
+                  </span>
+                ))}
+              </p>
             </div>
+            </Win>
 
             {allNames.length > 0 && (
-              <ul className="flex max-w-3xl flex-wrap justify-center gap-2">
+              <Win from="right" delay={0.8} bodyClassName="items-center py-4">
+              <ul className="relative flex max-w-4xl flex-wrap justify-center gap-2">
                 {allNames.map((p, i) => (
                   <li
                     key={`${i}-${p}`}
                     className="glass glass-raised glass-pill gap-2 py-1 ps-1 pe-4"
-                    style={{ animation: `pop-in 0.45s ${i * 0.06}s var(--ds-ease-spring) both` }}
+                    // המשתתפות מחליקות פנימה מעט מהצדדים, לסירוגין
+                    style={
+                      {
+                        "--fx": `${i % 2 ? -3 : 3}vw`,
+                        "--fy": "0px",
+                        animation: `glide-in 0.5s ${0.9 + i * 0.08}s var(--ds-ease) both`,
+                      } as React.CSSProperties
+                    }
                   >
                     <span
                       aria-hidden="true"
-                      className={`bubble bubble--${(i % 5) + 1} flex h-7 w-7 items-center justify-center text-[11px] font-extrabold`}
+                      // בלי חום: קורל ונייבי לסירוגין (בקשת הלקוחה)
+                      className={`bubble ${i % 2 === 0 ? "bubble--1" : "bubble--2"} flex h-7 w-7 items-center justify-center text-[11px] font-extrabold`}
                     >
                       {i + 1}
                     </span>
@@ -518,20 +723,28 @@ function IdentificationForm({
                   </li>
                 ))}
               </ul>
+              </Win>
             )}
 
             {/* "כלל הפרקטל" עבר למסך מלא אחרי השמירה (ראו celebration). כאן
-                נשאר המשפט שסוגר את ההזדהות. */}
-            <p
-              className="glass-title mt-6 max-w-4xl text-4xl lg:text-5xl"
-              style={{ animation: "fade-up 0.7s 0.4s var(--ds-ease) both" }}
-            >
-              {t.built_line}
-            </p>
+                נשאר המשפט שסוגר את ההזדהות - בחלון השלישי */}
+            <Win from="down" delay={1.3 + allNames.length * 0.1} bodyClassName="items-center px-12 py-5">
+              <PopWords
+                text={t.built_line}
+                delay={1.7 + allNames.length * 0.1}
+                className="text-ink relative max-w-5xl text-4xl font-extrabold lg:text-5xl"
+              />
+            </Win>
           </div>
         )}
+        </div>
       </div>
-    </StageShell>
+
+      {actions && (
+        <div className={cx("relative flex-none", step === "summary" ? "pt-[3vh]" : "pt-[1.5vh]")}>{actions}</div>
+      )}
+    </div>,
+    document.body,
   );
 }
 
@@ -558,16 +771,17 @@ function CardArrow({
       disabled={disabled}
       aria-label={next ? "המשך" : "חזרה"}
       className={cx(
-        // אזור נגיעה גדול (56px) גם כשהחץ עצמו דק
-        "absolute top-2 z-10 flex h-14 w-14 items-center justify-center transition-opacity duration-300",
-        next ? "left-3" : "right-3",
+        // בצידי המסך, באמצע הגובה, וגדולים - כמו חיצי דפדוף במשחק (במסך
+        // המלא של ההזדהות). אזור נגיעה של 96px
+        "absolute top-1/2 z-10 flex h-24 w-24 -translate-y-1/2 items-center justify-center transition-opacity duration-300",
+        next ? "left-0" : "right-0",
         disabled && "opacity-30",
       )}
     >
       <svg
         viewBox="0 0 24 24"
-        width={38}
-        height={38}
+        width={72}
+        height={72}
         fill="none"
         strokeWidth={2.6}
         strokeLinecap="round"
@@ -619,7 +833,8 @@ function ParticipantChip({
   return (
     <li
       className="glass glass-raised glass-pill flex min-w-0 items-center justify-between gap-0.5 py-0.5 ps-1 pe-0.5"
-      style={{ animation: "glass-in var(--ds-dur) var(--ds-ease) both" }}
+      // כל שם שנוסף "צץ" במקומו בקפיצה קטנה
+      style={{ animation: "pop-in 0.4s var(--ds-ease-spring) both" }}
     >
       <button
         type="button"
@@ -629,7 +844,8 @@ function ParticipantChip({
       >
         <span
           aria-hidden="true"
-          className={`bubble bubble--${(index % 5) + 1} flex h-7 w-7 flex-none items-center justify-center text-[11px] font-extrabold`}
+          // בלי חום: קורל ונייבי לסירוגין (בקשת הלקוחה)
+          className={`bubble ${index % 2 === 0 ? "bubble--1" : "bubble--2"} flex h-7 w-7 flex-none items-center justify-center text-[11px] font-extrabold`}
         >
           {index + 1}
         </span>
@@ -671,11 +887,13 @@ function RoomStatusNames({
       kicker="מצב החדר"
       icon="users"
       title="מי בחדר"
-      // קצת אוויר בין הכותרת לשורת ההסבר (בקשת הלקוחה, 2026-11-08)
-      subtitle={<span className="mt-2 inline-block">{t.intro}</span>}
+      subtitle={t.intro}
       background="ripple"
       width="wide"
       compactHeader
+      // "תצמצם את הרווח" (בקשת הלקוחה, 2026-11-08): התוכן מתחיל מיד מתחת
+      // לכותרת, ולא ממורכז לגובה - המרכוז השאיר חור גדול מעל "איתנו במסע"
+      center={false}
       actions={
         /*
           "אחרי החלוניות" יושב באזור הפעולות התחתון ולא באזור התוכן: אזור
@@ -701,7 +919,7 @@ function RoomStatusNames({
       }
     >
       {/* "איפה אנחנו במסע:" - כותרת לשלוש החלוניות */}
-      <h2 className="text-ink mb-4 flex-none text-center text-3xl font-extrabold">{t.journey_title}</h2>
+      <h2 className="text-ink mt-[2vh] mb-4 flex-none text-center text-3xl font-extrabold">{t.journey_title}</h2>
 
       <ul className="grid w-full flex-none grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {allGroups

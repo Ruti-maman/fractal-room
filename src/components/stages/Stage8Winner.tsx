@@ -349,7 +349,7 @@ function Stage8Winner({
       style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
     >
       <LevelBadge value={stageNumber} progress={stageNumber / 10} size={88} />
-      <div className="flex flex-wrap items-center justify-center gap-3">
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
         <span className="glass glass-chip text-accent-soft gap-2">
           <Icon name="trophy" size={15} />
           {t.kicker}
@@ -363,7 +363,7 @@ function Stage8Winner({
   if (phase !== "winner") {
     const isReflection = phase === "reflection";
     return (
-      <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-[2vh] overflow-hidden px-6 pt-20 pb-8 text-center">
+      <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-[2vh] overflow-hidden px-6 pt-20 pb-8 text-center lg:pt-8">
         <BackgroundLayers variant="night" />
         {header}
         <LinesCard
@@ -383,7 +383,7 @@ function Stage8Winner({
     // pb-4 ולא pb-40: הפודיום צר ויושב באמצע, בין מד ההתקדמות לטיימר שבפינות -
     // הרצועה התחתונה הגבוהה רק דחפה את התוכן למעלה, ותג השלב נחתך בראש המסך.
     // justify-center-safe: אם בכל זאת אין מקום - מצמיד למעלה, לא חותך.
-    <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-3 overflow-hidden px-6 pt-20 pb-4 text-center">
+    <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-3 overflow-hidden px-6 pt-20 pb-4 text-center lg:pt-4">
       <BackgroundLayers variant="night" />
 
       {/* קונפטי - רק כשיש תוצאה אמיתית להכריז עליה.

@@ -51,11 +51,32 @@ function formAmount(t: number) {
 const ONCE_SWIRL_MS = 1200;
 const ONCE_BUILD_MS = 2200;
 const ONCE_HOLD_MS = 3200;
+/* חזרות (בקשת הלקוחה 2026-11-08: "שיחזור על עצמו כמה פעמים"): בין בנייה
+   לבנייה המשפט מחזיק קצת, מתפרק חזרה למערבולת, ונבנה שוב. רק בבנייה
+   האחרונה הוא מחזיק את ONCE_HOLD_MS המלא. */
+const REPEAT_HOLD_MS = 1800;
+const REPEAT_BREAK_MS = 1500;
+const REPEAT_CYCLE_MS = ONCE_BUILD_MS + REPEAT_HOLD_MS + REPEAT_BREAK_MS;
 
-function onceAmount(elapsed: number) {
+function onceAmount(elapsed: number, repeats: number) {
   const ease = (x: number) => x * x * (3 - 2 * x);
   if (elapsed < ONCE_SWIRL_MS) return 0;
-  return ease(Math.min(1, (elapsed - ONCE_SWIRL_MS) / ONCE_BUILD_MS));
+  let e = elapsed - ONCE_SWIRL_MS;
+  for (let i = 0; i < repeats; i++) {
+    if (e < ONCE_BUILD_MS) return ease(e / ONCE_BUILD_MS);
+    e -= ONCE_BUILD_MS;
+    if (i === repeats - 1) return 1;
+    if (e < REPEAT_HOLD_MS) return 1;
+    e -= REPEAT_HOLD_MS;
+    if (e < REPEAT_BREAK_MS) return 1 - ease(e / REPEAT_BREAK_MS);
+    e -= REPEAT_BREAK_MS;
+  }
+  return 1;
+}
+
+/** משך כל המופע במצב once, עד onDone. */
+function onceTotalMs(repeats: number) {
+  return ONCE_SWIRL_MS + repeats * ONCE_BUILD_MS + (repeats - 1) * (REPEAT_HOLD_MS + REPEAT_BREAK_MS) + ONCE_HOLD_MS;
 }
 
 interface Props {
@@ -75,14 +96,30 @@ interface Props {
   grain?: number;
   /** בונה את המשפט פעם אחת (בלי לופ), מחזיק אותו, וקורא ל-onDone. */
   once?: boolean;
+  /** במצב once: כמה פעמים המשפט נבנה (מתפרק ונבנה שוב בין לבין). */
+  repeats?: number;
   onDone?: () => void;
+  /** נקרא בתחילת כל בנייה (0, 1, 2...) - למשל לצליל. */
+  onBuildStart?: (index: number) => void;
 }
 
-function FractalSentence({ text, className, letters: letterPool, solid = true, grain = TEXT_SPACING, once = false, onDone }: Props) {
+function FractalSentence({
+  text,
+  className,
+  letters: letterPool,
+  solid = true,
+  grain = TEXT_SPACING,
+  once = false,
+  repeats = 1,
+  onDone,
+  onBuildStart,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // ref ולא תלות באפקט - פונקציה חדשה בכל רינדור של ההורה לא תאתחל את האנימציה
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
+  const onBuildStartRef = useRef(onBuildStart);
+  onBuildStartRef.current = onBuildStart;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -94,7 +131,13 @@ function FractalSentence({ text, className, letters: letterPool, solid = true, g
     const letters = letterPool || text.replace(/[^֐-׿]/g, "") || "פרקטל";
     // גודל האות הקטנה כשהמשפט בנוי, ובמערבולת. בברירת המחדל (grain=3) זה
     // בדיוק 4px ו-11px כמו קודם.
-    const formedSize = grain === TEXT_SPACING ? 4 : grain * 1.15;
+    // במסך מלא האות הקטנה כמעט ממלאת את התא שלה (פי 1.6 מהמרווח), כך
+    // שהאותיות כמעט נוגעות זו בזו והמשפט נקרא ברור (בקשת הלקוחה, 2026-11-08:
+    // "שהאותיות יהיו יותר קרובות"). לא מקטינים את המרווח עצמו - יותר
+    // אותיות היה מכביד על הציור במסך האנדרואיד.
+    const formedSize = grain === TEXT_SPACING ? 4 : grain * 1.75;
+    const totalMs = onceTotalMs(Math.max(1, repeats));
+    let buildsFired = 0;
     const swirlSize = grain === TEXT_SPACING ? 11 : grain * 1.7;
     let start = 0;
     let doneFired = false;
@@ -146,7 +189,9 @@ function FractalSentence({ text, className, letters: letterPool, solid = true, g
       // מעבים את קווי האותיות - בשורה אחת הן דקות, וצריך מקום לאותיות הקטנות
       // במסך מלא (grain גדול) מעבים הרבה יותר: בלי מילוי מלא, הצורה של
       // האות הגדולה נקראת רק אם יש בקו שלה כמה אותיות קטנות זו לצד זו
-      m.lineWidth = Math.max(1, size * (grain === TEXT_SPACING ? 0.03 : 0.09));
+      // (0.07 ולא 0.09: עם אותיות צפופות יותר אין צורך לעבות כל כך, וקו
+      // דק יותר שומר על הצורה של האות הגדולה חדה)
+      m.lineWidth = Math.max(1, size * (grain === TEXT_SPACING ? 0.03 : 0.07));
       m.lineJoin = "round";
       m.strokeStyle = "#000";
       m.strokeText(text, w / 2, h * 0.44);
@@ -161,7 +206,8 @@ function FractalSentence({ text, className, letters: letterPool, solid = true, g
       // משפט: אותיות זעירות צפופות בתוך צורת המשפט
       for (let y = 0; y < h; y += grain) {
         for (let x = 0; x < w; x += grain) {
-          const jitter = Math.min(2, grain * 0.2);
+          // רעד קטן בלבד במסך מלא - שורות מסודרות נקראות חד יותר
+          const jitter = grain === TEXT_SPACING ? Math.min(2, grain * 0.2) : grain * 0.08;
           const jx = x + (rand() - 0.5) * jitter;
           const jy = y + (rand() - 0.5) * jitter;
           if (jx < 0 || jy < 0 || jx >= w || jy >= h || !inked(jx, jy)) continue;
@@ -180,8 +226,13 @@ function FractalSentence({ text, className, letters: letterPool, solid = true, g
       const dpr = window.devicePixelRatio || 1;
       if (!start) start = now;
       const elapsed = now - start;
-      const form = reduced ? 1 : once ? onceAmount(elapsed) : formAmount(now);
-      if (once && !doneFired && elapsed > ONCE_SWIRL_MS + ONCE_BUILD_MS + ONCE_HOLD_MS) {
+      const form = reduced ? 1 : once ? onceAmount(elapsed, Math.max(1, repeats)) : formAmount(now);
+      // תחילת כל בנייה - לצליל של ההורה
+      if (once && !reduced && buildsFired < repeats && elapsed >= ONCE_SWIRL_MS + buildsFired * REPEAT_CYCLE_MS) {
+        onBuildStartRef.current?.(buildsFired);
+        buildsFired++;
+      }
+      if (once && !doneFired && elapsed > totalMs) {
         doneFired = true;
         onDoneRef.current?.();
       }
@@ -194,6 +245,25 @@ function FractalSentence({ text, className, letters: letterPool, solid = true, g
       ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
       ctx!.textAlign = "center";
       ctx!.textBaseline = "middle";
+
+      // בסוף הבנייה המשפט "מוכן" (0 עד 1)
+      const ready = Math.min(1, Math.max(0, (form - 0.8) / 0.2));
+
+      // צל עדין של המשפט מתחת לאותיות הקטנות (בקשת הלקוחה 2026-11-08: "שהמשפט
+      // ייצא יותר ברור"). שקוף מאוד - לא "צבע מלא", המשפט עדיין עשוי אותיות,
+      // אבל הצורה של כל אות גדולה נקראת מרחוק.
+      if (!solid && ready > 0 && fontSpec) {
+        ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const ghost = ctx!.createLinearGradient(w * 0.94, 0, w * 0.06, 0);
+        rainbow.forEach((c, i) => ghost.addColorStop(i / (rainbow.length - 1), c));
+        ctx!.globalAlpha = ready * 0.22;
+        ctx!.font = fontSpec;
+        ctx!.direction = "rtl";
+        ctx!.fillStyle = ghost;
+        ctx!.fillText(text, w / 2, h * 0.44);
+        ctx!.globalAlpha = 1;
+        ctx!.direction = "ltr";
+      }
 
       const bgFont = "700 11px Assistant, sans-serif";
       const textFont = `800 ${swirlSize - form * (swirlSize - formedSize)}px Assistant, sans-serif`;
@@ -245,7 +315,6 @@ function FractalSentence({ text, className, letters: letterPool, solid = true, g
 
       // בסוף הבנייה המשפט "מוכן": הטקסט עצמו נחשף מעל האותיות הקטנות,
       // חד וברור, בקשת של הכותרות - ונעלם שוב כשהמשפט מתפרק
-      const ready = Math.min(1, Math.max(0, (form - 0.8) / 0.2));
       if (solid && ready > 0 && fontSpec) {
         ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
         const grad = ctx!.createLinearGradient(w * 0.94, 0, w * 0.06, 0);
@@ -286,7 +355,7 @@ function FractalSentence({ text, className, letters: letterPool, solid = true, g
       window.clearTimeout(doneTimer);
       ro.disconnect();
     };
-  }, [text, letterPool, solid, grain, once]);
+  }, [text, letterPool, solid, grain, once, repeats]);
 
   return (
     <div className={className}>

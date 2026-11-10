@@ -137,7 +137,7 @@ function FlyingChipEl({ chip }: { chip: FlyingChip }) {
 
   return (
     <span
-      className="glass glass-active pointer-events-none fixed z-50 rounded-full px-3.5 py-1.5 text-xs font-bold whitespace-nowrap transition-all ease-in"
+      className="glass glass-active pointer-events-none fixed z-50 rounded-sm px-3.5 py-1.5 text-xs font-bold whitespace-nowrap transition-all ease-in"
       style={{
         left: pos.x,
         top: pos.y,

@@ -183,8 +183,9 @@ function Stage7Mechanism({ texts, onDone }: { texts: MechanismTexts; onDone: () 
       <div
         className={cx(
           "flex w-full max-w-5xl flex-col items-center text-center",
-          // בסיכום יש יותר שורות - הרווחים מצטמצמים כדי שהכפתור לא יעלה על המשפט
-          finished ? "gap-[1.2vh]" : "gap-[1.8vh]",
+          // ריווח אחיד בין השורות (בקשת הלקוחה, 2026-11-08). בסיכום יש יותר
+          // שורות - הרווחים מצטמצמים כדי שהכפתור לא יעלה על המשפט
+          finished ? "gap-[1.6vh]" : "gap-[3vh]",
         )}
       >
         {/*
@@ -192,8 +193,8 @@ function Stage7Mechanism({ texts, onDone }: { texts: MechanismTexts; onDone: () 
           צבעונית עם סמל, והמילה מתחתיה. לא כפתורים ללחיצה - "חומרי הגלם"
           של המנגנון, ולכן בלי נפח של כפתור.
         */}
-        <div className="flex flex-col items-center gap-[1.1vh]">
-          <p className="text-ink text-[min(3vh,1.75rem)] font-extrabold">{t.changes_title}</p>
+        <div className="flex flex-col items-center gap-[2vh]">
+          <p className="text-ink text-[min(3.4vh,2rem)] font-extrabold">{t.changes_title}</p>
           <ul className="flex flex-wrap justify-center gap-3">
             {t.changes.map((c, i) => {
               const n = (i % 5) + 1;
@@ -217,7 +218,10 @@ function Stage7Mechanism({ texts, onDone }: { texts: MechanismTexts; onDone: () 
           </ul>
         </div>
 
-        {!finished && <p className="text-ink-2 text-[min(2.5vh,1.3rem)] font-bold">{t.questions_title}</p>}
+        {/* "לכל שינוי יש לשאול" - קצת יותר למטה, רחוק מהאייקונים (בקשת הלקוחה) */}
+        {!finished && (
+          <p className="text-ink-2 mt-[1.5vh] text-[min(2.8vh,1.5rem)] font-bold">{t.questions_title}</p>
+        )}
 
         {/* סרט ההרכבה - נגרר באצבע ימינה ושמאלה */}
         <div

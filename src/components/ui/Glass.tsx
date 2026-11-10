@@ -223,7 +223,9 @@ export function GlassButton({
         "glass glass-interactive glass-btn",
         variant !== "ghost" && "glass-3d",
         SIZE_CLASS[size],
-        variant === "primary" && "glass-btn-primary",
+        // כל כפתור ראשי באדום המלא של הלוגו, כמו "התחילו" (בקשת הלקוחה,
+        // 2026-11-08: "תשנה את כל השלבים")
+        variant === "primary" && "glass-btn-primary glass-btn-brand",
         variant === "ghost" && "!bg-transparent !shadow-none",
         variant === "danger" && "text-danger",
         block && "w-full",

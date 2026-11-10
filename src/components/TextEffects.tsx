@@ -34,7 +34,9 @@ function readColors() {
   const css = getComputedStyle(document.documentElement);
   const ink = css.getPropertyValue("--ds-text").trim() || "#121430";
   const rainbow = [1, 2, 3, 4, 5].map((n) => css.getPropertyValue(`--ds-rainbow-${n}`).trim() || ink);
-  return { ink, rainbow };
+  // צבע הכותרות - אדום הלוגו (ראו --ds-title-* ב-tokens.css)
+  const title = css.getPropertyValue("--ds-title-to").trim() || ink;
+  return { ink, rainbow, title };
 }
 
 interface TextMask {
@@ -118,13 +120,6 @@ function buildMask(text: string, w: number, h: number, opts: { blur?: number; ma
     },
     paint: draw,
   };
-}
-
-/** גרדיאנט הקשת לרוחב הלוח, מימין לשמאל - כמו בכותרות. */
-function rainbowFill(ctx: CanvasRenderingContext2D, w: number, rainbow: string[]) {
-  const g = ctx.createLinearGradient(w * 0.97, 0, w * 0.03, 0);
-  rainbow.forEach((c, i) => g.addColorStop(i / (rainbow.length - 1), c));
-  return g;
 }
 
 /**
@@ -236,7 +231,9 @@ export function SphereText({
   loop?: boolean;
 }) {
   const ref = useCanvasEffect(text, (ctx, w, h, reduced) => {
-    const { rainbow } = readColors();
+    // כותרת ("ברוכות הבאות", שלב 1) - אדום אחיד כמו כל הכותרות (בקשת
+    // הלקוחה, 2026-11-08), ולא מעבר צבעים
+    const { title } = readColors();
     const mask = buildMask(text, w, h, { maxLines: 1 });
     const pts = mask.points(3);
     for (let i = pts.length - 1; i > 0; i--) {
@@ -252,7 +249,6 @@ export function SphereText({
     });
     const target = sphere.map((_, i) => pts[i % Math.max(1, pts.length)] ?? [w / 2, h / 2]);
     const delay = sphere.map(() => Math.random() * 0.35);
-    const color = target.map(([x]) => rainbow[Math.min(rainbow.length - 1, Math.floor((1 - x / w) * rainbow.length))]);
     const R = Math.min(w, h) * 0.42;
     const focal = Math.min(w, h) * 2;
 
@@ -281,7 +277,7 @@ export function SphereText({
         const py = syp + (ty - syp) * m;
         const depth = Math.max(0.25, Math.min(1, 0.6 - z2 * 0.4));
         ctx.globalAlpha = m > 0.5 ? 0.55 + m * 0.45 : depth;
-        ctx.fillStyle = color[i];
+        ctx.fillStyle = title;
         const r = 1.8;
         ctx.fillRect(px - r / 2, py - r / 2, r, r);
       }
@@ -290,7 +286,7 @@ export function SphereText({
       const ready = clamp01((time - 2.9) / 0.6) * (loop && !reduced ? 1 - clamp01((time - 5.9) / 0.5) : 1);
       if (ready > 0) {
         ctx.globalAlpha = ready;
-        mask.paint(ctx, rainbowFill(ctx, w, rainbow));
+        mask.paint(ctx, title);
         ctx.globalAlpha = 1;
       }
       return loop && !reduced ? false : ready >= 1;

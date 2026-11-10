@@ -116,7 +116,11 @@ function StageShell({
         // הריווח התחתון קטן במסך רחב בכוונה: הטיימר ומד ההתקדמות יושבים
         // בפינות, ולא מתחת לעמודת התוכן, ולכן אין סיבה לשמור להם רצועה
         // שלמה לרוחב כל המסך. במסך צר הם כן חוסמים את המרכז, ושם הריווח נשאר.
-        "px-4 pt-20 pb-40 sm:px-8",
+        // הריווח העליון קטן במסך רחב (בקשת הלקוחה 2026-11-08: "להעלות את כל
+        // תוכן הדף, רווח שווה למעלה ולמטה"): הסרגל העליון תופס רק את שתי
+        // הפינות, ועמודת התוכן ממורכזת ביניהן - אין סיבה לשמור לו רצועה שלמה.
+        // lg:pt-6 = בדיוק lg:pb-6 של tightBottom.
+        "px-4 pt-20 pb-40 sm:px-8 lg:pt-6",
         tightBottom ? "lg:pb-6" : "lg:pb-24",
         className,
       )}
@@ -155,7 +159,8 @@ function StageShell({
             {/* התגית והמסקנה המעשית באותה שורה, מעל הכותרת */}
             {/* header-pair: כשיש גם מסקנה, הרווח בין התגית למסקנה יושב בדיוק
                 באמצע, מתחת לתג השלב (בקשת הלקוחה, 2026-11-08) - ראו glass.css */}
-            <div className="header-pair flex flex-wrap items-center justify-center gap-3">
+            {/* mt-3: רווח בין תג השלב לתגית, שלא יהיו צמודים (בקשת הלקוחה 2026-11-08) */}
+            <div className={`header-pair flex flex-wrap items-center justify-center gap-3 ${stage ? "mt-3" : ""}`}>
               {kicker && (
                 <span className="glass glass-chip text-accent-soft gap-2">
                   {icon && <Icon name={icon} size={15} />}

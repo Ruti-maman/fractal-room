@@ -181,7 +181,8 @@ function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
             iconAfter="arrowNext"
             onClick={handleStart}
             silent
-            className="glass-btn-brand px-16 text-2xl"
+            // הצורה (ארוך ודק) והצבע (אדום הלוגו) הם עכשיו ברירת המחדל של כל
+            // כפתור ראשי גדול - ראו .glass-btn-lg ו-GlassButton
           >
             התחילו
           </GlassButton>

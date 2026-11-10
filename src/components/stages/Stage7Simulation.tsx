@@ -18,7 +18,7 @@ import {
 import type { Group } from "../../types/group";
 import type { MediaItem } from "../../types/media";
 import { BackgroundLayers } from "../ui/AppBackground";
-import Icon from "../ui/Icon";
+import Icon, { type IconName } from "../ui/Icon";
 // תג השלב העגול - אותו תג כמו בכותרת של StageShell בכל שאר השלבים
 import { LevelBadge } from "../ui/GameTile";
 import { ConclusionInHeader } from "../PracticalConclusionBanner";
@@ -44,12 +44,12 @@ const PALETTE = ["#f5300f", "#f26a50", "#f3846e", "#c8955f", "#283d5b"];
  * מרחק, קול ותכנון המשפט - כי ההקלטה היא בת 10 שניות בלבד ואין הזדמנות
  * שנייה.
  */
-const SIMULATION_STEPS = [
-  { text: "בחרו משתתפת אחת שתעמוד מול המצלמה", color: PALETTE[0] },
-  { text: "עמדו כמטר מהמסך, כך שהפנים והידיים ייכנסו למסגרת", color: PALETTE[1] },
-  { text: "ודאו שהאור מגיע מלפנים - חלון מאחורי הגב יחשיך את הפנים", color: PALETTE[2] },
-  { text: "דברו לאט, בקול ברור, ישירות אל המצלמה", color: PALETTE[3] },
-  { text: "יש לכן 10 שניות בלבד - תכננו מראש משפט אחד ממוקד", color: PALETTE[4] },
+const SIMULATION_STEPS: { text: string; color: string; icon: IconName }[] = [
+  { text: "בחרו משתתפת אחת שתעמוד מול המצלמה", color: PALETTE[0], icon: "users" },
+  { text: "עמדו כמטר מהמסך, כך שהפנים והידיים ייכנסו למסגרת", color: PALETTE[1], icon: "camera" },
+  { text: "ודאו שהאור מגיע מלפנים - חלון מאחורי הגב יחשיך את הפנים", color: PALETTE[2], icon: "sun" },
+  { text: "דברו לאט, בקול ברור, ישירות אל המצלמה", color: PALETTE[3], icon: "volume" },
+  { text: "יש לכן 10 שניות בלבד - תכננו מראש משפט אחד ממוקד", color: PALETTE[4], icon: "clock" },
 ];
 
 /** כמה זמן עובר בין הופעת הוראה להוראה הבאה. */
@@ -403,6 +403,19 @@ function SolutionAndRecord({
   const currentAttempt = countdown !== null ? attempts + 1 : attempts;
   const lastAttempt = (countdown !== null || status === "recording") && currentAttempt === MAX_ATTEMPTS;
 
+  /*
+    בזמן ההקלטה התצוגה הופכת למסך מלא (בקשת הלקוחה, 2026-11-08): מהספירה
+    3-2-1 ועד סוף ההקלטה, ואז חוזרת לגודלה לצפייה ולשליחה. כפתור העצירה
+    והזמן נמצאים בסרגל הנגן עצמו, ולכן הם גלויים גם במסך המלא.
+  */
+  const capturing = countdown !== null || status === "recording";
+  const wasCapturingRef = useRef(false);
+  useEffect(() => {
+    if (capturing && !wasCapturingRef.current) setExpanded(true);
+    if (!capturing && wasCapturingRef.current) setExpanded(false);
+    wasCapturingRef.current = capturing;
+  }, [capturing]);
+
   useEffect(() => {
     if (phase !== "record") return;
     setStreamReady(false);
@@ -677,12 +690,18 @@ function SolutionAndRecord({
           נחתך בשום מסך). הקצה העליון של אזור הגלילה דוהה, כך שהוראה שעוברת
           מתחת לכותרת נעלמת ברכות ולא נחתכת בקו ישר.
         */
-        className="relative flex h-dvh flex-col items-center gap-4 overflow-hidden px-8 pt-20 pb-0 text-center"
+        className="relative flex h-dvh flex-col items-center gap-4 overflow-hidden px-8 pt-20 pb-0 text-center lg:pt-6"
       >
         <style>{`
           @keyframes step-in {
             from { opacity: 0; transform: translateY(22px); }
             to   { opacity: 1; transform: translateY(0); }
+          }
+          /* קלף משימה נוחת: מגיע מלמטה מוטה חזק, מקפץ, ונשאר בהטיה קלה */
+          @keyframes quest-in {
+            from { opacity: 0; transform: translateY(40px) scale(0.7) rotate(calc(var(--tilt) * 6)); }
+            60%  { opacity: 1; transform: translateY(-6px) scale(1.03) rotate(calc(var(--tilt) * -1)); }
+            to   { opacity: 1; transform: rotate(var(--tilt)); }
           }
         `}</style>
 
@@ -690,7 +709,7 @@ function SolutionAndRecord({
 
         <div className="relative flex flex-none flex-col items-center gap-2" style={{ animation: "fade-up 0.7s ease-out both" }}>
           <LevelBadge value={7} progress={0.7} size={88} />
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="header-pair mt-3 flex flex-wrap items-center justify-center gap-3">
             <span className="glass glass-chip text-accent-soft gap-2">
               <Icon name="camera" size={15} />
               סימולציות
@@ -710,9 +729,10 @@ function SolutionAndRecord({
         >
 
         {/* "עכשיו משנות צורה" - עולה מלמטה, כהמשך ישיר לטקסט של "מרעיון
-            למנגנון" שנגרר למעלה ויצא מהמסך (ראו Stage7Mechanism) */}
+            למנגנון" שנגרר למעלה ויצא מהמסך (ראו Stage7Mechanism). בלי תיבה
+            סביב הטקסט הרץ (בקשת הלקוחה, 2026-11-08) */}
         <div
-          className="glass glass-brick glass-raised relative flex w-full max-w-3xl flex-none flex-col items-center gap-2 rounded-2xl px-8 py-5"
+          className="relative flex w-full max-w-3xl flex-none flex-col items-center gap-2 px-8 py-2"
           style={{ animation: "step-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both" }}
         >
           {shapeLines.map((line, i) => (
@@ -742,26 +762,54 @@ function SolutionAndRecord({
           <RecordingLens />
         </div>
 
-        {/* ההוראות נחשפות אחת אחרי השנייה. כל אחת היא לבנה בפני עצמה -
-            קודם הן היו שורות טקסט עם עיגול צבעוני, וחמישה צבעים שונים
-            רמזו על היררכיה שלא קיימת: כל ההוראות שוות בחשיבותן. */}
-        <ol className="relative flex w-full max-w-2xl flex-none flex-col gap-3 text-right">
-          {SIMULATION_STEPS.map((step, i) => (
-            <li
-              key={i}
-              data-step={i}
-              className="glass glass-dim glass-raised flex items-center gap-4 rounded-lg px-5 py-3.5"
-              style={{ animation: `step-in 0.6s ${(i + 1) * STEP_DELAY_SECONDS}s cubic-bezier(0.22, 1, 0.36, 1) both` }}
-            >
-              <span
-                aria-hidden="true"
-                className="glass glass-active flex h-9 w-9 shrink-0 items-center justify-center diamond text-sm font-extrabold"
+        {/*
+          ההוראות כ"מסלול משימות" במשחק (בקשת הלקוחה, 2026-11-08: "צורה
+          יותר משחקית"): כל הוראה היא קלף עם מעוין צבעוני וסמל, הקלפים
+          מסודרים בזיגזג ומוטים קלות לסירוגין, וכל אחד "נוחת" במקומו בתורו.
+          כל ההוראות באותו גודל ובאותו משקל - אין ביניהן היררכיה.
+        */}
+        <ol className="relative flex w-full max-w-3xl flex-none flex-col gap-4 text-right">
+          {SIMULATION_STEPS.map((step, i) => {
+            const tilt = i % 2 === 0 ? -1.2 : 1.2;
+            return (
+              <li
+                key={i}
+                data-step={i}
+                className={cx(
+                  "relative flex w-[88%] items-center gap-5 rounded-2xl bg-white px-5 py-4",
+                  i % 2 === 0 ? "self-start" : "self-end",
+                )}
+                style={
+                  {
+                    "--tilt": `${tilt}deg`,
+                    border: `3px solid ${step.color}`,
+                    boxShadow: `0 14px 28px -16px ${step.color}`,
+                    animation: `quest-in 0.7s ${(i + 1) * STEP_DELAY_SECONDS}s var(--ds-ease-spring) both`,
+                  } as React.CSSProperties
+                }
               >
-                {i + 1}
-              </span>
-              <span className="text-ink text-lg font-bold sm:text-xl">{step.text}</span>
-            </li>
-          ))}
+                {/* המעוין: הסמל של ההוראה, ומספר קטן בפינה */}
+                <span
+                  aria-hidden="true"
+                  className="relative flex h-16 w-16 shrink-0 items-center justify-center diamond text-white"
+                  style={{
+                    background: `radial-gradient(circle at 32% 26%, color-mix(in srgb, ${step.color} 55%, white), ${step.color} 55%)`,
+                    boxShadow: `0 6px 14px -6px ${step.color}`,
+                  }}
+                >
+                  <Icon name={step.icon} size={28} />
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="text-ink-3 absolute -top-3 start-3 rounded-sm bg-white px-2.5 text-sm font-extrabold"
+                  style={{ border: `2px solid ${step.color}` }}
+                >
+                  {i + 1}
+                </span>
+                <span className="text-ink text-xl font-bold sm:text-2xl">{step.text}</span>
+              </li>
+            );
+          })}
         </ol>
 
         <div
@@ -837,7 +885,7 @@ function SolutionAndRecord({
           <div
             ref={playerRef}
             className={`glass !bg-black overflow-hidden shadow-glass-lg ${
-              expanded ? "fixed inset-0 z-50 rounded-none" : "relative rounded-[2rem]"
+              expanded ? "fixed inset-0 z-50 rounded-none" : "relative rounded-sm"
             }`}
           >
             <video
@@ -884,7 +932,7 @@ function SolutionAndRecord({
             {countdown !== null && countdown > 0 && (
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/35">
                 {lastAttempt && (
-                  <span className="rounded-full bg-black/70 px-5 py-2 text-xl font-extrabold text-white">
+                  <span className="rounded-sm bg-black/70 px-5 py-2 text-xl font-extrabold text-white">
                     ניסיון אחרון
                   </span>
                 )}
@@ -903,7 +951,7 @@ function SolutionAndRecord({
             {status === "recording" && captionState === "listening" && (
               // text-white ולא text-ink-2: במצב בהיר ink הוא נייבי, והחיווי
               // נבלע לגמרי ברקע השחור של הנגן
-              <div className="pointer-events-none absolute top-5 left-5 flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm font-bold text-white/85">
+              <div className="pointer-events-none absolute top-5 left-5 flex items-center gap-2 rounded-sm bg-black/60 px-4 py-2 text-sm font-bold text-white/85">
                 <span className="h-2 w-2 diamond bg-ok" style={{ animation: "rec-dot 1.4s ease-in-out infinite" }} />
                 כתוביות חיות
               </div>
@@ -984,7 +1032,7 @@ function SolutionAndRecord({
                 </span>
 
                 {status === "recording" && (
-                  <span className="flex items-center gap-2 rounded-full bg-record/20 px-3 py-1 text-sm font-black text-record">
+                  <span className="flex items-center gap-2 rounded-sm bg-record/20 px-3 py-1 text-sm font-black text-record">
                     <span
                       className="h-2.5 w-2.5 diamond bg-record"
                       style={{ animation: "rec-dot 1.1s ease-in-out infinite" }}
@@ -1024,7 +1072,7 @@ function SolutionAndRecord({
     <main
       // justify-center-safe: כשהתוכן גבוה מהמסך - מצמידים למעלה ולא חותכים את
       // תג השלב (justify-center רגיל דחף אותו החוצה מראש המסך)
-      className="relative flex h-dvh flex-col items-center justify-center-safe gap-3 overflow-hidden px-8 pt-16 pb-4 text-center"
+      className="relative flex h-dvh flex-col items-center justify-center-safe gap-3 overflow-hidden px-8 pt-16 pb-4 text-center lg:pt-4"
     >
       <style>{`
         @keyframes rec-dot {
@@ -1076,7 +1124,8 @@ function SolutionAndRecord({
           אחת) - כל פיקסל שנחסך כאן הולך לתצוגת המצלמה */}
       <div className="relative flex flex-none flex-col items-center gap-2" style={{ animation: "fade-up 0.7s ease-out both" }}>
         <LevelBadge value={7} progress={0.7} size={64} />
-        <div className="flex flex-wrap items-center justify-center gap-2">
+        {/* header-pair: התגית והמסקנה ממורכזות סביב האמצע (בקשת הלקוחה) */}
+        <div className="header-pair mt-2 flex flex-wrap items-center justify-center gap-2">
           <span className="glass glass-chip text-accent-soft gap-2">
             <Icon name="record" size={15} />
             הקלטה
@@ -1096,7 +1145,7 @@ function SolutionAndRecord({
         {/* הילת אורורה - אותו מניפת צבעים מסתובבת, מטושטשת מאוד, שגולשת
             מאחורי התצוגה ונושמת אל הרקע. זה מה שנותן את ה"וואו" בלי להוסיף
             שום אלמנט חדש למסך */}
-        <div className="pointer-events-none absolute -inset-20 overflow-hidden rounded-[6rem] opacity-20 blur-[110px]">
+        <div className="pointer-events-none absolute -inset-20 overflow-hidden rounded-sm opacity-20 blur-[110px]">
           <div
             className="absolute top-1/2 left-1/2 aspect-square w-[130%]"
             style={{
@@ -1114,16 +1163,16 @@ function SolutionAndRecord({
             כך שהמצב "מקליטים עכשיו" ברור מכל מקום בחדר. */}
         {status === "recording" ? (
           <div
-            className="absolute -inset-[2px] rounded-[2.1rem] bg-record"
+            className="absolute -inset-[2px] rounded-[6px] bg-record"
             style={{ animation: "rec-ring 2.4s ease-in-out infinite" }}
           />
         ) : (
           <>
             <div
-              className="absolute -inset-[3px] rounded-[2.2rem]"
+              className="absolute -inset-[3px] rounded-[7px]"
               style={{ background: `linear-gradient(135deg, ${PALETTE[0]}, ${PALETTE[2]}, ${PALETTE[4]})` }}
             />
-            <div className="absolute -inset-[3px] overflow-hidden rounded-[2.2rem]">
+            <div className="absolute -inset-[3px] overflow-hidden rounded-[7px]">
               <div
                 className="absolute top-1/2 left-1/2 aspect-square w-[160%]"
                 style={{
@@ -1200,7 +1249,8 @@ function SolutionAndRecord({
                 במקום כפתור נפרד). כאן רק רמז עדין, עם שלוש נקודות שמראות
                 כמה ניסיונות נוצלו מתוך שלושה. */}
             {attemptsLeft > 0 && (
-              <p className="glass glass-pill text-ink-2 gap-3 px-5 py-3 text-lg font-bold">
+              // בלי תיבה סביב הרמז (בקשת הלקוחה, 2026-11-08) - טקסט בלבד
+              <p className="text-ink-2 flex items-center gap-3 px-2 text-lg font-bold">
                 <AttemptDots used={attempts} />
                 {attemptsLeft === 1
                   ? "נשאר לכן עוד ניסיון אחד – לחצנה על הכפתור האדום להקלטה האחרונה"
@@ -1653,7 +1703,7 @@ function SharedViewing({
       // אותה פריסה כמו StageShell: נעול לגובה המסך ומתחיל מלמעלה (pt-20 -
       // מתחת לסרגל העליון), ולא ממורכז - מרכוז דחף את הסרטונים למטה, אל
       // מתחת למד ההתקדמות ולטיימר שבפינות.
-      className="relative flex h-dvh flex-col items-center gap-5 overflow-hidden px-8 pt-20 pb-6 text-center"
+      className="relative flex h-dvh flex-col items-center gap-5 overflow-hidden px-8 pt-20 pb-6 text-center lg:pt-6"
     >
       <BackgroundLayers variant="deep" />
 
@@ -1696,7 +1746,7 @@ function SharedViewing({
         <LevelBadge value={7} progress={0.7} size={88} />
         {/* התגית והמסקנה באותה שורה (כמו ב-StageShell) - כל שורה שנחסכת
             כאן הולכת לגובה של הסרטונים */}
-        <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
           <span className="glass glass-chip text-accent-soft gap-2">
             <Icon name="film" size={15} />
             צפייה משותפת
@@ -1763,7 +1813,7 @@ function SharedViewing({
                     className="glass glass-raised relative rounded-2xl p-[3px] transition-shadow duration-300 group-hover:shadow-[0_0_46px_-4px_var(--ds-glow)]"
                   >
                     {/* בלי bg-black: הרקע השחור בצבץ בפינות המעוגלות */}
-                    <div className="overflow-hidden rounded-[calc(1rem-2px)]">
+                    <div className="overflow-hidden rounded-[2px]">
                       <GroupClip
                     workshopId={workshopId}
                     groupId={g.id}

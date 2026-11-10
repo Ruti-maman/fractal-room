@@ -667,10 +667,12 @@
     font-size: 1rem;
   }
 
+  /* ארוך ודק, כמו "התחילו" בשלב 1 (בקשת הלקוחה, 2026-11-08): גובה 64px -
+     המינימום לכפתור מגע (סעיף 2 ב-CLAUDE.md) - ורוחב נדיב */
   .glass-btn-lg {
-    min-height: 5rem;
-    padding-inline: 3rem;
-    font-size: 1.6rem;
+    min-height: 4rem;
+    padding-inline: 5rem;
+    font-size: 1.5rem;
   }
 
   /*
@@ -741,7 +743,8 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    border-radius: var(--ds-r-full);
+    /* מרובע (בקשת הלקוחה 2026-11-08: כל המסגרות מרובעות) */
+    border-radius: var(--ds-r-btn);
     padding: 0.5rem 1.1rem;
   }
 
@@ -750,7 +753,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    border-radius: var(--ds-r-full);
+    border-radius: var(--ds-r-btn);
     padding: 0.35rem 0.95rem;
     font-size: 0.8rem;
     font-weight: 700;
@@ -777,7 +780,7 @@
     width: 100%;
     min-height: var(--ds-touch);
     padding-inline: 1.5rem;
-    border-radius: var(--ds-r-full);
+    border-radius: var(--ds-r-btn);
     background-color: color-mix(in srgb, var(--ds-glass) 75%, transparent);
     color: var(--ds-text);
     font-size: 1.15rem;
@@ -953,7 +956,7 @@
   @supports not ((-webkit-background-clip: text) or (background-clip: text)) {
     .glass-title {
       background-image: none;
-      color: var(--ds-text);
+      color: var(--ds-title-to);
     }
   }
 
@@ -1206,7 +1209,7 @@
     overflow: hidden;
     field-sizing: content;
     min-height: 4.25rem;
-    border-radius: 2rem;
+    border-radius: var(--ds-r-btn);
     color: var(--ds-text);
     /* מסגרת דקה שרואים כבר לפני ההקלדה - בגוון הטורקיז, לא אפור שנבלע ברקע */
     border: 1.5px solid color-mix(in srgb, var(--ds-accent) 40%, transparent);
@@ -1312,19 +1315,23 @@
     הלקוחה 2026-11-08. כמו מסך צ'אט באפליקציה: נייבי עמוק עם רשת נקודות
     עדינה והילת קורל, והבועות לבנות ואטומות מעליו.
   */
+  /* הרקע של האתר עצמו (בקשת הלקוחה 2026-11-08, אחרי נייבי מנוקד, קרם
+     ונייבי חלק): אותו גרדיאנט --ds-bg-* של המסך ושל "כלל הפרקטל" - כהה
+     במצב הכהה ובהיר במצב הבהיר, כך שהחלון נראה כחלק מהאתר. */
   .chat-surface {
     --chat-bubble-bg: #ffffff;
-    background-color: var(--ds-navy) !important;
-    background-image:
-      radial-gradient(circle, color-mix(in srgb, white 14%, transparent) 1.2px, transparent 1.7px),
-      radial-gradient(60% 50% at 85% 0%, color-mix(in srgb, var(--ds-pal-3) 38%, transparent), transparent 70%),
-      radial-gradient(55% 45% at 10% 100%, color-mix(in srgb, var(--ds-wood) 30%, transparent), transparent 70%),
-      linear-gradient(165deg, color-mix(in srgb, var(--ds-navy) 80%, white), var(--ds-navy) 55%, color-mix(in srgb, var(--ds-navy) 75%, black)) !important;
-    background-size: 22px 22px, auto, auto, auto !important;
+    --chat-ink: var(--ds-navy);
+    --chat-shadow: color-mix(in srgb, var(--ds-navy) 40%, transparent);
+    background-color: var(--ds-bg-solid) !important;
+    background-image: linear-gradient(160deg, var(--ds-bg-from), var(--ds-bg-via), var(--ds-bg-to)) !important;
+    background-size: auto !important;
   }
 
-  .chat-surface::after {
-    display: none;
+  /* בלי מסגרת הזכוכית ובלי ברק הזכוכית - הברק הלבן במצב הבהיר יצר כתם
+     אפור-לבן עכור על הנייבי */
+  .chat-surface::after,
+  .chat-surface::before {
+    display: none !important;
   }
 
   /*
@@ -1351,10 +1358,11 @@
     }
   }
 
+  /* הכותרת באדום של כל הכותרות - נקרא טוב גם על הנייבי */
   .chat-surface .glass-title {
     background-image: none;
-    color: #ffffff;
-    -webkit-text-fill-color: #ffffff;
+    color: var(--ds-pal-3);
+    -webkit-text-fill-color: var(--ds-pal-3);
   }
 
   /* המצב הכהה: תגיות ניטרליות-סגלגלות ולא טורקיז מלא */

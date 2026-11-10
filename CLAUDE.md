@@ -87,6 +87,17 @@
 - הלוגו: `public/brand/fractal-logo.png` (עם הרקע הכחול - בשלב 1, ממלא את
   המסגרת), ו-`FractalLogo.tsx` (וקטור בלי רקע - במעבר הזום במקום פרח העיגולים).
 - הבועות/כדורים המרחפים ברקע הוסרו מכל הפרויקט, וגם צליל הדקה האחרונה.
+- **2026-11-08: כל הכותרות (`.glass-title`) באדום אחיד** - הקורל של המילה
+  "פרקטל" בלוגו (`--ds-pal-3`), בשני המצבים. בלי מעבר צבעים: שלוש נקודות
+  `--ds-title-*` שוות. לא לחזור לגרדיאנט נייבי-קורל או קאמל-קורל.
+- **2026-11-08: כל כפתור ראשי** (`GlassButton variant="primary"`) באדום המלא
+  של הלוגו (`glass-btn-brand`), וכל כפתור גדול (`size="lg"`) **ארוך ודק**:
+  גובה 64px (המינימום למגע) וריווח צד 5rem - בדיוק כמו "התחילו" בשלב 1.
+  לא לתת לכפתור בודד גובה/צבע משלו; משנים ב-`.glass-btn-lg` וב-GlassButton.
+- **2026-11-08: כל המסגרות מרובעות** - כרטיסים, שדות, תגיות, פופ-אפים.
+  כל `--ds-r-*` שווים ל-`--ds-r-btn` (4px) ב-`tokens.css`. `rounded-full`
+  ו-`--ds-r-full` רק לעיגולים אמיתיים (נקודות, הילות, פסי התקדמות),
+  לא למסגרת. לא להחזיר גלולות.
 
 **עדכון 2026-10-05 - מצב בהיר בקשת, כברירת מחדל.** המצב הכהה נפסל כ"מעושן".
 ברירת המחדל עכשיו היא **מצב בהיר** בהשראת האתר של המפתחת (ruti-maman.github.io):
@@ -520,11 +531,12 @@ media            id, workshop_id, group_id, stage_number, url, created_at
   ממשק העריכה של חלק 5, או עם הרשאת גישה) ייקבע כשנדע יותר על סביבת העבודה בחדר.
 
 
+
 <!-- cloude-code-toolbox:mcp-skills-awareness-begin -->
 
 ### MCP & Skills awareness (Claude Code ToolBox)
 
-_Last synced: 2026-11-08T10:27:20.006Z._
+_Last synced: 2026-11-10T11:19:33.520Z._
 
 - **Full report:** `.claude/cloude-code-toolbox-mcp-skills-awareness.md` in this workspace (auto-overwritten on each scan). Use it as ground truth for configured servers and skill folders.
 - **MCP:** For **live tools** in Claude Code, enable the matching server via `/mcp`. Servers are configured in `~/.claude.json` (user) and `.mcp.json` (project).

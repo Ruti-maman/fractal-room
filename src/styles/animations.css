@@ -56,6 +56,84 @@
   }
 }
 
+/* כניסת צעד בהזדהות (שלב 2): קופץ מהמרכז, קטן ומסובב, ונוחת ישר */
+@keyframes step-burst {
+  from {
+    opacity: 0;
+    transform: scale(0.45) rotate(-5deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04) rotate(1deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* חלק שעף מקצה המסך למקומו ונוחת (הפרקטל המתחבר בהזדהות, שלב 2).
+   --fx/--fy: נקודת המוצא, --fr: סיבוב בדרך */
+@keyframes fly-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--fx, 0), var(--fy, 0)) rotate(var(--fr, 180deg)) scale(0.3);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1.15);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* החלקה קצרה ורכה פנימה, בלי קפיצה (ההזדהות, שלב 2 - הגרסה הרגועה) */
+@keyframes glide-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--fx, 0), var(--fy, 0));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* אות/תג שנופל מלמעלה וקופץ בנחיתה */
+@keyframes letter-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-70vh) rotate(var(--lr, -20deg));
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(0.12em) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-0.18em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* סיבוב איטי בלי סוף - הפרקטל "חי" אחרי שהתחבר */
+@keyframes slow-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* זרם החול בטיימר: המקפים זזים כלפי מטה */
+@keyframes sand-stream {
+  to {
+    stroke-dashoffset: -7;
+  }
+}
+
 /* קו מחיקה שנמתח על מילה, מימין לשמאל */
 @keyframes strike-through {
   from {
@@ -105,6 +183,66 @@
   100% {
     transform: scale(14) rotate(12deg);
     opacity: 1;
+  }
+}
+
+/* הלוגו מתפזר לריבועים (פתיחת שלב 2): כל ריבוע עף בכיוון שלו, מסתובב
+   ונמוג. --sx/--sy/--sr לכל ריבוע (FractalLogo, shatter) */
+/* הריבועים נפרדים בתנועה רכה (ease-out): יוצאים מיד ומאטים בהדרגה, ולא
+   "עומדים ואז נזרקים". הנמיגה מתחילה רק באמצע הדרך, כדי שהעין תלווה אותם. */
+@keyframes shard-fly {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  45% {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--sx, 0), var(--sy, 0)) rotate(var(--sr, 90deg)) scale(0.6);
+  }
+}
+
+@keyframes shard-fade {
+  to {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+/* הלוגו לא נוחת ונעצר: הוא מופיע בעדינות וממשיך לגדול לאט כל הזמן,
+   גם כשהריבועים כבר נפרדים - תנועה אחת רציפה בלי רגע של עמידה
+   (בקשת הלקוחה, 2026-11-08: "יותר חלק ונעים לעין"). */
+@keyframes logo-land {
+  from {
+    opacity: 0;
+    transform: scale(0.84);
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+/* מסך הלוגו המתפזר: הרקע מתחיל להתבהר כבר כשהריבועים נפרדים, ונמוג
+   ברצף אחד - בלי קפיצה מאטום לשקוף. */
+@keyframes shatter-veil {
+  0%,
+  28% {
+    opacity: 1;
+    background-color: var(--ds-bg-solid);
+  }
+  75% {
+    opacity: 1;
+    background-color: transparent;
+  }
+  100% {
+    opacity: 0;
+    background-color: transparent;
   }
 }
 

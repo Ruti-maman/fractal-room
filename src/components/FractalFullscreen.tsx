@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { playSparkle } from "../lib/tapFeedback";
 import FractalSentence from "./FractalSentence";
 import { BackgroundLayers } from "./ui/AppBackground";
 
@@ -32,6 +33,10 @@ function FractalFullscreen({ title, text, onDone }: { title: string; text: strin
         solid={false}
         grain={6}
         once
+        // נבנה, מתפרק ונבנה שוב - שלוש פעמים (בקשת הלקוחה 2026-11-08)
+        repeats={3}
+        // נצנוץ קסום בתחילת כל בנייה
+        onBuildStart={playSparkle}
         onDone={onDone}
         className="relative min-h-0 w-full flex-1"
       />

@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Group } from "../types/group";
 import { supabase } from "../lib/supabase";
 import Icon from "./ui/Icon";
@@ -38,14 +39,37 @@ function TopBar({ myGroup, screenNumber, center, onGoBack }: Props) {
       {/* המסקנה המעשית, כשיש */}
       <div className="pointer-events-auto flex min-w-0 flex-1 justify-center">{center}</div>
 
-      {/* פקדי מערכת - בצד הסיום (שמאל ב-RTL) */}
-      <div className="pointer-events-auto flex flex-none items-center gap-2">
-        {onGoBack && <BackButton onClick={onGoBack} />}
-        {/* חיווי הוויי-פיי הוסר לבקשת הלקוחה ("להוריד את כל הסימונים של
-            הוויי-פיי"). ConnectionBadge נשאר ב-SystemControls אם יידרש שוב. */}
-        <ThemeToggle />
+      {/* פקדי מערכת - בצד הסיום (שמאל ב-RTL). כאן רק שומר מקום בלתי נראה
+          באותו גודל, כדי שהמסקנה באמצע לא תזוז; הפקדים עצמם ב-portal למטה. */}
+      <div aria-hidden="true" className="invisible flex flex-none items-center gap-2">
+        <SystemButtons onGoBack={onGoBack} />
       </div>
+
+      {/* "תמיד תהיה אפשרות לחזור אחורה" (בקשת הלקוחה, 2026-11-08): מסכים
+          מלאים (ההזדהות בשלב 2, "כלל הפרקטל", סרטון במסך מלא) יושבים מעל
+          הסרגל (z-40) ומסתירים אותו. לכן הפקדים בשכבה משלהם, מעל כולם.
+          portal ל-body: בתוך הסרגל (fixed עם z-40) שום z-index של ילד לא
+          היה עובר אותו. */}
+      {createPortal(
+        <div className="pointer-events-none fixed end-0 top-0 z-[75] flex p-4 sm:p-5">
+          <div className="pointer-events-auto flex items-center gap-2">
+            <SystemButtons onGoBack={onGoBack} />
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
+  );
+}
+
+function SystemButtons({ onGoBack }: { onGoBack?: () => void }) {
+  return (
+    <>
+      {onGoBack && <BackButton onClick={onGoBack} />}
+      {/* חיווי הוויי-פיי הוסר לבקשת הלקוחה ("להוריד את כל הסימונים של
+          הוויי-פיי"). ConnectionBadge נשאר ב-SystemControls אם יידרש שוב. */}
+      <ThemeToggle />
+    </>
   );
 }
 

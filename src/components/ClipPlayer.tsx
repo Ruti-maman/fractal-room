@@ -206,7 +206,7 @@ function ClipPlayer({ src, caption, title }: { src: string; caption?: string; ti
             />
           </span>
           {ended && (
-            <span className="rounded-full bg-black/60 px-4 py-1 text-sm font-bold text-white">
+            <span className="rounded-sm bg-black/60 px-4 py-1 text-sm font-bold text-white">
               לצפייה מהתחלה
             </span>
           )}
@@ -287,7 +287,7 @@ function ClipPlayer({ src, caption, title }: { src: string; caption?: string; ti
 
       {/* שם הקבוצה במסך מלא - אחרת לא ברור של מי ההקלטה שמוצגת */}
       {expanded && title && (
-        <div className="absolute top-6 right-6 rounded-full bg-black/60 px-5 py-2 text-lg font-bold text-white">
+        <div className="absolute top-6 right-6 rounded-sm bg-black/60 px-5 py-2 text-lg font-bold text-white">
           {title}
         </div>
       )}

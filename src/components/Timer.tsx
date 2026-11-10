@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cx } from "../lib/cx";
 import Icon from "./ui/Icon";
@@ -53,14 +53,93 @@ const WARN_SECONDS = 60;
 const REMINDER_MS = 8000;
 
 /*
- * מעוין במקום טבעת (בקשת הלקוחה, 2026-11-08: "העיגולים למעוינים").
- * המסלול מתחיל בקודקוד העליון ונע עם כיוון השעון, בדיוק כמו הטבעת
- * הקודמת. pathLength=100 מאפשר לחשב את המילוי באחוזים, בלי היקף.
+ * ----------------------------------------------------------------------------
+ *  שעון חול (בקשת הלקוחה, 2026-11-08: "לשנות לשעון חול וגדול")
+ * ----------------------------------------------------------------------------
+ *  החול **הוא** הזמן: התא העליון מתרוקן והתחתון מתמלא לפי הזמן שנשאר בפועל
+ *  (fraction), וזרם דק יורד ביניהם כל עוד השעון רץ. זה לא AnimatedHourglass
+ *  (הלופ הדקורטיבי של מסך ההמתנה) - כאן כל גרגר מייצג זמן אמיתי.
  */
-function diamondPath(r: number) {
-  return `M40 ${40 - r} L${40 + r} 40 L40 ${40 + r} L${40 - r} 40 Z`;
+const TOP_BULB = "M18 16 C18 52 45 66 47.5 80 L52.5 80 C55 66 82 52 82 16 Z";
+const BOTTOM_BULB = "M18 144 C18 108 45 94 47.5 80 L52.5 80 C55 94 82 108 82 144 Z";
+const BULB_H = 64; // גובה כל תא, מהצוואר (80) עד השפה (16 / 144)
+
+function HourglassGauge({
+  fraction,
+  sand,
+  running,
+  className,
+}: {
+  /** 1 = כל הזמן לפנינו (התא העליון מלא), 0 = נגמר. */
+  fraction: number;
+  sand: string;
+  running: boolean;
+  className?: string;
+}) {
+  const id = useId().replace(/:/g, "");
+  const topH = BULB_H * fraction;
+  const bottomH = BULB_H * (1 - fraction);
+
+  return (
+    <svg viewBox="0 0 100 160" className={className} aria-hidden="true">
+      <defs>
+        <clipPath id={`${id}-top`}>
+          <path d={TOP_BULB} />
+        </clipPath>
+        <clipPath id={`${id}-bottom`}>
+          <path d={BOTTOM_BULB} />
+        </clipPath>
+      </defs>
+
+      {/* הזכוכית: מילוי לבן עדין */}
+      <path d={TOP_BULB} style={{ fill: "var(--ds-glass-strong)" }} />
+      <path d={BOTTOM_BULB} style={{ fill: "var(--ds-glass-strong)" }} />
+
+      {/* החול שנשאר - יושב בתחתית התא העליון, צמוד לצוואר */}
+      <g clipPath={`url(#${id}-top)`}>
+        <rect
+          x="0"
+          y={80 - topH}
+          width="100"
+          height={topH}
+          style={{ fill: sand, transition: "y 1s linear, height 1s linear, fill var(--ds-dur) var(--ds-ease)" }}
+        />
+      </g>
+
+      {/* הזרם - רק כשהשעון רץ ויש עוד חול למעלה */}
+      {running && fraction > 0 && (
+        <line
+          x1="50"
+          y1="80"
+          x2="50"
+          y2={144 - bottomH}
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeDasharray="3 4"
+          style={{ stroke: sand, animation: "sand-stream 0.6s linear infinite" }}
+        />
+      )}
+
+      {/* החול שנערם למטה - עם תלולית קטנה באמצע */}
+      <g clipPath={`url(#${id}-bottom)`}>
+        <path
+          d={`M0 ${144 - bottomH + 4} Q50 ${144 - bottomH - 6} 100 ${144 - bottomH + 4} L100 160 L0 160 Z`}
+          style={{ fill: sand, transition: "d 1s linear, fill var(--ds-dur) var(--ds-ease)" }}
+        />
+      </g>
+
+      {/* קו המתאר והמכסים - בנייבי של הלוגו */}
+      <g fill="none" strokeWidth="3" strokeLinejoin="round" style={{ stroke: "var(--ds-navy)" }}>
+        <path d={TOP_BULB} />
+        <path d={BOTTOM_BULB} />
+      </g>
+      <rect x="10" y="6" width="80" height="10" rx="4" style={{ fill: "var(--ds-wood)" }} />
+      <rect x="10" y="144" width="80" height="10" rx="4" style={{ fill: "var(--ds-wood)" }} />
+      {/* נצנוץ על הזכוכית */}
+      <path d="M26 24 C26 44 36 56 42 64" fill="none" stroke="white" strokeOpacity="0.7" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
 }
-const TRACK = 36; // חצי האלכסון של מעוין הזמן ב-SVG
 
 function Timer({
   startedAt,
@@ -158,7 +237,7 @@ function Timer({
       className={cx(
         "glass glass-brick glass-raised flex",
         center
-          ? "flex-none flex-col items-center gap-3 rounded-3xl px-10 py-6"
+          ? "flex-none flex-col items-center gap-3 rounded-2xl px-10 py-6"
           : "fixed right-4 bottom-4 z-30 items-center gap-3 rounded-xl p-3 sm:right-6 sm:bottom-6 sm:gap-4 sm:p-4",
         tone.text,
       )}
@@ -166,54 +245,25 @@ function Timer({
         isWarning ? { animation: "raised-glow 1.6s ease-in-out infinite" } : undefined
       }
     >
-      <div
-        className={cx(
-          "relative flex-none",
-          // במרכז הטבעת נגזרת מגובה המסך, כדי שלא תגלוש במסך נמוך
-          // מעוין צר יותר מעיגול באותו גודל - לכן הוא גדול מהטבעת הקודמת, כדי שהספרות ייכנסו בתוכו
-          center ? "h-[min(16rem,32dvh)] w-[min(16rem,32dvh)]" : "h-[104px] w-[104px] sm:h-28 sm:w-28",
-        )}
-      >
-        <svg viewBox="0 0 80 80" className="h-full w-full overflow-visible">
-          {/* המסלול - חריץ שקוע: שפת אור דקה מבחוץ, וחריץ כהה בתוכה */}
-          <path d={diamondPath(TRACK + 3.6)} fill="none" stroke="var(--ds-3d-rim)" strokeWidth="1.2" strokeLinejoin="round" />
-          <path d={diamondPath(TRACK)} fill="none" stroke="var(--ds-3d-shade)" strokeWidth="7" strokeLinejoin="round" />
-          {/* מה שנשאר מהזמן */}
-          <path
-            d={diamondPath(TRACK)}
-            pathLength={100}
-            fill="none"
-            stroke={tone.stroke}
-            strokeWidth="6"
-            strokeLinejoin="round"
-            strokeDasharray="100"
-            strokeDashoffset={100 * (1 - fraction)}
-            style={{
-              transition: "stroke-dashoffset 1s linear, stroke var(--ds-dur) var(--ds-ease)",
-              filter: "drop-shadow(0 1px 1.5px var(--ds-3d-shadow-near)) drop-shadow(0 0 6px var(--ds-glow-soft))",
-            }}
-          />
-        </svg>
+      {/* שעון החול - גדול (בקשת הלקוחה). במרכז הוא נגזר מגובה המסך, כדי
+          שלא יגלוש במסך נמוך */}
+      <HourglassGauge
+        fraction={pending ? 1 : fraction}
+        sand={tone.stroke}
+        running={!pending && !isTimeUp}
+        className={cx("flex-none", center ? "h-[min(17rem,32dvh)] w-auto" : "h-28 w-auto sm:h-32")}
+      />
 
-        {/* מעוין מורם במרכז החוגה */}
-        <div className="timer-dial absolute inset-[13%]" aria-hidden="true" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          {isTimeUp ? (
-            <Icon name="check" size={center ? 64 : 30} />
-          ) : (
-            <span
-              className={cx(
-                "font-extrabold tabular-nums",
-                center ? "text-[min(3.4rem,6.5dvh)]" : "text-xl sm:text-2xl",
-              )}
-            >
-              {mm}:{ss}
-            </span>
+      <div className={cx(center ? "text-center" : "pe-1 text-start")}>
+        {/* הספרות גדולות ליד השעון - נקראות מהצד השני של החדר */}
+        <div
+          className={cx(
+            "flex font-extrabold tabular-nums leading-none",
+            center ? "mb-2 justify-center text-[min(3.6rem,7dvh)]" : "mb-1.5 text-3xl sm:text-4xl",
           )}
+        >
+          {isTimeUp ? <Icon name="check" size={center ? 56 : 32} /> : `${mm}:${ss}`}
         </div>
-      </div>
-
-      <div className={cx(center ? "text-center" : "hidden pe-1 text-start sm:block")}>
         <div
           className={cx(
             "text-ink-3 flex items-center gap-1.5 font-bold tracking-wide",

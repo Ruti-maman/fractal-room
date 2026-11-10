@@ -122,8 +122,12 @@ function TipChat({
                   {[0, 1, 2].map((d) => (
                     <span
                       key={d}
-                      className="bg-ink-3 h-2.5 w-2.5 diamond"
-                      style={{ animation: `chat-typing 0.9s ${d * 0.15}s ease-in-out infinite` }}
+                      className="h-2.5 w-2.5 diamond"
+                      style={{
+                        background: "var(--chat-ink, var(--ds-text-3))",
+                        opacity: 0.45,
+                        animation: `chat-typing 0.9s ${d * 0.15}s ease-in-out infinite`,
+                      }}
                     />
                   ))}
                 </div>
@@ -139,7 +143,8 @@ function TipChat({
                   // בועה לבנה ואטומה, בלי מסגרת צבעונית - הצבע של הדוברת
                   // נשאר בכותרת הטיפ ובמעוין הממוספר
                   background: "var(--chat-bubble-bg, var(--ds-glass-opaque-raised))",
-                  boxShadow: "0 10px 24px -10px rgba(0, 0, 0, 0.45)",
+                  // צל נייבי רך - על הרקע הבהיר צל שחור נראה מלוכלך
+                  boxShadow: "0 10px 26px -10px var(--chat-shadow, rgba(0, 0, 0, 0.45))",
                   // הפינה התחתונה שממנה יוצא הזנב - כמעט ישרה, כמו בבועת דיבור
                   borderRadius: start
                     ? "var(--ds-r-lg) var(--ds-r-lg) var(--ds-r-xs) var(--ds-r-lg)"
@@ -169,7 +174,11 @@ function TipChat({
                 <p className="text-xl leading-snug font-extrabold" style={{ color: `var(--ds-bubble-${n})` }}>
                   {tip.title}
                 </p>
-                <p className="text-ink mt-0.5 text-lg leading-snug">{tip.text}</p>
+                {/* נייבי קבוע: הבועה תמיד לבנה, ו-text-ink במצב הכהה הוא כמעט
+                    לבן - השורה נעלמה */}
+                <p className="mt-0.5 text-lg leading-snug" style={{ color: "var(--chat-ink, var(--ds-text))", opacity: 0.8 }}>
+                  {tip.text}
+                </p>
               </div>
             </li>
           );
