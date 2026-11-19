@@ -4,7 +4,6 @@ import { cleanAiHebrew } from "../../lib/hebrewText";
 import type { Stage4Content, Stage4IntroTexts } from "../../types/stage4Content";
 import StageShell from "../StageShell";
 import StageIntro from "../StageIntro";
-import ZoomIntro from "../ZoomIntro";
 import Icon from "../ui/Icon";
 import GlassModal from "../ui/GlassModal";
 import { GlassButton, Spinner } from "../ui/Glass";
@@ -37,7 +36,6 @@ const STROKE_ALPHA = 1;
 // שהוא מאבד את הצורה שתפורה לאות. אם הדפדפן לא תומך ב-ctx.filter (מסך ישן)
 // הוא פשוט מתעלם ממנו ומצייר בלי טשטוש - לא נשבר, רק פחות רך.
 const STROKE_BLUR_PX = 1.5;
-const ERASER_CURSOR_COLOR = "#d5e8e4";
 
 /**
  * הופכת את סמן העכבר עצמו למרקר קטן בצבע הכלי הפעיל, מוטה באלכסון (כמו
@@ -46,15 +44,26 @@ const ERASER_CURSOR_COLOR = "#d5e8e4";
  * (הנקודה שבאמת "לוחצת"), כך שהחוד תמיד נשאר בדיוק במקום שעליו מצביעים
  * גם כשהגוף של המרקר מוטה מאחוריו - בדיוק כמו עט ביד אמיתית.
  */
-function brushCursor(color: string): string {
+/** סמן המחק - אותו מחק מצויר כמו בכלי שבצד (בקשת המפתחת 2026-11-16). */
+function eraserCursor(): string {
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 42 42">` +
-    `<g transform="rotate(30 15 38)">` +
-    `<rect x="7" y="6" width="16" height="19" rx="3" fill="${color}" stroke="white" stroke-width="2"/>` +
-    `<polygon points="7,25 23,25 15,38" fill="${color}" stroke="white" stroke-width="2" stroke-linejoin="round"/>` +
-    `</g>` +
+    // קטן יותר (28px) ובלי קו הרצפה מתחת (בקשת המפתחת 2026-11-16)
+    `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24">` +
+    `<path d="M7 21 L2.7 16.7 c-1 -1 -1 -2.5 0 -3.4 l9.6 -9.6 c1 -1 2.5 -1 3.4 0 l5.6 5.6 c1 1 1 2.5 0 3.4 L13 21 Z" fill="white" stroke="#0b1b3f" stroke-width="1.5" stroke-linejoin="round"/>` +
+    `<path d="M5 11 L14 20" stroke="#2a4286" stroke-width="1.8"/>` +
     `</svg>`;
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 15 38, auto`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 6 24, auto`;
+}
+
+function brushCursor(color: string): string {
+  // 2026-11-16: באותו סגנון של המרקרים בצד - קו נייבי דק, וצבע הדיו רק
+  // בחוד ובמשיכה מתחתיו. ה-hotspot הוא קצה החוד (3,21)
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">` +
+    `<path d="M22 12 L17.4 16.6 a2 2 0 0 1 -2.8 0 L9.4 11.4 a2 2 0 0 1 0 -2.8 L14 4" fill="white" stroke="#0b1b3f" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>` +
+    `<path d="M9 11 L3 17 V20 H12 L15 17" fill="${color}" stroke="#0b1b3f" stroke-width="1.3" stroke-linejoin="round"/>` +
+    `</svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 5 33, auto`;
 }
 // סלחנות למגע לא מדויק - רדיוס בפיקסלים מסביב לאות שעדיין "תופס" אותה, כי
 // אצבע אמיתית על מסך ענק אף פעם לא נוגעת בול במרכז אות בודדת (בשונה מעכבר).
@@ -125,33 +134,65 @@ function ToolButton({
   icon: "marker" | "eraser";
   label: string;
 }) {
+  /*
+    שפת "עיתונאי" (2026-11-15): הכלי **מראה מה הוא עושה**. השם שלו כתוב על
+    משיכת מרקר אמיתית בצבע הדיו - "חוזקות" מודגש בירוק, "חסמים" באדום -
+    בדיוק כמו שהטקסט ייראה על הדף. המחק מוחק משיכה (קו חוצה). הכלי הפעיל
+    הוא כרטיס לבן שבולט מהעמודה הכחולה, עם פס אדום-כתום בצד; הכבויים
+    שקופים עם מסגרת דקה. CSS: .mk-* ב-styles/stage-scenes.css.
+  */
+  /*
+    2026-11-15 (בקשת המפתחת: "טושים חמודים"): מרקר מצויר שעומד - גוף
+    שמנמן בצבע הדיו עם ברק לבן, תווית לבנה, צווארון וחוד משופע; המחק -
+    מחק עם שרוול כחול. הכלי ביד קופץ למעלה ונוטה, השאר עומדים במקום.
+    .mk-cute ב-stage-scenes.css.
+  */
   return (
     <button
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      // לבן, טקסט כחול, מסגרת אדומה (בקשת הלקוחה, 2026-11-08). הכלי הפעיל
-      // מורם ומקבל טבעת לבנה עבה מסביב - בולטת על המגש האדום
-      className={cx(
-        "glass glass-interactive glass-3d glass-pill btn-rect frame-red flex w-full min-w-[11rem] items-center gap-3.5 py-2.5 ps-2.5 pe-5 transition-all duration-300",
-        active && "-translate-y-0.5 scale-[1.04]",
-      )}
-      style={active ? { outline: "4px solid var(--ds-on-active)", outlineOffset: "3px" } : undefined}
+      // בלי עיגול/זוהר המגע של שאר המסכים (בקשת המפתחת 2026-11-15)
+      data-no-glow=""
+      className={cx("mk-cute", active && "is-active")}
+      style={{ ["--ink" as string]: color }}
     >
-      {/* האייקון גדול יותר (בקשת הלקוחה) - 64 במקום 44 */}
-      <span
+      {/* ציור קו דק ועדין (2026-11-15, "עדינים, דקים, מצוירים"): קו מתאר
+          נייבי של 1 פיקסל, גוף לבן צר וארוך, והצבע רק בחוד ובפס אחד */}
+      {/* קו מצויר בלבד, כמו האיורים של "רעיון / שאלה / תחושה" בשלב 3 (בקשת
+          המפתחת 2026-11-15): בלי מילוי, קו נייבי דק אחד, והצבע של הדיו רק
+          בקו של החוד ובשני פסים. כל קו "מצטייר" בכניסה (mk-draw) */}
+      {/* אייקון קטן בקו דק (24x24), בדיוק בסגנון האיורים של שלב 3 (בקשת
+          המפתחת: "קטן יותר, אותו סגנון"). מרקר אלכסוני - קו החוד ומשיכת
+          הדיו מתחתיו בצבע הדיו; מחק - בלוק מחק עם קו רצפה */}
+      <svg
+        className="mk-cute__art"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#0b1b3f"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
         aria-hidden="true"
-        className="flex h-16 w-16 flex-none items-center justify-center diamond text-white"
-        style={{
-          background: `radial-gradient(circle at 32% 26%, color-mix(in srgb, ${color} 45%, white) 0%, ${color} 50%, color-mix(in srgb, ${color} 65%, #0b2a2a) 100%)`,
-          boxShadow: `inset 0 -3px 6px -2px rgba(0,0,0,0.25), inset 0 2px 3px rgba(255,255,255,0.6), 0 4px 10px -3px color-mix(in srgb, ${color} 70%, transparent)`,
-        }}
       >
-        <Icon name={icon} size={30} />
-      </span>
-      <span className={cx("text-ink text-xl", active ? "font-extrabold" : "font-bold")}>
-        {label}
-      </span>
+        {icon === "marker" ? (
+          <>
+            {/* גוף המרקר */}
+            <path className="mk-draw" pathLength={1} d="M22 12 L17.4 16.6 a2 2 0 0 1 -2.8 0 L9.4 11.4 a2 2 0 0 1 0 -2.8 L14 4" />
+            {/* החוד - בצבע הדיו */}
+            <path className="mk-draw" pathLength={1} d="M9 11 L3 17 V20 H12 L15 17" stroke="var(--ink-line)" strokeWidth="1.5" />
+            {/* משיכת הדיו מתחת */}
+            <path className="mk-draw" pathLength={1} d="M3 22.5 H13" stroke="var(--ink-line)" strokeWidth="2" />
+          </>
+        ) : (
+          <>
+            <path className="mk-draw" pathLength={1} d="M7 21 L2.7 16.7 c-1 -1 -1 -2.5 0 -3.4 l9.6 -9.6 c1 -1 2.5 -1 3.4 0 l5.6 5.6 c1 1 1 2.5 0 3.4 L13 21" />
+            <path className="mk-draw" pathLength={1} d="M5 11 L14 20" stroke="#2a4286" strokeWidth="1.5" />
+            <path className="mk-draw" pathLength={1} d="M22 21 H7" />
+          </>
+        )}
+      </svg>
+      <span className="mk-cute__label">{label}</span>
     </button>
   );
 }
@@ -206,23 +247,45 @@ function fillCharShape(
   const r = charEl.getBoundingClientRect();
   ctx.save();
   if (tool === "eraser") {
-    ctx.globalCompositeOperation = "destination-out";
+    // המחק "מדגיש בלבן" (בקשת המפתחת 2026-11-16): צובע בלבן של הדף מעל
+    // הסימון, במקום לחתוך את השכבה - כך רואים בדיוק את מה שנמחק
+    ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = 1;
-    ctx.fillStyle = "#000000";
+    ctx.filter = "none";
+    ctx.fillStyle = "#ffffff";
   } else {
     ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = STROKE_ALPHA;
     ctx.filter = `blur(${STROKE_BLUR_PX}px)`;
     ctx.fillStyle = STROKE_COLOR[tool];
   }
-  roundRectPath(
-    ctx,
-    r.left - paperRect.left - CHAR_FILL_PADDING_PX,
-    r.top - paperRect.top + r.height * 0.12,
-    r.width + CHAR_FILL_PADDING_PX * 2,
-    r.height * 0.76,
-    3,
-  );
+  if (tool === "eraser") {
+    // קצת יותר מהאות לכל כיוון - שלא יישארו שאריות צבע בקצוות
+    roundRectPath(
+      ctx,
+      r.left - paperRect.left - CHAR_FILL_PADDING_PX - 1,
+      r.top - paperRect.top,
+      r.width + CHAR_FILL_PADDING_PX * 2 + 2,
+      r.height,
+      0,
+    );
+  } else {
+    /*
+      2026-11-16 (בקשת המפתחת: "שיתאים למרקר שבצד"): משיכה של מרקר-הדגשה
+      אמיתי עם חוד משופע, כמו האיור בצד - פס חד (בלי טשטוש ובלי פינות
+      מעוגלות) שיושב על החצי התחתון של האות ועולה מעט מעבר לה, כמו מרקר
+      שעובר על שורה. אותיות שכנות מתחברות לפס רציף אחד.
+    */
+    ctx.filter = "none";
+    roundRectPath(
+      ctx,
+      r.left - paperRect.left - CHAR_FILL_PADDING_PX,
+      r.top - paperRect.top + r.height * 0.34,
+      r.width + CHAR_FILL_PADDING_PX * 2,
+      r.height * 0.6,
+      0,
+    );
+  }
   ctx.fill();
   ctx.restore();
 }
@@ -272,28 +335,61 @@ function CategoryPopup({
       open
       onClose={guardedCancel}
       tone={pending.color === "green" ? "ok" : "warn"}
-      icon="marker"
+      // ראש החלון צבוע בצבע הדיו, ובמרכזו המרקר המצויר שבו סימנו (cat-modal ב-editorial.css)
+      className={cx("cat-modal", pending.color === "green" ? "cat-modal--green" : "cat-modal--red")}
+      visual={
+        <>
+        <span className="cat-band" aria-hidden="true" />
+        <div className="cat-visual" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0b1b3f" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 12 L17.4 16.6 a2 2 0 0 1 -2.8 0 L9.4 11.4 a2 2 0 0 1 0 -2.8 L14 4" fill="#ffffff" />
+            <path d="M9 11 L3 17 V20 H12 L15 17" fill="var(--ink)" />
+            <path className="cat-visual__swipe" d="M3 22.5 H13" stroke="var(--ink)" strokeWidth="2.4" />
+          </svg>
+        </div>
+        </>
+      }
       title={pending.color === "green" ? "סימנתן חוזקה" : "סימנתן חסם"}
       description="מה המונח המקצועי התואם ביותר?"
       cancelLabel="ביטול (להשאיר מסומן בלי תיוג)"
     >
-      <p className="glass glass-dim text-ink rounded-lg px-5 py-4 text-xl font-bold">
-        "{pending.text}"
-      </p>
+      {/* 2026-11-16 (בקשת המפתחת: "להוסיף צבע"): צבע הדיו של המרקר שבו
+          סימנו - הקטע מוצג מודגש בדיוק כמו על הדף, פס בצבע הדיו בצד, וכל
+          תחום עם ריבוע בצבע הדיו שמתמלא כשנוגעים. cat-pop ב-editorial.css */}
+      <div className="cat-pop" style={{ ["--ink" as string]: STROKE_COLOR[pending.color] }}>
+        {/* הקטע שסומן - טקסט גדול באמצע, בלי הדגשה ובלי גרשיים (בקשת המפתחת) */}
+        <p className="cat-pop__phrase">{pending.text}</p>
 
-      {categories.length === 0 ? (
-        <InlineNotice tone="warn" className="mt-5">
-          לא הוגדרו קטגוריות בתוכן השלב.
-        </InlineNotice>
-      ) : (
-        <div className="mt-5 flex flex-wrap justify-center gap-3">
-          {categories.map((category) => (
-            <GlassButton key={category} size="sm" onClick={() => guardedChoose(category)}>
-              {category}
-            </GlassButton>
-          ))}
-        </div>
-      )}
+        {categories.length === 0 ? (
+          <InlineNotice tone="warn" className="mt-5">
+            לא הוגדרו קטגוריות בתוכן השלב.
+          </InlineNotice>
+        ) : (
+          // לוח של אריחים בשני טורים: מספר דק בצבע הדיו, שם התחום, וחץ
+          // שזז כשנוגעים; בנגיעה האריח מתמלא בצבע הדיו
+          <div className="cat-pop__grid">
+            {categories.map((category, i) => (
+              <button
+                key={category}
+                type="button"
+                className="cat-pop__btn"
+                // בלי עיגול המגע הכחול - בנגיעה רק הצבע של המרקר נמרח (בקשת המפתחת)
+                data-no-glow=""
+                style={{ animationDelay: `${0.2 + i * 0.06}s` }}
+                onClick={() => guardedChoose(category)}
+              >
+                <span className="cat-pop__n" aria-hidden="true">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="cat-pop__name">{category}</span>
+                <svg className="cat-pop__go" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M19 5 L5 19 M5 8.5 L5 19 L15.5 19" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                </svg>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </GlassModal>
   );
 }
@@ -324,9 +420,28 @@ const PHRASE_COLUMN_STYLES: Record<
  * תיבה מלבנית מסביבה. text-stroke מצייר קו מתאר לאורך הצורה הגרפית
  * האמיתית של הגליף, בדיוק כמו מסגרת סביב צורה ב-SVG, לא מלבן גנרי.
  */
-function FramedCategoryLabel({ text }: { text: string; color: "green" | "red" }) {
-  // טקסט מודגש בלבד, בלי רקע צבעוני - לבקשת הלקוחה
-  return <span className="text-ink text-lg font-extrabold">{text}</span>;
+
+/** מונה שרץ מ-00 עד המספר - פתיחת הטבלה "סופרת" את מה שהקבוצה מצאה. */
+function CountUp({ to, delayMs, className }: { to: number; delayMs: number; className?: string }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (to <= 0) return;
+    let raf = 0;
+    const start = performance.now() + delayMs;
+    const dur = Math.min(1200, 250 + to * 120);
+    const tick = (now: number) => {
+      const t = Math.max(0, Math.min(1, (now - start) / dur));
+      setN(Math.round(to * (1 - Math.pow(1 - t, 3))));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [to, delayMs]);
+  return (
+    <span className={className} aria-hidden="true">
+      {String(n).padStart(2, "0")}
+    </span>
+  );
 }
 
 /** טור אחד בטבלת הסנכרון (שקף 7) - חוזקות או חסמים, כל שורה מחולקת למונח המקצועי (מימין, מודגש) ולנתון עצמו (משמאל). */
@@ -348,64 +463,72 @@ function PhraseColumn({
     if (group) group.items.push(p);
     else groups.push({ category: p.category, items: [p] });
   }
+  /*
+    איחוד קטעים צמודים (2026-11-16): סימון אחד שנעשה בשתי משיכות נשמר כשני
+    קטעים ("התלמיד מפ" + "גין יכולת...") - אבל זה נתון אחד. קטעים באותו תחום
+    שנוגעים זה בזה (או שרק רווח ביניהם) מוצגים כאחד, וגם נספרים כאחד.
+  */
+  for (const g of groups) {
+    const sorted = [...g.items].sort((a, b) => a.startIndex - b.startIndex);
+    const merged: TaggedPhrase[] = [];
+    for (const p of sorted) {
+      const prev = merged[merged.length - 1];
+      if (prev && p.startIndex <= prev.endIndex + 2) {
+        const gap = p.startIndex - prev.endIndex;
+        merged[merged.length - 1] = {
+          ...prev,
+          endIndex: Math.max(prev.endIndex, p.endIndex),
+          text: p.startIndex <= prev.endIndex ? prev.text : prev.text + (gap === 2 ? " " : "") + p.text,
+        };
+      } else {
+        merged.push(p);
+      }
+    }
+    g.items = merged;
+  }
+  const itemCount = groups.reduce((n, g) => n + g.items.length, 0);
+  /*
+    2026-11-15 (בקשת המפתחת: "לשדרג דחוף"): בשפת "עיתונאי". ראש הטור - בלוק
+    צבע מלא (חוזקות בכחול, חסמים באדום-כתום) עם מספר ענק ודק של כמה זוהו.
+    מתחתיו כל תחום הוא שורה: המונח המקצועי מימין, והנתונים משמאלו **מודגשים
+    במרקר** - בדיוק כמו שהקבוצה סימנה אותם על הדף. התחומים נכנסים בזה אחר זה.
+    pc-* ב-editorial.css.
+  */
   return (
-    // לבן, כותרות אדומות, טקסט כחול, מסגרות אדומות (בקשת הלקוחה, 2026-11-08)
-    <div className="glass glass-brick glass-raised frame-red flex max-h-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
-      {/* כותרת הטור: אדומה, על הלבן של הכרטיס, עם קו אדום מתחתיה */}
-      <div className="text-red-head border-pal-3 flex flex-none items-center gap-2.5 border-b-2 px-5 py-4 text-2xl font-extrabold">
-        <Icon name={styles.icon} size={24} />
-        {title}
-        <span className="text-ink-3 ms-auto text-sm font-bold tabular-nums">
-          {phrases.length}
+    <div
+      className={cx("pc", color === "green" ? "pc--green" : "pc--red")}
+      style={{ ["--hl" as string]: styles.strokeColor }}
+    >
+      <div className="pc__head">
+        <CountUp className="pc__count" to={itemCount} delayMs={color === "green" ? 650 : 800} />
+        <span className="pc__title">
+          <Icon name={styles.icon} size={22} />
+          {title}
         </span>
       </div>
 
       {phrases.length === 0 ? (
-        <p className="text-ink-3 px-5 py-8 text-center text-sm">עדיין לא סומן כאן כלום</p>
+        <p className="pc__empty">עדיין לא סומן כאן כלום</p>
       ) : (
-        // mx/mb: המסגרת הצבעונית של הכרטיס (::after) יושבת מתחת לתוכן -
-        // בלי הרווח הזה הרקע של שורת הכותרות הקבועה כיסה אותה והמסגרת
-        // נראתה חתוכה. rounded-b: שורות שגוללות לא בולטות מהפינות המעוגלות.
-        <div className="glass-scroll mx-0.5 mb-0.5 min-h-0 flex-1 overflow-y-auto rounded-b-2xl">
-        <table className="w-full border-collapse text-right">
-          <thead>
-            <tr className="text-red-head text-base">
-              {/* המונח המקצועי מימין (נקרא ראשון, טור קצר ואחיד שקל לסרוק) והנתון
-                  - המשפט מהטקסט - משמאלו. אושר ע"י המפתחת, 2026-10-20. */}
-              {/* sticky: שורת הכותרות נשארת קבועה כשהשורות גוללות מתחתיה */}
-              <th className="border-pal-3 sticky top-0 z-10 border-b bg-white px-4 py-2 font-extrabold">
-                מונח מקצועי
-              </th>
-              <th className="border-pal-3 sticky top-0 z-10 border-b bg-white px-4 py-2 font-extrabold">
-                נתון
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {groups.map((g) =>
-              g.items.map((p, i) => (
-                <tr
-                  key={p.id}
-                  // קו מפריד רק בין תחומים; בתוך תחום - קו עדין בין המשפטים בלבד
-                  className={cx(
-                    i === g.items.length - 1 ? "border-pal-5 border-b" : "border-pal-6 border-b border-dashed",
-                    "last:border-b-0",
-                  )}
-                >
-                  {i === 0 && (
-                    <td rowSpan={g.items.length} className="px-4 py-3.5 align-top whitespace-nowrap">
-                      {/* נצמד מתחת לשורת הכותרות בגלילה, עד שהתחום הבא דוחף אותו */}
-                      <div className="sticky top-14">
-                        <FramedCategoryLabel text={g.category} color={color} />
-                      </div>
-                    </td>
-                  )}
-                  <td className="text-ink px-4 py-3.5 align-middle text-lg leading-snug">{p.text}</td>
-                </tr>
-              )),
-            )}
-          </tbody>
-        </table>
+        <div className="pc__body glass-scroll">
+          <div className="pc__legend" aria-hidden="true">
+            <span>מונח מקצועי</span>
+            <span>נתון</span>
+          </div>
+          <ul className="pc__groups">
+            {groups.map((g, gi) => (
+              <li key={g.category} className="pc__group" style={{ animationDelay: `${(color === "green" ? 1.05 : 1.2) + gi * 0.16}s` }}>
+                <span className="pc__cat">{g.category}</span>
+                <span className="pc__items">
+                  {g.items.map((p) => (
+                    <span key={p.id} className="pc__item">
+                      {p.text}
+                    </span>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
@@ -499,7 +622,7 @@ function FunctioningPictureStep({
   return (
     <StageShell
       stage={4}
-      kicker="תמונת תפקוד"
+      // בלי התגית "תמונת תפקוד" (כמו בשאר מסכי שלב 4, 2026-11-15)
       icon="lightbulb"
       title="תמונת תפקוד כוללת ומסקנה מעשית"
       subtitle={
@@ -559,50 +682,34 @@ function FunctioningPictureStep({
           לצד זה (ולא זה מעל זה), וזה מפנה את כל הגובה שהיה חסר לתיבת
           המסקנה. התיבה עצמה נמוכה יותר (2 שורות) - היא מתרחבת לרוחב.
         */
-        <div className="flex w-full flex-col gap-5">
-          {/* שני המשפטים שה-AI ניסח - ממוספרים כלבנים נפרדות, כדי שיהיה
-              ברור שאלו שתי אמירות ולא פסקה אחת ארוכה. */}
-          <ol className="grid gap-4 lg:grid-cols-2">
+        <div className="flex w-full flex-col gap-[4.5vh]">
+          {/* 2026-11-15 (בקשת המפתחת: "לעצב מחדש"): שתי האמירות הן שתי פיסות
+              שמתחברות - "כל פיסה מצטרפת לפיסה" מהטקסט. פיסה 1 בלוק כחול מלא,
+              פיסה 2 לבנה במסגרת נייבי, צמודות זו לזו; הן גולשות מהצדדים
+              ונפגשות, וריבוע אדום-כתום ננעץ בתפר. fp-* ב-editorial.css */}
+          <ol className="fp-pieces">
             {[result.sentence1, result.sentence2].map(cleanAiHebrew).map((sentence, i) => (
-              <li
-                key={i}
-                // לבן, טקסט כחול, מסגרת אדומה (בקשת הלקוחה, 2026-11-08)
-                className="glass glass-brick glass-raised frame-red flex items-start gap-4 rounded-2xl p-6"
-                style={{
-                  animation: `glass-in var(--ds-dur-slow) ${i * 120}ms var(--ds-ease) both`,
-                }}
-              >
-                <span
-                  aria-hidden="true"
-                  className="glass glass-active slot-chosen flex h-10 w-10 flex-none items-center justify-center diamond text-base font-extrabold"
-                >
-                  {i + 1}
+              <li key={i} className={cx("fp-piece", i === 0 ? "fp-piece--a" : "fp-piece--b")}>
+                <span className="fp-piece__n" aria-hidden="true">
+                  {String(i + 1).padStart(2, "0")}
                 </span>
-                <p className="text-ink text-xl leading-relaxed">{sentence}</p>
+                <p className="fp-piece__t">{sentence}</p>
               </li>
             ))}
+            <span className="fp-seam" aria-hidden="true" />
           </ol>
 
-          {/* לפי בקשת הלקוחה: לא הצעת AI מוצגת כאן - תיבה ריקה שהקבוצה
-              עצמה מקלידה לתוכה את המסקנה המעשית שלה. הלבנה הזו מודגשת
-              (glass-strong) כי היא הפעולה היחידה במסך. */}
-          <div className="glass glass-strong glass-brick glass-raised frame-red rounded-2xl p-5">
-            {/* הכותרת באדום (בקשת הלקוחה, 2026-11-08) */}
-            <label
-              htmlFor="group-conclusion"
-              className="text-red-head mb-3 flex items-center justify-center gap-2 text-center text-lg font-extrabold"
-            >
-              <Icon name="lightbulb" size={20} />
+          {/* המסקנה המעשית: בלי קופסה - כותרת עם ריבוע אדום, ושורת כתיבה אחת
+              ארוכה עם קו תחתון עבה, כמו לכתוב על שורה בדף */}
+          <div className="fp-write">
+            <label htmlFor="group-conclusion" className="fp-write__label">
               על סמך ההבנות למעלה - כתבו מסקנה מעשית שתלווה את כל השלבים הבאים
             </label>
             <textarea
               key={shakeKey}
               ref={conclusionRef}
               id="group-conclusion"
-              className={cx(
-                "glass-input !border-pal-4 text-navy h-24 w-full resize-none !rounded-xl !border-2 !bg-white py-4 !text-xl",
-                conclusionMissing && !groupConclusion.trim() && "!border-accent ring-accent/35 !border-2 ring-4",
-              )}
+              className={cx("fp-write__input", conclusionMissing && !groupConclusion.trim() && "is-missing")}
               style={
                 conclusionMissing && !groupConclusion.trim()
                   ? { animation: "shake-x 420ms var(--ds-ease) both" }
@@ -615,8 +722,7 @@ function FunctioningPictureStep({
               placeholder={conclusionMissing ? "כדי להמשיך, כתבו כאן קודם מסקנה מעשית..." : "הקלידו כאן..."}
               aria-invalid={conclusionMissing && !groupConclusion.trim()}
             />
-          </div>
-        </div>
+          </div>        </div>
       )}
     </StageShell>
   );
@@ -742,7 +848,6 @@ function Stage4Analysis(props: Props) {
     return (
       <StageIntro
         stage={4}
-        kicker="זיהוי חוזקות וחסמים"
         icon="marker"
         background="quiet"
         lines={intro.lines}
@@ -877,8 +982,11 @@ function Stage4Marking({
     const rect = paper.getBoundingClientRect();
     canvas.width = Math.max(1, Math.round(rect.width * dpr));
     canvas.height = Math.max(1, Math.round(rect.height * dpr));
-    canvas.style.width = `${rect.width}px`;
-    canvas.style.height = `${rect.height}px`;
+    // 100% ולא px: getBoundingClientRect מחזיר פיקסלים אמיתיים של המסך, אבל
+    // תחת הקטנת הממשק (zoom ב-index.css) px ב-style מוקטן - והסימון "ריחף"
+    // מעל המילים. כך התצוגה תמיד בגודל הדף, והציור (לפי rect) נופל עליו 1:1
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
     const ctx = canvas.getContext("2d");
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
@@ -1310,12 +1418,66 @@ function Stage4Marking({
   // באופן שוטף תוך כדי גרירה) - כך שהקבוצה יכולה למחוק/לתקן סימונים לפני
   // שהטבלה הסופית נקבעת.
   if (step === "table") {
-    const strengths = phrases.filter((p) => p.color === "green");
-    const blockers = phrases.filter((p) => p.color === "red");
+    /*
+      2026-11-16 (באג: "יש כאן חסמים, והטבלה מראה שאין"): הטבלה נבנתה רק
+      מקטעים **שתויגו** בחלון בחירת התחום. סימון שהחלון שלו נסגר בלי תיוג,
+      או קטע שנשבר לכמה משיכות ("ה" לבד), נעלם או הופיע שבור. עכשיו הטבלה
+      נבנית ממה שבאמת צבוע על הדף (marks): כל רצף צבוע מאותו צבע = נתון אחד,
+      עם הטקסט המלא שלו. התחום נלקח מהתיוג שחופף לרצף; רצף בלי תיוג מופיע
+      תחת "ללא תיוג", כדי ששום סימון לא ילך לאיבוד.
+    */
+    const UNTAGGED = "ללא תיוג";
+    const derived: TaggedPhrase[] = [];
+    let i = 0;
+    while (i < marks.length) {
+      const color = marks[i];
+      if (color !== "green" && color !== "red") {
+        i++;
+        continue;
+      }
+      let end = i;
+      while (end + 1 < marks.length && marks[end + 1] === color) end++;
+      // התיוגים מאותו צבע שחופפים לרצף, לפי הסדר
+      const overlapping = phrases
+        .filter((p) => p.color === color && p.endIndex >= i && p.startIndex <= end)
+        .sort((a, b) => a.startIndex - b.startIndex);
+      const categories = Array.from(new Set(overlapping.map((p) => p.category)));
+      if (categories.length <= 1) {
+        derived.push({
+          id: `run-${i}`,
+          color,
+          category: categories[0] ?? UNTAGGED,
+          text: textForRange(i, end),
+          startIndex: i,
+          endIndex: end,
+        });
+      } else {
+        // כמה תחומים שונים בתוך אותו רצף - מפצלים לפי גבולות התיוגים; חלק לא
+        // מתויג בין שניים מצטרף לקטע שלפניו
+        let segStart = i;
+        overlapping.forEach((p, k) => {
+          const next = overlapping[k + 1];
+          const segEnd = next ? Math.max(segStart, next.startIndex - 1) : end;
+          derived.push({
+            id: `run-${i}-${k}`,
+            color,
+            category: p.category,
+            text: textForRange(segStart, segEnd),
+            startIndex: segStart,
+            endIndex: segEnd,
+          });
+          segStart = segEnd + 1;
+        });
+      }
+      i = end + 1;
+    }
+    const strengths = derived.filter((p) => p.color === "green");
+    const blockers = derived.filter((p) => p.color === "red");
     return (
       <StageShell
         stage={4}
-        kicker="חוזקות וחסמים"
+        // התגית "חוזקות וחסמים" הוסרה (בקשת המפתחת 2026-11-15)
+        className="pc-screen"
         compactHeader
         icon="ladder"
         title="מערכת אפיון אוטומטית"
@@ -1335,7 +1497,7 @@ function Stage4Marking({
       >
         {/* flex-1 + max-h-full בכרטיסים: הכרטיס לא גבוה מהאזור, הכותרת שלו
             נשארת במקום ורק השורות גוללות בתוכו (קודם כל האזור נגלל והכותרת נחתכה). */}
-        <div className="flex min-h-0 w-full flex-1 flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-8 lg:flex-row lg:items-start">
           <PhraseColumn title="חוזקות שזוהו" color="green" phrases={strengths} />
           <PhraseColumn title="חסמים שזוהו" color="red" phrases={blockers} />
         </div>
@@ -1352,10 +1514,27 @@ function Stage4Marking({
   return (
     <StageShell
       stage={4}
-      kicker="זיהוי חוזקות וחסמים"
+      // mk-screen: כפתור "הבא" ממורכז מתחת לדף (שזז ימינה) - stage-scenes.css
+      className="mk-screen"
       icon="marker"
       title="ניתוח דילמה"
-      subtitle={markingHint}
+      // שלוש שורות (בקשת המפתחת 2026-11-15) - בלי לשנות מילה: שבירה אחרי
+      // הסוגריים הראשונים ואחרי הנקודתיים. טקסט אחר מהמסד שאין בו את
+      // הסימנים האלה פשוט נשאר שורה אחת רציפה.
+      // (בלי lookbehind ב-regex - לא נתמך בדפדפנים ישנים של אנדרואיד)
+      // אזור התוכן לא חותך: הטושים יושבים קרוב לקצה המסך ונחתכו בגבול שלו.
+      // הדף עצמו גולל בתוך המסגרת שלו, כך שלא צריך גלילה של האזור כולו.
+      clipContent={false}
+      subtitle={markingHint
+        .replace(/\)\s+/, ")\n")
+        .replace(/:\s+/, ":\n")
+        .split("\n")
+        .map((part, i, all) => (
+          <span key={i}>
+            {part.trim()}
+            {i < all.length - 1 && <br />}
+          </span>
+        ))}
       background="quiet"
       width="wide"
       // הדף והמגש ממורכזים בין מד ההתקדמות לטיימר (שיושבים בפינות), כך
@@ -1375,7 +1554,9 @@ function Stage4Marking({
       }
       overlay={
         <>
-          {zoomIn && <ZoomIntro />}
+          {/* צלילת הזום לתוך הלוגו הוסרה - בקשת המפתחת 2026-11-15 ("תעיף את
+              הלוגו ברקע"). zoomIn נשאר רק כדי לא לגעת בשאר הזרימה */}
+          {zoomIn && null}
           {pendingPhrase && (
             <CategoryPopup
               pending={pendingPhrase}
@@ -1401,12 +1582,14 @@ function Stage4Marking({
       */}
       {/* `lg:pt-5`: המרקר הפעיל מורם מעל המגש, ובלי מרווח הוא נחתך בקצה העליון של אזור התוכן. */}
       <div
-        className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col gap-5 lg:translate-x-8 lg:flex-row lg:items-start lg:pt-5"
+        // בלי lg:translate-x-8 (2026-11-15): הזיז את הטושים אל מחוץ למסך
+        className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col gap-8 lg:flex-row lg:items-start lg:pt-5 2xl:translate-x-4"
       >
       {/* המגש. שטוח ונמוך בכוונה (glass-dim) - הכלים הם הגיבורים כאן,
           והמגש רק מחזיק אותם; לבנה עבה מסביבם הייתה מתחרה בהם. */}
       {/* המגש אדום (בקשת הלקוחה, 2026-11-08), והכלים עליו לבנים */}
-      <div className="glass glass-raised tray-red flex flex-none flex-wrap items-center justify-center gap-4 rounded-2xl p-3 lg:flex-col lg:flex-nowrap lg:items-stretch lg:self-center lg:p-5">
+      {/* 2026-11-15: עמודה כחולה עמוקה (mk-tray) במקום המגש האדום */}
+      <div className="mk-tray flex flex-none flex-wrap items-center justify-center lg:flex-col lg:flex-nowrap lg:items-stretch lg:self-stretch">
         <MarkerTool
           tool="green"
           label="חוזקות"
@@ -1422,7 +1605,7 @@ function Stage4Marking({
         <EraserTool active={activeTool === "eraser"} onClick={() => setActiveTool("eraser")} />
       </div>
 
-        <div ref={paperAreaRef} className="flex h-full min-h-0 flex-1 flex-col pb-4">
+        <div ref={paperAreaRef} className="flex h-full min-h-0 flex-1 flex-col pb-4 mk-paper-area">
       {/*
         הדף.
 
@@ -1437,20 +1620,17 @@ function Stage4Marking({
           הם רק רשת ביטחון למקרה שגם ברצפת הגופן הטקסט לא נכנס. */}
       <div
         ref={paperFrameRef}
-        className="glass glass-brick glass-raised glass-scroll max-h-full w-full flex-none overflow-y-auto rounded-2xl p-3"
+        // 2026-11-15: דף מחברת לבן (mk-paper) - קווים דקים ושוליים אדומים
+        className="mk-paper-frame glass-scroll max-h-full w-full flex-none overflow-y-auto"
       >
         <div
           ref={paperRef}
-          className="relative w-full rounded-xl p-6 lg:p-8"
+          className="mk-paper relative w-full p-6 lg:p-8"
           style={{
-            background: "linear-gradient(180deg, #fffcfa 0%, #f8efea 100%)",
-            boxShadow: "inset 0 2px 20px -8px rgba(8, 48, 45, 0.35)",
             touchAction: "none",
             // סמן העכבר עצמו הופך למכחול בצבע הכלי הפעיל - כדי שיהיה ברור על מה
             // בדיוק לוחצים בלי להסתמך על נקודה שמצטיירת רק אחרי הלחיצה עצמה.
-            cursor: brushCursor(
-              activeTool === "eraser" ? ERASER_CURSOR_COLOR : STROKE_COLOR[activeTool],
-            ),
+            cursor: activeTool === "eraser" ? eraserCursor() : brushCursor(STROKE_COLOR[activeTool]),
           }}
           onPointerDown={handlePaperPointerDown}
           onPointerMove={handlePaperPointerMove}
@@ -1460,7 +1640,7 @@ function Stage4Marking({
               חדות וקריאות במלואן, גם כשהרקע הצבוע מתחתן מלא/חזק ולא שקוף. */}
           <p
             ref={paperTextRef}
-            className="relative z-10 leading-loose text-[#283d5b] select-none"
+            className="mk-paper__text relative z-10 leading-loose select-none"
             style={{ fontSize: `${paperFontPx}px` }}
           >
             {wordGroups.map((chars, wi) => (

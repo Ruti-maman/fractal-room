@@ -20,6 +20,35 @@ const corsHeaders = {
 
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
+/*
+  2026-11-16: Gemini החזיר 503 ("high demand") לאורך יום שלם, וה-AI נכשל.
+  לכן כל מודל מקבל כמה ניסיונות עם המתנה, ואם הוא עדיין עמוס או לא קיים -
+  עוברים למודל הבא. (אותו מנגנון כמו generate-functioning-picture.)
+*/
+const GEMINI_FALLBACK_MODELS = [GEMINI_MODEL, "gemini-3.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-flash"];
+const TRIES_PER_MODEL = 2;
+const RETRY_DELAY_MS = 1500;
+const TRANSIENT = new Set([429, 500, 502, 503, 504]);
+
+/** קריאה ל-generateContent עם ניסיונות חוזרים ומעבר בין מודלים. מחזירה את התשובה האחרונה. */
+async function fetchGemini(apiKey: string, body: string): Promise<Response> {
+  let last: Response | null = null;
+  for (const model of GEMINI_FALLBACK_MODELS) {
+    for (let t = 1; t <= TRIES_PER_MODEL; t++) {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body },
+      );
+      if (res.ok) return res;
+      last = res;
+      console.error("Gemini API error:", model, res.status);
+      if (!TRANSIENT.has(res.status)) break;
+      if (t < TRIES_PER_MODEL) await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * t));
+    }
+  }
+  return last!;
+}
+
 interface Segment {
   start: number; // שניות מתחילת הסרטון
   end: number;
@@ -156,23 +185,19 @@ Deno.serve(async (req) => {
       "אל תוסיף הסברים, כותרות או סימוני קוד - רק ה-JSON עצמו.",
     ].join("\n");
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                { inline_data: { mime_type: "video/webm", data: base64 } },
-              ],
-            },
-          ],
-          generationConfig: { temperature: 0, responseMimeType: "application/json" },
-        }),
-      },
+    const geminiRes = await fetchGemini(
+      apiKey,
+      JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: "video/webm", data: base64 } },
+            ],
+          },
+        ],
+        generationConfig: { temperature: 0, responseMimeType: "application/json" },
+      }),
     );
 
     if (!geminiRes.ok) {

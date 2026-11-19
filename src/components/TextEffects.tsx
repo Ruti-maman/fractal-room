@@ -12,7 +12,7 @@
  *
  *  עקרונות משותפים, כמו ב-FractalSentence ו-SandText:
  *   - Canvas דו-ממדי בלבד, בלי WebGL - הדפדפן בפלזמה לא ידוע ואולי ישן.
- *   - פונט Assistant הארוז בפרויקט, וצבעים מהטוקנים (קשת / צבע הטקסט), כך
+ *   - פונט Heebo הארוז בפרויקט, וצבעים מהטוקנים (קשת / צבע הטקסט), כך
  *     שזה עובד גם במצב הבהיר וגם בכהה.
  *   - **כל אפקט נגמר בטקסט חד וקריא** ועוצר את הציור - לא לולאה אינסופית
  *     (חוסך מעבד בפלזמה, ושום משפט לא נשאר "באמצע").
@@ -26,7 +26,7 @@ import { useEffect, useRef } from "react";
    כלים משותפים
    ========================================================================== */
 
-const FONT = (size: number) => `800 ${size}px Assistant, sans-serif`;
+const FONT = (size: number) => `800 ${size}px Heebo, Assistant, sans-serif`;
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 

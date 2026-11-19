@@ -41,22 +41,17 @@ function PracticalConclusionBanner({ workshopId, groupId }: Props) {
         // **הפתרון מוצג בשלמותו, בכל אורך** (דרישת הלקוחה) - קודם הוא נחתך
         // ב-"..." ונראה רק בלחיצה. עכשיו הוא יורד שורה בתוך הלבנה, וטקסט
         // ארוך קטן מעט. הלחיצה עדיין פותחת אותו בגדול.
-        className={`glass glass-interactive glass-3d flex max-w-[min(80vw,46rem)] items-start gap-2.5 py-2 ps-4 pe-3 text-start ${
-          conclusion.length > 50 ? "btn-rect" : "glass-pill btn-rect"
-        }`}
+        /* 2026-11-16 (בקשת המפתחת: "תעצב את זה"): בשפת "עיתונאי" - בלי
+           קופסה לבנה. ריבוע כתום קטן, תווית זעירה, קו מפריד דק, המסקנה
+           עצמה, ופס כתום דק שנמתח מתחת. הצבע יורש מהעמוד - לבן על כחול/
+           נייבי, נייבי על נייר. pc-tag ב-editorial.css */
+        className={`pc-tag ${conclusion.length > 60 ? "pc-tag--long" : ""}`}
+        data-no-glow
       >
-        <Icon name="lightbulb" size={17} className="text-accent-soft mt-0.5 flex-none" />
-        <span className="text-ink-3 mt-0.5 flex-none text-xs font-bold tracking-wide">
-          המסקנה שלנו:
-        </span>
-        <span
-          className={`text-ink min-w-0 leading-snug font-bold break-words ${
-            conclusion.length > 120 ? "text-xs" : conclusion.length > 60 ? "text-sm" : "text-base"
-          }`}
-        >
-          {conclusion}
-        </span>
-        <Icon name="chevronDown" size={15} className="text-ink-3 mt-0.5 flex-none" />
+        <span className="pc-tag__sq" aria-hidden="true" />
+        <span className="pc-tag__label">המסקנה שלנו</span>
+        <span className="pc-tag__text">{conclusion}</span>
+        <Icon name="chevronDown" size={14} className="pc-tag__more flex-none" />
       </button>
 
       {/* portal ל-body: הכפתור יושב בכותרת המונפשת (transform), ומודאל fixed

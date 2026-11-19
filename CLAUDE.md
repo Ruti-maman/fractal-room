@@ -72,6 +72,47 @@
 | אחסון האתר | Vercel או Netlify, רצוי על דומיין של הלקוחה |
 | ניתוב | React Router |
 
+**עדכון 2026-11-14 - שפת "עיתונאי" לכל הסדנה (גוברת על כל מה שלמטה).**
+בהשראת האתרים שהלקוחה שלחה (גלריית Michal's ב-Figma, פרקטיקה): נייר בהיר
+`#f4f6fb` עם רשת קווים של 12.5vw, כחול הלקוחה `#2a4286`, נגיעות אדום-כתום
+`#f25740`, טקסט נייבי `#0b1b3f`, Heebo, מספרים ענקיים ודקים מול טקסט זעיר,
+חיצים אלכסוניים דקים. **בלי זכוכית, בלי צללים, בלי גרדיאנטים, מסגרות מרובעות דקות.**
+- מסך הפתיחה, ההזדהות, "כלל הפרקטל", חלון הטיפים ומעבר הרשת - בנויים ישירות
+  בשפה הזו (`src/styles/editorial.css`, `src/lib/gridCurtain.ts`).
+- שאר השלבים מקבלים אותה דרך **שכבה אחת**: `src/styles/editorial-skin.css`,
+  מופעלת ב-`data-skin="editorial"` על `<html>` (index.html). מחוץ ל-`@layer`,
+  ולכן גוברת על glass.css בלי לשכתב רכיבים. למחוק את התכונה = חזרה לזכוכית.
+- **מלכודת:** `!important` בתוך `@layer` גובר על כל כלל מחוץ לשכבה, גם עם
+  `!important`. כלל כזה (למשל `.tray-red`) מתקנים ב-glass.css עצמו.
+- **מלכודת 2:** טוקנים של המצב הבהיר יושבים על `:root[data-theme="light"]`
+  (0,2,0) - דריסה שלהם צריכה `html:root[...]`, אחרת הם גוברים.
+- בעמוד **כחול מלא** שמים קווי רשת לבנים; בבלוק כחול לצד לבן - בלי קווים.
+- המצב הכהה ומתג הכהה/בהיר הוסרו מהמסכים; האתר תמיד בהיר.
+- פס התקדמות כתום דק בראש המסך בכל הסדנה (`ProjectProgressBar`), וזוהר עגול
+  בכל נגיעה (`TouchGlow`). כל צלילי הממשק כבויים חוץ מ"התחילו"
+  (`UI_SOUNDS_ENABLED` ב-tapFeedback.ts).
+- תצוגה מקדימה של כל שלב בלי לגעת בסדנה: `/preview/stage?n=3` (רק בפיתוח).
+- **2026-11-15 - לכל שלב סצנה משלו** ("לא חתיכה אחת, לא תבניתי"):
+  `src/styles/stage-scenes.css` לפי `data-stage` על `<html>` (נקבע ב-StageRouter),
+  והתפאורה ב-`SceneSet.tsx`. 2 ו-8 כחול מלא עם קווים, 7 "אולפן" נייבי, 3 עמודת
+  כחול, 4 רצועת ראש כחולה, 5 חצי תחתון כחול, 6 עמודה רחבה, 9 ריבועי "קונפטי",
+  10 מסגרת. **לא להשוות את כולם חזרה לאותה קומפוזיציה.**
+- **מעברים בין שלבים מתחלפים** (`advanceWithCurtain` ב-StageRouter, `gridCurtain.ts`):
+  `slide` (תיבה שגולשת לצד - "גלילה לצדדים כמו תיבות" של הלקוחה), `columns`
+  (עמודות שיורדות), `diagonal`. הסוג לפי מספר השלב שאליו עוברים.
+- **הופעת האלמנטים** (stage-scenes.css): כותרת עם חתימה קבועה (מספר עולה,
+  ריבוע מסתובב, כותרת "נכתבת", קו נמתח), התוכן בזה אחר זה בתנועה שמשתנה לפי
+  שלב (נפילה/איריס/ניגוב/תריס), הכפתור אחרון. **רק clip-path ו-opacity** -
+  transform היה דורס מיקום inline של רכיבים (קלפי שלב 7, קרני השמש).
+- **ניגודיות:** אחרי כל שינוי צבע/סצנה - לבדוק שאין טקסט באותו צבע של הרקע.
+  נבדק אוטומטית בכל השלבים (יחס מינימלי 3:1) ב-2026-11-15.
+- **שלב 3 (2026-11-15):** המעוין במרכז מלא ואטום (לבן, מסגרת נייבי), גדל עם כל
+  בחירה, ובבחירה הרביעית **מתפוצץ למסך כחול מלא** עם משפט המעבר וארבע הבחירות,
+  ועובר לבד לשלב 4 (`CoreZoom`). זה **מחליף את גרירת המסך** (SwipeToAdvance) בשלב הזה.
+  מסך הפתיחה (`StageIntro`) - בלי מסגרת, הקלדה אות אחר אות, איורים מצטיירים.
+- **שלב 4:** המרקרים מראים מה הם עושים (המילה על משיכת דיו), בעמודה כחולה;
+  הדף - מחברת לבנה עם שורות ושוליים אדומים (`.mk-*`).
+
 **עדכון 2026-10-25 - פלטת הלקוחה "פרקטל" (גוברת על כל מה שלמטה לגבי צבעים).**
 הלקוחה שלחה לוגו ופלטה: **אלמנטים** בסולם קורל-כתום (`--ds-pal-1..7`),
 **טקסטים ומסגרות** בנייבי של הלוגו (`--ds-navy` #283d5b), **אלמנטים קטנים**
@@ -166,7 +207,7 @@
 | טוקנים (צבע, רדיוס, צל, טשטוש, תזמון) | `src/styles/tokens.css` |
 | מחלקות הזכוכית (`.glass`, `.glass-active`, `.glass-btn`...) | `src/styles/glass.css` |
 | keyframes + `prefers-reduced-motion` | `src/styles/animations.css` |
-| הפונט (Assistant, ארוז מקומית) | `src/styles/fonts.css` + `src/assets/fonts/` |
+| הפונט (Heebo, ארוז מקומית; הלוגו נשאר בפונט המקורי שלו - בקשת הלקוחה) | `src/styles/fonts.css` + `src/assets/fonts/` |
 | ספריית רכיבים | `src/components/ui/` |
 
 **Tailwind v4 - אין `tailwind.config`.** הטוקנים מוגדרים ב-`@theme inline`
@@ -439,9 +480,10 @@ media            id, workshop_id, group_id, stage_number, url, created_at
 - [ ] `zbgsishvublrwfzhiail.supabase.co` (HTTPS) - REST API, Storage, Auth
 - [ ] `wss://zbgsishvublrwfzhiail.supabase.co` (Realtime)
 
-**הפונט לא מוסיף דומיין.** Assistant ארוז בתוך ה-build
-(`src/assets/fonts/*.woff2`, 29KB) ולא נטען מ-Google Fonts, בדיוק כדי
-שלא יהיה עוד דומיין שצריך אישור סינון.
+**הפונט לא מוסיף דומיין.** Heebo (הפונט של כל הסדנה מ-2026-11-12) ו-Assistant
+(הטקסט שבלוגו המצויר, וגיבוי) ארוזים בתוך ה-build (`src/assets/fonts/*.woff2`, ~71KB)
+ולא נטענים מ-Google Fonts, בדיוק כדי שלא יהיה עוד דומיין שצריך אישור סינון.
+פונט מסחרי (למשל "אברהם" של Fontef) לא נכנס בלי רישיון ווב על שם הלקוחה.
 
 **פתרון שנבנה בעקבות זה (2026-09-23):** הקלטות שלב 7 נשמרות בשלושה מקומות
 במקביל - Supabase Storage (כרגיל), IndexedDB של הדפדפן, **וכקובץ בתוך
@@ -537,11 +579,17 @@ media            id, workshop_id, group_id, stage_number, url, created_at
 
 
 
+
+
+
+
+
+
 <!-- cloude-code-toolbox:mcp-skills-awareness-begin -->
 
 ### MCP & Skills awareness (Claude Code ToolBox)
 
-_Last synced: 2026-11-10T11:19:33.520Z._
+_Last synced: 2026-11-19T14:14:14.217Z._
 
 - **Full report:** `.claude/cloude-code-toolbox-mcp-skills-awareness.md` in this workspace (auto-overwritten on each scan). Use it as ground truth for configured servers and skill folders.
 - **MCP:** For **live tools** in Claude Code, enable the matching server via `/mcp`. Servers are configured in `~/.claude.json` (user) and `.mcp.json` (project).

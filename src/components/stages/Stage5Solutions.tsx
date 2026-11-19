@@ -3,7 +3,6 @@ import type { ExplanationLine, Stage5Content, SolutionOption } from "../../types
 import StageShell from "../StageShell";
 import Icon from "../ui/Icon";
 import GlassModal from "../ui/GlassModal";
-import GameTile, { LevelBadge } from "../ui/GameTile";
 import { cx } from "../../lib/cx";
 
 interface Props {
@@ -92,6 +91,9 @@ function AnswerMark({ ok }: { ok: boolean }) {
         )}
         style={{
           animation: "bounce-in 0.55s var(--ds-ease-spring) both",
+          // ה-× של "לא הפעם" בכתום של האתר (בקשת המפתחת 2026-11-16) -
+          // ה-skin צבע אותו נייבי
+          ...(ok ? {} : { color: "#f25740" }),
         }}
       >
         <svg
@@ -183,13 +185,15 @@ function Stage5Solutions({ content, onAdvance }: Props) {
   return (
     <StageShell
       stage={5}
-      kicker="גיבוש פתרונות"
+      // בלי התגית "גיבוש פתרונות" (בקשת המפתחת 2026-11-15)
       icon="lightbulb"
       title={content.title || DEFAULT_TITLE}
       subtitle={introLines.join(" ")}
       background="tide"
       // "normal" ולא "wide": ברוחב מלא מד ההתקדמות והטיימר שבפינות עלו על האריחים
-      width="normal"
+      // "full": ארבעה כרטיסים לרוחב (מאוזנים) בשורה אחת - בקשת הלקוחה 2026-11-16.
+      // השורה יושבת גבוה, הרחק מהפאנלים שבפינות התחתונות
+      width="full"
       overlay={
         <GlassModal
           open={Boolean(chosen)}
@@ -243,56 +247,39 @@ function Stage5Solutions({ content, onAdvance }: Props) {
       {/* הרשת ממלאת בדיוק את הגובה הפנוי (שתי שורות שוות), כדי שכל
           ארבעת האריחים ייראו בלי גלילה גם במסך נמוך - האריחים מתכווצים
           במקום לגלוש. בדיון על ארבע אפשרויות חייבים לראות את כולן יחד. */}
-      <ul className="grid min-h-0 w-full flex-1 grid-cols-1 gap-4 sm:grid-cols-2 sm:grid-rows-2 lg:gap-5 pb-4">
+      {/* 2026-11-15 (בקשת המפתחת: "לעצב מחדש"): לוח עיתונאי של ארבע משבצות
+          לבנות על הכחול, עם קווים דקים ביניהן. בכל משבצת: אות ענקית ודקה
+          באדום-כתום, "אפשרות X" קטן, שם האפשרות גדול, ו"לבחירה" עם חץ
+          אלכסוני דק. **ארבעתן זהות לגמרי** - הכלל הפדגוגי: שום משבצת לא
+          רומזת על התשובה. כל משבצת נחשפת מכיוון אחר. s5-* ב-editorial.css */}
+      <ul className="s5-board">
         {content.options.map((opt, i) => (
-          <li key={i} className="flex min-h-0">
-            <GameTile
-              title={`אפשרות ${OPTION_LETTERS[i] ?? i + 1}`}
-              plain
-              /*
-                כל ארבעת התגים **באותו צבע**, בכוונה. ניסיון לתת לכל אפשרות
-                בועה בצבע אחר יצר בדיוק את הבעיה שהשלב הזה חייב להימנע
-                ממנה: אלמוג נקרא כ"שגוי" וענבר כ"אזהרה", כלומר הצבע עצמו
-                רמז לתשובה. הצבעוניות של המסך מגיעה מהרקע ומהסצנות.
-              */
-              badge={<LevelBadge value={OPTION_LETTERS[i] ?? i + 1} label="" size={60} />}
-              onClick={() => setChosen(opt)}
-              className="h-full"
-              footer={
-                <span className="flex items-center gap-2">
-                  לבחירה
-                  <span style={{ animation: "swipe-sway 1.6s var(--ds-ease) infinite" }}>
-                    <Icon name="arrowNext" size={16} />
-                  </span>
-                </span>
-              }
-              style={{
-                animation: `glass-in var(--ds-dur-slow) ${i * 90}ms var(--ds-ease) both`,
-              }}
-            >
-              {/* "קצת יותר משחקי בטקסט" (בקשת הלקוחה, 2026-11-08): כל מילה
-                  קופצת פנימה עם הטיה, בגרדיאנט של הכותרות. אותו דבר בדיוק בכל
-                  ארבעת האריחים - שום אריח לא "בולט" יותר (הכלל הפדגוגי למעלה) */}
-              <p className="text-2xl leading-snug sm:text-3xl" aria-label={opt.label}>
-                {opt.label.split(" ").map((word, w) => (
-                  // glass-title על כל מילה ולא על הפסקה: גרדיאנט שנחתך לפי
-                  // הטקסט לא מגיע למילים שזזות בנפרד (transform)
-                  <span
-                    key={w}
-                    aria-hidden="true"
-                    className="glass-title mx-[0.13em] inline-block"
-                    style={
-                      {
-                        "--word-tilt": `${w % 2 === 0 ? -9 : 9}deg`,
-                        animation: `word-pop 0.55s ${0.25 + i * 0.09 + w * 0.08}s var(--ds-ease-spring) both`,
-                      } as React.CSSProperties
-                    }
-                  >
-                    {word}
-                  </span>
-                ))}
-              </p>
-            </GameTile>
+          <li
+            key={i}
+            className="s5-cell"
+            style={
+              {
+                // "חלוקת קלפים": כולם יוצאים מערימה אחת באמצע ונפרסים למקומם
+                // (RTL - הראשון מימין, ולכן הוא מתחיל משמאלו). s5-deal ב-editorial.css
+                "--deal-x": `${-((content.options.length - 1) / 2 - i) * 112}%`,
+                "--deal-r": `${((content.options.length - 1) / 2 - i) * 7}deg`,
+                animationDelay: `${0.35 + i * 0.13}s`,
+              } as React.CSSProperties
+            }
+          >
+            <button type="button" className="s5-opt" onClick={() => setChosen(opt)}>
+              <span className="s5-opt__letter" aria-hidden="true">
+                {OPTION_LETTERS[i] ?? i + 1}
+              </span>
+              <span className="s5-opt__kicker">{`אפשרות ${OPTION_LETTERS[i] ?? i + 1}`}</span>
+              <span className="s5-opt__label">{opt.label}</span>
+              <span className="s5-opt__go">
+                לבחירה
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M19 5 L5 19 M5 8.5 L5 19 L15.5 19" fill="none" stroke="currentColor" strokeWidth="1.3" />
+                </svg>
+              </span>
+            </button>
           </li>
         ))}
       </ul>

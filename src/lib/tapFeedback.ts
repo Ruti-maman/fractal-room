@@ -20,6 +20,16 @@
 
 const STORAGE_KEY = "fractal-tap-sound";
 
+/**
+ * **מתג מרכזי לכל צלילי הממשק** (2026-11-12, בקשת המפתחת: "תוריד את השמע
+ * כרגע בכל"). false = שקט מוחלט: טיק של כפתורים, whoosh של מעבר שלב, פופ,
+ * צלצול, תרועות, נצנוץ הפרקטל, התנפצות הלוגו ופנפרת המנצחת.
+ * **היוצא מן הכלל היחיד:** ה"טוק" של כפתור "התחילו" (playKeyClick) - נשאר.
+ * סרטוני התוכן (פתיחה, דילמה, הקלטות) לא מושפעים - זה תוכן, לא צליל ממשק.
+ * להחזרת כל הצלילים: לשנות ל-true.
+ */
+export const UI_SOUNDS_ENABLED = false;
+
 let audioCtx: AudioContext | null = null;
 
 function getContext(): AudioContext | null {
@@ -58,7 +68,7 @@ export function setTapSoundEnabled(on: boolean) {
  * ש"המשך" נשמע קצת יותר "פתוח" מאשר כיבוי מתג.
  */
 export function playTap(tone: "soft" | "primary" = "soft") {
-  if (!tapSoundEnabled()) return;
+  if (!UI_SOUNDS_ENABLED || !tapSoundEnabled()) return;
   const ctx = getContext();
   if (!ctx) return;
   // הדפדפן משהה את ההקשר עד שהייתה מחוות משתמשת; זו בדיוק אחת כזו.
@@ -83,6 +93,70 @@ export function playTap(tone: "soft" | "primary" = "soft") {
     osc.stop(now + 0.16);
   } catch {
     // בלי צליל - לא עוצרים שום זרימה בגללו
+  }
+}
+
+/**
+ * "טוק" של מקש, כמו מקלדת הנעילה של האייפון (בקשת הלקוחה, 2026-11-11):
+ * נקישה קצרה ויבשה - צליל עליון שיורד מהר, "גוף" נמוך מתחתיו, ורחש קצרצר
+ * בהתחלה שנותן את תחושת המגע. כולו פחות מעשירית שנייה.
+ *
+ * מחזיר true אם ההקשר כבר היה פעיל ונשמע צליל. בנגיעה הראשונה בדף, דפדפן
+ * מגע עלול לאשר קול רק בהרמת האצבע ולא בנגיעה - ואז שווה לנסות שוב בשחרור.
+ */
+export function playKeyClick(): boolean {
+  if (!tapSoundEnabled()) return true;
+  const ctx = getContext();
+  if (!ctx) return true;
+  if (ctx.state === "suspended") ctx.resume().catch(() => {});
+  if (ctx.state !== "running") return false;
+
+  try {
+    const now = ctx.currentTime;
+
+    // הנקישה העליונה - יורדת מהר, כמו פלסטיק קשה
+    const tick = ctx.createOscillator();
+    const tickGain = ctx.createGain();
+    tick.type = "sine";
+    tick.frequency.setValueAtTime(1550, now);
+    tick.frequency.exponentialRampToValueAtTime(1050, now + 0.03);
+    tickGain.gain.setValueAtTime(0.0001, now);
+    tickGain.gain.exponentialRampToValueAtTime(0.11, now + 0.002);
+    tickGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+    tick.connect(tickGain).connect(ctx.destination);
+    tick.start(now);
+    tick.stop(now + 0.06);
+
+    // הגוף - "טוק" עמום מתחת
+    const body = ctx.createOscillator();
+    const bodyGain = ctx.createGain();
+    body.type = "triangle";
+    body.frequency.setValueAtTime(620, now);
+    body.frequency.exponentialRampToValueAtTime(420, now + 0.05);
+    bodyGain.gain.setValueAtTime(0.0001, now);
+    bodyGain.gain.exponentialRampToValueAtTime(0.07, now + 0.003);
+    bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
+    body.connect(bodyGain).connect(ctx.destination);
+    body.start(now);
+    body.stop(now + 0.08);
+
+    // רחש קצרצר - המגע עצמו
+    const len = Math.floor(ctx.sampleRate * 0.008);
+    const noise = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = noise.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = ctx.createBufferSource();
+    src.buffer = noise;
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 3000;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.value = 0.05;
+    src.connect(hp).connect(noiseGain).connect(ctx.destination);
+    src.start(now);
+    return true;
+  } catch {
+    return true; // בלי צליל - לא עוצרים שום זרימה בגללו
   }
 }
 
@@ -138,7 +212,7 @@ function send(ctx: AudioContext, node: AudioNode, echo = false) {
 }
 
 function readyContext(): AudioContext | null {
-  if (!tapSoundEnabled()) return null;
+  if (!UI_SOUNDS_ENABLED || !tapSoundEnabled()) return null;
   const ctx = getContext();
   if (!ctx) return null;
   if (ctx.state === "suspended") ctx.resume().catch(() => {});

@@ -4,9 +4,12 @@ import { useScreenData } from "../hooks/useScreenData";
 import { useProgramStages } from "../hooks/useProgramStages";
 import { useKioskMode } from "../hooks/useKioskMode";
 import StageRouter from "../components/StageRouter";
+import RoomScreen from "../components/RoomScreen";
 import { EmptyState, ErrorState, LoadingState, GlassButton } from "../components/ui";
 
-const VALID_SCREENS = [1, 2, 3];
+const VALID_SCREENS = [1, 2, 3, 4];
+/** המסך הרביעי - פלזמה משותפת לכל החדר, לא קבוצה (RoomScreen). */
+const ROOM_SCREEN = 4;
 
 function ScreenPage() {
   useKioskMode();
@@ -40,7 +43,7 @@ function ScreenPage() {
     return (
       <ErrorState
         title="כתובת מסך לא תקינה"
-        description="בסדנה יש שלושה מסכים. פתחו את אחת מהכתובות הבאות במסך הזה."
+        description="בסדנה יש ארבעה מסכים: שלושה לקבוצות (1-3) ומסך משותף לחדר (4)."
         detail={`הכתובת שהתקבלה: /screen/${screenNumberParam}`}
       />
     );
@@ -69,6 +72,15 @@ function ScreenPage() {
         </GlassButton>
       </EmptyState>
     );
+  }
+
+  // המסך הרביעי: לא קבוצה - מציג את כל החדר (בלי myGroup, בלי "הבא")
+  if (screenNumber === ROOM_SCREEN) {
+    // תוכן "room" של כל שלב (program_stages.content.room) - הטקסטים של המסך הרביעי
+    const roomContent = Object.fromEntries(
+      stages.map((st) => [st.stage_number, (st.content as { room?: { title?: string } } | null)?.room]),
+    );
+    return <RoomScreen allGroups={allGroups} stageNumbers={stageNumbers} roomContent={roomContent} />;
   }
 
   // יש הפעלה, אבל אין קבוצה שמשויכת למסך הזה - כאן זו כן תקלת נתונים.

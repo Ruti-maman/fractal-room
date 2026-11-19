@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Stage6Content, Stage6Line } from "../../types/stage6Content";
 import type { Group } from "../../types/group";
 import { useDiscussionStart } from "../../hooks/useDiscussionStart";
 import StageShell from "../StageShell";
-import Timer from "../Timer";
+import Hourglass from "../Hourglass";
 import type { Tip } from "../TipPopups";
 import TipChat from "../TipChat";
 import FractalFullscreen from "../FractalFullscreen";
@@ -112,6 +112,16 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
     </GlassButton>
   );
 
+  /*
+    2026-11-16 (בקשת המפתחת): בכל כניסה למסך הדיון שעון החול מתחיל מ-10
+    דקות מחדש - גם אחרי רענון או חזרה לשלב. לכן הספירה מתחילה מרגע
+    ההגעה למסך הזה, ולא מהזמן השמור ב-DB (שעדיין קובע לאיזה מסך חוזרים).
+  */
+  const [enteredAt, setEnteredAt] = useState<string | null>(null);
+  useEffect(() => {
+    if (startedAt && !enteredAt) setEnteredAt(new Date().toISOString());
+  }, [startedAt, enteredAt]);
+
   // עד שידוע אם הדיון כבר התחיל - לא מציגות אף מסך, כדי שרענון באמצע
   // הדיון לא יהבהב לרגע את מסך ההוראות
   if (loading) return null;
@@ -120,7 +130,8 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
     return (
       <StageShell
         stage={6}
-        kicker="זמן דיון קבוצתי מונחה"
+        // s6-discuss: כל המסך יורד מעט למטה (בקשת המפתחת 2026-11-16, stage-scenes.css)
+        className="s6-discuss"
         icon="users"
         background="tide"
         compactHeader
@@ -140,14 +151,23 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-5">
           {/* השאלה נשארת מול העיניים לאורך כל הדיון */}
           <p className="text-ink max-w-3xl text-center text-2xl leading-snug font-extrabold sm:text-3xl">
-            {intro[0]?.text}
+            {/* שבירה במקום המקף (בקשת המפתחת 2026-11-16): "...לשנות" בשורה
+                אחת, "כדי ש..." בשורה הבאה, בלי המקף ביניהן */}
+            {(() => {
+              const q = intro[0]?.text ?? "";
+              const parts = q.split(/\s*[—–-]\s+/);
+              if (parts.length < 2) return q;
+              return (
+                <>
+                  {parts[0]}
+                  <br />
+                  {parts.slice(1).join(" ")}
+                </>
+              );
+            })()}
           </p>
-          <Timer
-            placement="center"
-            startedAt={startedAt}
-            durationMinutes={t.discussion_minutes}
-            label={t.discussion_label}
-          />
+          {/* שעון חול שמתהפך כל דקה (בקשת המפתחת 2026-11-15), במקום טבעת */}
+          <Hourglass startedAt={enteredAt ?? new Date().toISOString()} durationMinutes={t.discussion_minutes} label={t.discussion_label} />
         </div>
       </StageShell>
     );
@@ -156,7 +176,6 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
   return (
     <StageShell
       stage={6}
-      kicker="זמן דיון קבוצתי מונחה"
       icon="users"
       background="tide"
       compactHeader
@@ -176,25 +195,72 @@ function Stage6Discussion({ workshopId, myGroup, content, onAdvance }: Props) {
       {tipsPopup}
       {fractalShowing && (
         <FractalFullscreen
+          // בשפת "עיתונאי", כמו בשלב 2 - "כלל הפרקטל" חוזר כמוטיב קבוע (2026-11-15)
+          variant="editorial"
           title={t.fractal_title}
           text={t.fractal_text}
           onDone={() => setFractalShowing(false)}
         />
       )}
 
-      <div className="glass glass-brick glass-raised flex min-h-0 w-full max-w-3xl flex-[0_1_auto] flex-col items-center gap-[0.6vh] rounded-2xl px-10 py-[2.4vh] text-center">
-        {intro.map((line, i) => (
-          <p
-            key={i}
-            className={cx("leading-snug", line.bold ? "text-ink font-extrabold" : "text-ink-2")}
-            style={{
-              fontSize: line.bold ? "min(3.4vh, 2rem)" : "min(2.9vh, 1.6rem)",
-              animation: `fade-up 0.6s ${0.15 + i * 0.12}s var(--ds-ease) both`,
-            }}
-          >
-            {line.text}
-          </p>
-        ))}
+      {/* בלי מסגרת (בקשת המפתחת 2026-11-15). המילים עולות אחת-אחת מתוך פס
+          סמוי; מספר (ה-"10") נכתב ענק ודק באדום-כתום; ושורה מודגשת שבאה
+          אחרי שורה שנגמרת ב-":" ("התוצר") מקבלת משיכת מרקר מתחתיה - המרקר
+          של שלב 4 חוזר. key: הכניסה מתנגנת שוב כשהטיפים וכלל הפרקטל נסגרים,
+          כי קודם היא קרתה מאחוריהם. s6-* ב-editorial.css */}
+      <div
+        key={fractalReady && !fractalShowing ? "after" : "before"}
+        className="s6-lines flex min-h-0 w-full max-w-3xl flex-[0_1_auto] flex-col items-center gap-[0.9vh] px-10 py-[2.4vh] text-center"
+      >
+        {(() => {
+          /* קצב של שורה-שורה (בקשת המפתחת 2026-11-15): כל שורה מתחילה רק
+             אחרי שהקודמת נגמרה ונשארה רגע מול העיניים. בתוך השורה המילים
+             עולות מהר (WORD_GAP), ובין שורה לשורה יש הפסקה (LINE_PAUSE). */
+          const WORD_GAP = 0.06;
+          const WORD_DUR = 0.6;
+          const LINE_PAUSE = 0.55;
+          let clock = 0.4;
+          /* שבירה במקום המקף (בקשת המפתחת 2026-11-16, כמו במסך הדיון):
+             "...לשנות" בשורה אחת, "כדי ש..." בשורה הבאה, בלי המקף */
+          const lines = intro.flatMap((line) =>
+            line.text.split(/\s*[—–]\s+|\s+-\s+/).map((part) => ({ ...line, text: part.trim() })),
+          );
+          return lines.map((line, i) => {
+            const marked = Boolean(line.bold && i > 0 && lines[i - 1].text.trim().endsWith(":"));
+            const words = line.text.split(/\s+/).filter(Boolean);
+            const lineAt = clock;
+            const lineEnd = lineAt + (words.length - 1) * WORD_GAP + WORD_DUR;
+            clock = lineEnd + LINE_PAUSE;
+            return (
+              <p
+                key={i}
+                className={cx("leading-snug", line.bold ? "text-ink font-extrabold" : "text-ink-2")}
+                style={{ fontSize: line.bold ? "min(3.4vh, 2rem)" : "min(2.9vh, 1.6rem)" }}
+              >
+                <span className="sr-only">{line.text}</span>
+                <span
+                  aria-hidden="true"
+                  className={cx("s6-line", marked && "s6-line--mark")}
+                  style={{ "--s6-mark-at": `${lineEnd}s` } as React.CSSProperties}
+                >
+                  {/* הרווח מחוץ ל-s6-w: בתוך inline-block הוא נבלע והמילים נדבקו */}
+                  {words.map((word, wi) => (
+                    <Fragment key={wi}>
+                      <span className="s6-w">
+                        <span
+                          className={cx("s6-w__in", /^\d+$/.test(word) && "s6-num")}
+                          style={{ animationDelay: `${lineAt + wi * WORD_GAP}s` }}
+                        >
+                          {word}
+                        </span>
+                      </span>{" "}
+                    </Fragment>
+                  ))}
+                </span>
+              </p>
+            );
+          });
+        })()}
 
         {/* כלל הפרקטל עבר למסך מלא (FractalFullscreen למעלה), שמופיע אחרי
             סגירת הטיפים - ולא במקביל אליהם (דרישת הלקוחה) */}

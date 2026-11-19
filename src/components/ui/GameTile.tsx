@@ -19,7 +19,7 @@
  *  המפורשת של הלקוחה (סעיף 3 ב-CLAUDE.md).
  */
 
-import { useId, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { cx } from "../../lib/cx";
 import Icon, { type IconName } from "./Icon";
 
@@ -58,34 +58,29 @@ export function LevelBadge({
   // כיוון השעון; pathLength=100 מחליף את חישוב ההיקף.
   const r = 46;
   const diamond = `M50 ${50 - r} L${50 + r} 50 L50 ${50 + r} L${50 - r} 50 Z`;
-  const ringId = `level-ring-${useId().replace(/:/g, "")}`;
 
   return (
     <span
-      className={cx("relative inline-flex flex-none items-center justify-center", className)}
+      // level-badge*: בשפת "עיתונאי" (editorial-skin.css) ההילה ומסגרת המעוין
+      // מוסתרות, ונשאר ריבוע שטוח בצבע מלא עם המספר
+      className={cx("level-badge relative inline-flex flex-none items-center justify-center", className)}
       style={{ width: size, height: size }}
     >
       {/* הילה מאחורי התג - מה שגורם לו להיראות מואר ולא מודבק */}
       <span
         aria-hidden="true"
-        className="bg-glow diamond absolute inset-0 blur-lg opacity-70"
+        className="level-badge__glow bg-glow diamond absolute inset-0 blur-lg opacity-70"
       />
 
-      <svg viewBox="0 0 100 100" className="absolute inset-0 overflow-visible" aria-hidden="true">
-        {/* הטבעת עוברת מהקורל לנייבי - כמו הדיסקית שבתוכה, ולא בקאמל
-            (בקשת הלקוחה). id ייחודי לכל תג, כי כמה תגים באותו מסך */}
-        <defs>
-          <linearGradient id={ringId} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" style={{ stopColor: "var(--ds-pal-4)" }} />
-            <stop offset="100%" style={{ stopColor: "var(--ds-navy)" }} />
-          </linearGradient>
-        </defs>
+      <svg viewBox="0 0 100 100" className="level-badge__frame absolute inset-0 overflow-visible" aria-hidden="true">
+        {/* המסגרת באותו אדום מלא של הלוגו כמו הדיסקית שבתוכה (בקשת הלקוחה,
+            2026-11-11). קודם: מעבר קורל->נייבי, ולפניו קאמל. */}
         <path d={diamond} fill="none" stroke="var(--ds-glass-strong)" strokeWidth="6" strokeLinejoin="round" />
         <path
           d={diamond}
           pathLength={100}
           fill="none"
-          stroke={`url(#${ringId})`}
+          stroke="var(--ds-brand-coral-vivid)"
           strokeWidth="6"
           strokeLinejoin="round"
           strokeDasharray="100"

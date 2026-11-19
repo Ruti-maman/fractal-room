@@ -7,6 +7,17 @@ import FractalLogo from "../FractalLogo";
 import { BackgroundLayers } from "../ui/AppBackground";
 import Icon from "../ui/Icon";
 import { GlassButton } from "../ui/Glass";
+import Stage1OpeningBrand from "./Stage1OpeningBrand";
+import Stage1OpeningEditorial from "./Stage1OpeningEditorial";
+
+/**
+ * איזו גרסה של מסך הפתיחה מוצגת. כל הגרסאות שמורות - מחליפים כאן בלבד:
+ *   "editorial" - ניסוי "עיתונאי" (2026-11-12): כחול-לבן, רשת קווים, כותרת
+ *                 סריף, בהשראת האתר שהלקוחה שלחה ב-Figma.
+ *   "brand"     - ניסוי "שפת הלוגו" (2026-11-11): נייבי, סמלי לוגו מרחפים.
+ *   "glass"     - העיצוב המקורי בזכוכית.
+ */
+const OPENING_VARIANT: "editorial" | "brand" | "glass" = "editorial";
 
 interface Props {
   screenNumber: number;
@@ -123,7 +134,13 @@ function ScreenContent({ screen }: { screen: Stage1Content["screens"][string] | 
  * ההזדהות לקבוצה עוד אין שם ואין לאן לחזור, וכל פקד נוסף היה רק רעש
  * סביב הפעולה היחידה שצריך לעשות.
  */
-function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
+function Stage1Opening(props: Props) {
+  if (OPENING_VARIANT === "editorial") return <Stage1OpeningEditorial {...props} />;
+  if (OPENING_VARIANT === "brand") return <Stage1OpeningBrand {...props} />;
+  return <Stage1OpeningGlass {...props} />;
+}
+
+function Stage1OpeningGlass({ screenNumber, content, onAdvance }: Props) {
   const screen = content.screens[String(screenNumber)];
 
   function handleStart() {
@@ -168,8 +185,10 @@ function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
         className="relative flex flex-none flex-col items-center gap-4 pb-2"
         style={{ animation: "fade-up var(--ds-dur-slow) 260ms var(--ds-ease) both" }}
       >
-        {/* הילה שנושמת מאחורי הכפתור - מושכת את היד לנקודה הנכונה */}
-        <div className="relative">
+        {/* הילה שנושמת מאחורי הכפתור - מושכת את היד לנקודה הנכונה.
+            התנודה הקלה (start-sway, בקשת הלקוחה 2026-11-11) על העוטף ולא על
+            הכפתור, כדי שלא תדרוס את שקיעת הכפתור בלחיצה */}
+        <div className="relative" style={{ animation: "start-sway 2.8s ease-in-out infinite" }}>
           <span
             aria-hidden="true"
             className="bg-glow absolute inset-0 -z-10 rounded-full blur-2xl"
@@ -181,6 +200,9 @@ function Stage1Opening({ screenNumber, content, onAdvance }: Props) {
             iconAfter="arrowNext"
             onClick={handleStart}
             silent
+            // HOLD: לא בהחזקה - הלחיצה הזו פותחת קול ומסך מלא, והדפדפן
+            // מאשר אותם רק בתוך מחוות משתמשת אמיתית (לא click() מטיימר)
+            hold={false}
             // הצורה (ארוך ודק) והצבע (אדום הלוגו) הם עכשיו ברירת המחדל של כל
             // כפתור ראשי גדול - ראו .glass-btn-lg ו-GlassButton
           >

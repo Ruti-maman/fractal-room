@@ -10,7 +10,7 @@
  *   - האותיות נבנות מלמטה למעלה, והמילה **נשארת עשויה מגרגרים** - כמו
  *     בקובץ של הלקוחה. בלי התפרקות בסוף: שם המנצחת נשאר על המסך.
  *   - הגרגרים בצבעי הקשת של הסדנה (מהטוקנים), כך שזה עובד במצב הבהיר והכהה.
- *   - הפונט הוא Assistant הארוז בפרויקט.
+ *   - הפונט הוא Heebo הארוז בפרויקט.
  *   - Canvas דו-ממדי בלבד, בלי WebGL - הדפדפן בפלזמה לא ידוע ואולי ישן
  *     (סעיף 2 ב-CLAUDE.md). הציור נעצר ברגע שהכול התיישב.
  *   - ב-prefers-reduced-motion המילה מוצגת מוכנה, בלי שפיכה.
@@ -82,10 +82,10 @@ function SandText({ text, className }: { text: string; className?: string }) {
       m.textAlign = "center";
       m.textBaseline = "middle";
       let size = bh * 0.86;
-      m.font = `800 ${size}px Assistant, sans-serif`;
+      m.font = `800 ${size}px Heebo, Assistant, sans-serif`;
       while (m.measureText(text).width > bw * 0.96 && size > 12) {
         size -= 1;
-        m.font = `800 ${size}px Assistant, sans-serif`;
+        m.font = `800 ${size}px Heebo, Assistant, sans-serif`;
       }
       m.fillStyle = "#000";
       m.fillText(text, bw / 2, bh / 2);
@@ -155,7 +155,7 @@ function SandText({ text, className }: { text: string; className?: string }) {
       if (!cancelled && !allLanded) frame = requestAnimationFrame(draw);
     }
 
-    // מחכים לפונט (Assistant ארוז מקומית) ולסוף הכניסה של המסך, כדי שהמסכה
+    // מחכים לפונט (Heebo ארוז מקומית) ולסוף הכניסה של המסך, כדי שהמסכה
     // תיבנה בצורה הנכונה ובמקום הנכון
     let timer = 0;
     (document.fonts?.ready ?? Promise.resolve()).then(() => {

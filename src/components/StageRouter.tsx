@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import type { Group } from "../types/group";
 import type { ProgramStage } from "../types/stage";
 import { startSharedStage } from "../lib/stageActions";
+import { coverWithGrid, curtainBusy, revealGrid, type CurtainMode } from "../lib/gridCurtain";
+import ProjectProgressBar from "./ProjectProgressBar";
 import WaitingScreen from "./WaitingScreen";
 import PlaceholderStage from "./PlaceholderStage";
 import Stage1Opening from "./stages/Stage1Opening";
@@ -58,10 +60,17 @@ function StageRouter({
   const validSharedStageStartedAt =
     stage && sharedStageNumber === stage.stage_number ? sharedStageStartedAt : null;
 
+  /*
+    בדיקה עם קבוצה אחת (בקשת המפתחת 2026-11-17): בשרת הפיתוח בלבד, קבוצה
+    שבכלל לא התחילה (עדיין בשלב 1) לא נספרת בשער - כך מסך יחיד עובר את
+    "ממתינים לשאר הצוותים" ורואה את השלב המשותף. באתר שבענן (הסדנה
+    האמיתית) השער מחכה לכל שלוש הקבוצות, כמו תמיד.
+  */
+  const gateGroups = import.meta.env.DEV ? allGroups.filter((g) => g.current_stage > 1) : allGroups;
   const allArrived =
     !!stage &&
     stage.sync_gate &&
-    allGroups.every((g) => g.current_stage >= stage.stage_number);
+    gateGroups.every((g) => g.current_stage >= stage.stage_number);
 
   // שלב 7 יוצא מהכלל: הטיימר (10 דקות) מתחיל לרוץ לכולן יחד ברגע שהראשונה
   // מתחילה להקליט, לא מחכה שכולן יגיעו (כל קבוצה מקליטה בזמן שלה, אבל השעון משותף).
@@ -77,6 +86,24 @@ function StageRouter({
     }
   }, [stage, timerShouldStart, validSharedStageStartedAt, workshopId]);
 
+  // מעבר "רשת הריבועים" מ"ברוכות הבאות" (gridCurtain.ts): בכל שלב שאינו
+  // הפתיחה מבקשים גילוי - גם כשהקבוצה כבר הזדהתה ומגיעה ישר ל"מי בחדר"
+  // (שם טופס ההזדהות, שמבקש גילוי בעצמו, לא עולה). בלי זה הרשת נתקעה.
+  const stageNumber = stage?.stage_number;
+  useEffect(() => {
+    if (stageNumber && stageNumber !== 1) revealGrid();
+  }, [stageNumber]);
+
+  // data-stage על <html>: לכל שלב "סצנה" משלו (styles/stage-scenes.css) -
+  // קומפוזיציה אחרת של בלוקים, צבע ורשת, כדי שהמסכים לא ייראו כתבנית אחת
+  useEffect(() => {
+    if (!stageNumber) return;
+    document.documentElement.dataset.stage = String(stageNumber);
+    return () => {
+      delete document.documentElement.dataset.stage;
+    };
+  }, [stageNumber]);
+
   // מספר השלבים נלקח מהתוכנית עצמה ולא מקובע ל-10, כדי שתוכנית עם מספר
   // שלבים אחר תציג את המספר הנכון.
   // "מתוך" לפי מספר השלב האחרון בתוכנית ולא לפי כמות השורות - מספרי השלבים
@@ -88,7 +115,34 @@ function StageRouter({
     הטיימר של שלב 10 קידם ל"שלב 11", ונפתח מסך "אין הגדרה לשלב 11".
   */
   const isLastStage = !!stage && lastStageNumber > 0 && stage.stage_number >= lastStageNumber;
-  const onAdvance = isLastStage ? () => {} : rawAdvance;
+
+  /*
+    מעבר בין שלבים (2026-11-15): כל "הבא" - גם מהכפתור וגם מהטיימר - עובר
+    דרך מסך מעבר מרשת הריבועים, והסוג מתחלף לפי השלב שאליו עוברים (תיבה
+    שגולשת לצד / עמודות שיורדות / אלכסון), כדי שהמעברים לא יחזרו על עצמם.
+    המסך מתחלף רק כשהוא מכוסה; השלב החדש מבקש גילוי (revealGrid למעלה).
+    אם כבר יש מעבר באוויר (שלב 1 פותח את שלו בעצמו) - מתקדמים מיד.
+  */
+  const nextStageNumber = stage
+    ? stages
+        .map((s) => s.stage_number)
+        .sort((a, b) => a - b)
+        .find((x) => x > stage.stage_number)
+    : undefined;
+  const advanceWithCurtain = () => {
+    if (!stage || nextStageNumber === undefined || curtainBusy()) return rawAdvance();
+    const modes: CurtainMode[] = ["slide", "columns", "diagonal"];
+    const wait = coverWithGrid({
+      from: String(stage.stage_number).padStart(2, "0"),
+      to: String(nextStageNumber).padStart(2, "0"),
+      label: "שלב",
+      mode: modes[nextStageNumber % 3],
+      stay: false,
+    });
+    if (wait < 0) rawAdvance();
+    else window.setTimeout(rawAdvance, wait);
+  };
+  const onAdvance = isLastStage ? () => {} : advanceWithCurtain;
   const progressBar = (
     <ProgressBar
       allGroups={allGroups}
@@ -149,6 +203,7 @@ function StageRouter({
     return (
       <>
         <WaitingScreen stageNumber={stage.stage_number} allGroups={allGroups} workshopId={workshopId} />
+        <ProjectProgressBar stageNumber={stage.stage_number} lastStage={lastStageNumber} />
         <TopBar
           myGroup={myGroup}
           screenNumber={screenNumber}
@@ -240,7 +295,9 @@ function StageRouter({
   // סולם ההשראות מוצג מכאן, גלובלית לכל קומפוננטות השלב (לא כפול בכל אחת
   // בנפרד) - לפי בקשת הלקוחה: משלב 4 (שקף 6) ועד סוף הסדנה, כולל שלב 9
   // (הכרזת המנצחת - קודם שלב 9 היה שאלון נסתר, והוחרג מכאן).
-  const showInspirationsLadder = stage.stage_number >= 4;
+  // 2026-11-16 (סוכם עם המפתחת): מהשעון חול של שלב 6 והלאה - בלי הסולם.
+  // בשלב 6 עצמו השעון מסתיר אותו (data-hourglass), ומשלב 7 הוא לא מוצג.
+  const showInspirationsLadder = stage.stage_number >= 4 && stage.stage_number <= 6;
 
   // "מסקנה מעשית" (תמונת התפקוד שנוסחה ב-AI בשלב 4) מלווה את כל השלבים
   // הבאים - החל משלב 5 ואילך, לא בשלב 4 עצמו (שם היא מוצגת בתוך המסך
@@ -259,6 +316,8 @@ function StageRouter({
       >
         <StageTransition stageKey={stage.stage_number}>{stageContent}</StageTransition>
       </ConclusionContext.Provider>
+      {/* פס התקדמות כתום דק בראש המסך, בכל השלבים (בקשת הלקוחה 2026-11-14) */}
+      <ProjectProgressBar stageNumber={stage.stage_number} lastStage={lastStageNumber} />
       {showInspirationsLadder && <InspirationsLadder workshopId={workshopId} />}
       {/* הסרגל העליון מושהה במסך הפתיחה (שלב 1) יחד עם המד והטיימר: לפני
           ההזדהות לקבוצה עוד אין שם להציג, ואין לאן לחזור. */}

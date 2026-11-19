@@ -1,0 +1,5508 @@
+/* ==========================================================================
+   מסך הפתיחה - גרסת "עיתונאי" (ניסוי, 2026-11-12)
+   --------------------------------------------------------------------------
+   בהשראת האתר שהלקוחה שלחה ב-Figma: רשת קווים גלויה, חלוקה חדה בין בהיר
+   לבלוק צבע מלא, חצים אלכסוניים דקים, כותרת סריף ענקית ומספר גדול.
+   הצבעים לבקשתה: כחול-לבן, "יותר RGB", עם נגיעות אדומות בלבד.
+
+   הכל ממוקד ב-.opening-editorial. מופעל מ-OPENING_VARIANT ב-Stage1Opening.tsx.
+   להסרה: OPENING_VARIANT="brand", או למחוק את הקובץ, את
+   Stage1OpeningEditorial.tsx ואת השורה ב-index.css.
+
+   הרשת: 8 עמודות ברוחב 12.5vw. הבלוק הכחול תופס בדיוק 3 עמודות משמאל
+   (37.5vw), כך שהקווים שלו ושל הצד הבהיר נופלים על אותם קווים.
+   ========================================================================== */
+
+/* הטוקנים משותפים למסך הפתיחה ולמסכים שבאים אחריו בשפה הזו (.ed-page) */
+.opening-editorial,
+.ed-page,
+.tp-page {
+  /* צבעים */
+  --ed-ink-2: rgb(11 27 63 / 0.6);
+  --ed-line-strong: rgb(11 27 63 / 0.22);
+  --ed-paper: #f4f6fb;
+  --ed-ink: #0b1b3f;
+  /* הכחול והאדום שהלקוחה בחרה (2026-11-12, מתוך בורר הצבעים ששלחה).
+     קודם: כחול רויאל #1f4fe0 וקורל #f2674a */
+  --ed-blue: #2a4286;
+  --ed-line: rgb(11 27 63 / 0.11);
+  --ed-line-on-blue: rgb(255 255 255 / 0.16);
+  --ed-col: calc(12.5 * var(--sw, 1vw));
+  --ed-top: calc(12 * var(--sh, 1vh));
+  --ed-bottom: calc(88 * var(--sh, 1vh));
+
+  /* הכפתור המשותף (StartKeyButton) קורא את אלה */
+  --bt-coral: #f25740;
+  --bt-white: #ffffff;
+  --bt-ease-grow: cubic-bezier(0.34, 1.45, 0.64, 1);
+
+  position: relative;
+  height: var(--full-h, 100dvh);
+  overflow: hidden;
+  background: var(--ed-paper);
+  color: var(--ed-ink);
+  font-family: "Heebo", var(--font-sans);
+}
+.opening-editorial button,
+.ed-page button,
+.ed-page input {
+  font-family: inherit;
+}
+/* הלוגו כאן הוא קובץ הלוגו של הלקוחה עצמה (public/brand/fractal-logo-on-dark.png),
+   בפונט המקורי שלו - היא ביקשה להשאיר אותו כמו שהוא (2026-11-12) */
+
+/* --- רשת הקווים --------------------------------------------------------- */
+
+.ed-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* קו אנכי בתחילת כל עמודה. הגודל ב-vw (לא %) כדי שהקווים בבלוק הכחול
+     ובצד הבהיר ייפלו בדיוק על אותם מקומות */
+  background-image: linear-gradient(to right, var(--ed-line) 1px, transparent 1px);
+  background-size: var(--ed-col) 100%;
+  background-position: 0 0;
+  animation: ed-fade 1.2s ease-out both;
+}
+/* רשת על כחול: רק לעמוד שכולו כחול מלא. בבלוק הכחול שליד הרקע הבהיר אין
+   קווים - צורה בצבע אחד על רקע אחר לא צריכה רשת משלה (2026-11-12) */
+.ed-grid--on-blue {
+  background-image: linear-gradient(to right, var(--ed-line-on-blue) 1px, transparent 1px);
+}
+.ed-hline {
+  position: absolute;
+  /* נעצרים בקצה הבלוק הכחול - בלי שום פס על הכחול (2026-11-12) */
+  left: calc(var(--ed-col) * 2);
+  right: 0;
+  height: 1px;
+  background: var(--ed-line);
+  transform-origin: right;
+  animation: ed-draw 1.1s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.ed-hline--top {
+  top: var(--ed-top);
+}
+.ed-hline--bottom {
+  top: var(--ed-bottom);
+  animation-delay: 0.15s;
+}
+
+/* --- הבלוק הכחול --------------------------------------------------------- */
+
+.ed-panel {
+  position: absolute;
+  /* מעל הרשת והפסים של הרקע הבהיר, כדי ששום קו לא יעבור על הכחול */
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  /* 2 עמודות ולא 3 (2026-11-12): בהשראה הצבע "תפאורה ולא משתלט" */
+  width: calc(var(--ed-col) * 2);
+  background: var(--ed-blue);
+  color: var(--bt-white);
+  overflow: hidden;
+  /* נכנס כמו מסך שנפתח מהקצה */
+  animation: ed-wipe 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.1s both;
+}
+.ed-panel__body {
+  position: absolute;
+  inset: var(--ed-top) 0 calc(var(--full-h, 100vh) - var(--ed-bottom)) 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4vh 2.5vw;
+}
+/* קטן בערך בשליש מקודם (הלקוחה: "להקטין קצת את הלוגו"). קובץ PNG, ולכן
+   object-fit שומר על היחס בכל גודל */
+.ed-panel__logo {
+  /* קצת יותר קטן (בקשת המפתחת 2026-11-16) - היה 100% / 38vh */
+  width: 78%;
+  max-height: min(30vh, 15vw);
+  object-fit: contain;
+  animation: bt-grow 0.9s var(--bt-ease-grow) 0.8s both;
+}
+.ed-panel__media {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.ed-panel__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ed-panel__text {
+  font-size: clamp(1.1rem, 2.4vh, 1.6rem);
+  line-height: 1.6;
+  text-align: center;
+}
+.ed-panel__title {
+  font-weight: 600;
+  font-size: clamp(2rem, 5vh, 3.4rem);
+  margin-bottom: 1rem;
+}
+
+/* --- הצד הבהיר: מספר, כותרת, כפתור --------------------------------------- */
+
+.ed-copy {
+  position: absolute;
+  top: var(--ed-top);
+  bottom: calc(var(--full-h, 100vh) - var(--ed-bottom));
+  right: 0;
+  width: calc(var(--ed-col) * 6);
+  /* עמודה אחת פנימה מהקצה הימני, ועמודה אחת לפני הכחול */
+  padding-inline: var(--ed-col) var(--ed-col);
+  padding-block: 4vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3vh;
+}
+
+/* שורת הראש: "01" בצד אחד, כיתוב זעיר בצד השני */
+.ed-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.ed-index {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+.ed-index__num {
+  font-weight: 200;
+  font-size: clamp(3rem, 9vh, 7rem);
+  line-height: 0.85;
+  letter-spacing: -0.02em;
+}
+/* נגיעה אדומה - הריבוע של הלוגו */
+.ed-index__square {
+  width: clamp(0.8rem, 1.6vh, 1.2rem);
+  aspect-ratio: 1;
+  background: var(--bt-coral);
+  margin-top: 0.4rem;
+}
+
+/* Heebo כמו כל הסדנה (2026-11-12). קודם נוסה כאן Frank Ruhl Libre עם
+   סריפים, בהשראת הכותרות באתר של הלקוחה - הוחלף לבקשת המפתחת */
+/* 800 - אותו עובי בדיוק כמו "פרקטל" בלוגו. ב-700 שני הטקסטים נראו כמו
+   שני פונטים שונים, למרות ששניהם Heebo (2026-11-12) */
+.ed-title {
+  font-weight: 800;
+  font-size: clamp(3.5rem, min(10vw, 19vh), 13rem);
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+}
+/* הכותרת והחץ הגדול באותה שורה; החץ יושב בתחתית, ליד "הבאות" */
+.ed-title-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 2.5vw;
+}
+.ed-title-arrow {
+  width: clamp(3rem, min(7vw, 13vh), 9rem);
+  height: clamp(3rem, min(7vw, 13vh), 9rem);
+  flex: none;
+  color: var(--ed-ink);
+  margin-bottom: 1.5vh;
+}
+
+.ed-foot {
+  display: flex;
+  align-items: center;
+  /* הכפתור נשאר בצד השמאלי (סוף השורה ב-RTL), כמו כשהקו דחף אותו לשם */
+  justify-content: flex-end;
+  gap: 2.5vw;
+}
+
+/* הכפתור (2026-11-12): מלבן אדום נקי - בלי צל מוזח, בלי "נשימה" (breathe
+   כבוי ב-TSX), טקסט קטן יותר וחץ דק, כמו "BUY NOW ↗" בהשראה. הגובה נשאר
+   64px - המינימום למגע (סעיף 2 ב-CLAUDE.md). הלחיצה (התכווצות, עיגול
+   שקוף, צליל) לא השתנתה - היא מ-StartKeyButton. */
+.opening-editorial .ed-btn,
+.ed-page .ed-btn,
+.tp-page .ed-btn {
+  box-shadow: none;
+  padding-inline: 2.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.opening-editorial .ed-btn:active,
+.opening-editorial .ed-btn.is-pressed,
+.ed-page .ed-btn:active {
+  box-shadow: none;
+}
+.opening-editorial .ed-btn .bt-btn__label,
+.ed-page .ed-btn .bt-btn__label,
+.tp-page .ed-btn .bt-btn__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.75rem;
+}
+.ed-btn__arrow {
+  width: 1.4rem;
+  height: 1.4rem;
+  flex: none;
+}
+
+/* ==========================================================================
+   מסך ההזדהות (שלב 2) באותה שפה - 2026-11-12
+   --------------------------------------------------------------------------
+   המשך ישיר של מסך הפתיחה: אותה רשת, אותו בלוק כחול באותו מקום (כך
+   שהמעבר מרגיש כמו עמוד הבא באותו מגזין), ואותם צבעים - כחול-לבן עם
+   נגיעות אדומות בלבד. בבלוק הכחול: מד הצעדים, אנכי. בלי קווים על הכחול
+   (knowledge/grid-lines-on-color-blocks.md).
+   ========================================================================== */
+
+.ed-page {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  height: auto;
+}
+
+/* --- שורת ראש בפס העליון, כמו כותרת רצה במגזין ------------------------- */
+.ed-runner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: calc(var(--ed-col) * 2);
+  height: var(--ed-top);
+  padding-inline: var(--ed-col) calc(var(--ed-col) * 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--ed-ink-2);
+  font-size: clamp(1rem, 2vh, 1.35rem);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  animation: ed-fade 0.8s ease-out both;
+}
+.ed-runner__id {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.ed-runner__num {
+  color: var(--ed-ink);
+  font-weight: 200;
+  font-size: clamp(2rem, 5vh, 3.5rem);
+  line-height: 1;
+}
+
+/* --- הבלוק הכחול: מד הצעדים --------------------------------------------- */
+.ed-steps {
+  position: absolute;
+  inset: var(--ed-top) 0 calc(var(--full-h, 100vh) - var(--ed-bottom)) 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4.5vh;
+  padding-inline: 2.5vw;
+  list-style: none;
+}
+.ed-steps__item {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  color: rgb(255 255 255 / 0.4);
+  font-size: clamp(1.1rem, 2.4vh, 1.6rem);
+  font-weight: 400;
+  transition: color 0.4s ease;
+}
+.ed-steps__item.is-done {
+  color: rgb(255 255 255 / 0.75);
+}
+.ed-steps__item.is-current {
+  color: var(--bt-white);
+  font-weight: 700;
+}
+.ed-steps__mark {
+  width: 2.6em;
+  font-weight: 200;
+  font-size: 1.5em;
+  line-height: 1;
+}
+/* נגיעה אדומה ליד הצעד הנוכחי - הריבוע של הלוגו */
+.ed-steps__dot {
+  width: 0.6em;
+  height: 0.6em;
+  flex: none;
+  background: transparent;
+  transition: background 0.4s ease;
+}
+.ed-steps__item.is-current .ed-steps__dot {
+  background: var(--bt-coral);
+}
+.ed-steps__logo {
+  position: absolute;
+  bottom: 3vh;
+  left: 50%;
+  translate: -50% 0;
+  height: min(7vh, 5vw);
+  opacity: 0.9;
+}
+
+/* --- המסגרת: כותרת, וזירת הצעד ------------------------------------------ */
+.ed-frame {
+  position: absolute;
+  top: var(--ed-top);
+  bottom: calc(var(--full-h, 100vh) - var(--ed-bottom));
+  right: 0;
+  left: calc(var(--ed-col) * 2);
+  /* ימין: עמודה שלמה. שמאל: חצי עמודה - שם יושב חץ ההמשך */
+  padding: 4vh var(--ed-col) 4vh calc(var(--ed-col) * 0.5);
+  display: flex;
+  flex-direction: column;
+}
+.ed-h1 {
+  font-weight: 800;
+  font-size: clamp(2.75rem, min(6vw, 10vh), 7rem);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.ed-lead {
+  margin-top: 2.2vh;
+  font-weight: 300;
+  font-size: clamp(1.25rem, 3.2vh, 2.2rem);
+  line-height: 1.3;
+}
+.ed-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 4vh;
+  padding-top: 4vh;
+  border-top: 1px solid var(--ed-line-strong);
+}
+.ed-stage--tap {
+  cursor: pointer;
+}
+
+/* חיצי הדפדוף בצדי הזירה (בקשת הלקוחה: חיצים בצדדים, לא כפתורי
+   "המשך/חזרה"). דקים, כמו החץ שליד "ברוכות הבאות"; ההמשך באדום. */
+/* fixed ולא absolute (2026-11-12, "שיהיה באמצע"): בגובה - בדיוק באמצע
+   המסך, מול מד הצעדים שבבלוק הכחול, ולא באמצע זירת הצעד (שגובהה משתנה
+   מצעד לצעד). אין transform באף הורה (.ed-stage/.ed-frame/.ed-page), ולכן
+   fixed נמדד ביחס לחלון - לא ליפול במלכודת 6 ב-CLAUDE.md. */
+.ed-arrow {
+  position: fixed;
+  top: 50vh;
+  translate: 0 -50%;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ed-ink);
+  transition: opacity 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.ed-arrow svg {
+  width: 64px;
+  height: 64px;
+}
+/* כל חץ ממורכז בדיוק ברווח שלו (2026-11-12, "שיהיה באמצע"): ההמשך - בין
+   הבלוק הכחול לתוכן (חצי עמודה), החזרה - בשוליים הימניים (עמודה שלמה) */
+.ed-arrow--next {
+  left: calc(var(--ed-col) * 2.25);
+  translate: -50% -50%;
+  color: var(--bt-coral);
+}
+.ed-arrow--back {
+  right: calc(var(--ed-col) * 0.5);
+  translate: 50% -50%;
+}
+/* בצעדים עם שדה הזנה: בתוך שורת השדה, ממורכזים לגובה השדה (2026-11-12).
+   השורה מתחילה ונגמרת בדיוק בקצוות התוכן, ולכן אותם רווחים כמו למעלה. */
+.ed-arrow--inline {
+  position: absolute;
+  top: 50%;
+}
+.ed-arrow--next.ed-arrow--inline {
+  left: calc(var(--ed-col) * -0.25);
+}
+.ed-arrow--back.ed-arrow--inline {
+  right: calc(var(--ed-col) * -0.5);
+}
+.ed-arrow:disabled {
+  opacity: 0.25;
+}
+.ed-arrow--next:not(:disabled) svg {
+  animation: ed-nudge 1.8s ease-in-out infinite;
+}
+@keyframes ed-nudge {
+  /* סימטרי סביב המרכז, כדי שהחץ יישאר באמצע הרווח גם בזמן התנועה */
+  0%,
+  100% {
+    transform: translateX(5px);
+  }
+  50% {
+    transform: translateX(-5px);
+  }
+}
+
+/* --- טקסטים בזירה ------------------------------------------------------- */
+.ed-statement {
+  font-weight: 800;
+  font-size: clamp(2.25rem, min(4.6vw, 8vh), 5.5rem);
+  line-height: 1.05;
+}
+.ed-h2 {
+  font-weight: 700;
+  font-size: clamp(1.75rem, min(3vw, 5.5vh), 3.25rem);
+  line-height: 1.15;
+}
+.ed-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 3vh;
+  color: var(--ed-ink-2);
+  font-size: clamp(1rem, 2.2vh, 1.4rem);
+  font-weight: 500;
+}
+.ed-hint svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.ed-note {
+  color: var(--ed-ink-2);
+  font-size: clamp(1rem, 2.1vh, 1.3rem);
+}
+.ed-kicker {
+  color: var(--ed-ink-2);
+  font-size: clamp(1rem, 2.2vh, 1.4rem);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+/* ריבוע אדום לפני שורה - "וצברו ניקוד נוסף" */
+.ed-bonus {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: clamp(1.2rem, 2.6vh, 1.7rem);
+  font-weight: 500;
+}
+.ed-bonus::before {
+  content: "";
+  width: 0.7em;
+  height: 0.7em;
+  flex: none;
+  background: var(--bt-coral);
+}
+/* מונה המשתתפות - ריבוע אדום מלא */
+.ed-count {
+  min-width: 64px;
+  height: 64px;
+  padding-inline: 0.5rem;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bt-coral);
+  color: var(--bt-white);
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- שדות --------------------------------------------------------------- */
+.ed-input {
+  width: 100%;
+  min-height: 72px;
+  padding-inline: 1.25rem;
+  background: var(--bt-white);
+  border: 1px solid var(--ed-ink);
+  border-radius: 0;
+  color: var(--ed-ink);
+  font-size: clamp(1.4rem, 3vh, 2rem);
+  outline: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.ed-input::placeholder {
+  color: rgb(11 27 63 / 0.35);
+}
+.ed-input:focus {
+  border-color: var(--ed-blue);
+  box-shadow: inset 0 0 0 1px var(--ed-blue);
+}
+/* --- שדה שמות המשתתפות: אותו שדה, ופס כתום בתחתיתו (2026-11-16) -------
+   כל עוד השדה ריק הפס "נושם" (נמתח ומתכווץ); כשמקלידים - נשאר מלא */
+.ed-line-field {
+  position: relative;
+}
+.ed-line-field::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  left: 1px;
+  height: 4px;
+  background: var(--bt-coral);
+  transform-origin: right;
+  animation: ed-line-breathe 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+.ed-line-field:has(.ed-input:not(:placeholder-shown))::after {
+  animation: none;
+  transform: scaleX(1);
+}
+@keyframes ed-line-breathe {
+  0%,
+  100% {
+    transform: scaleX(0.15);
+  }
+  50% {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ed-line-field::after {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
+
+/* כפתור משני: מסגרת דקה, מתמלא בכחול בנגיעה */
+.ed-ghost {
+  min-height: 72px;
+  padding-inline: 2rem;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  border: 1px solid var(--ed-ink);
+  background: transparent;
+  color: var(--ed-ink);
+  font-size: 1.2rem;
+  font-weight: 600;
+  transition: background 0.2s ease, color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.ed-ghost:active {
+  background: var(--ed-blue);
+  border-color: var(--ed-blue);
+  color: var(--bt-white);
+}
+
+/* --- תגי משתתפות -------------------------------------------------------- */
+.ed-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  align-content: start;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.ed-chip {
+  display: flex;
+  align-items: stretch;
+  min-height: 56px;
+  background: var(--bt-white);
+  border: 1px solid var(--ed-line-strong);
+  animation: ed-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ed-chip__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-inline-end: 0.5rem;
+  color: var(--ed-ink);
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: start;
+}
+.ed-chip__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ed-num {
+  align-self: stretch;
+  width: 48px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ed-blue);
+  color: var(--bt-white);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.ed-chip__x {
+  width: 56px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-inline-start: 1px solid var(--ed-line);
+  color: var(--ed-ink-2);
+}
+.ed-chip__x svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+/* בסיכום - אותם תגים, בלי פעולות */
+.ed-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+}
+.ed-tags .ed-chip {
+  min-height: 48px;
+}
+.ed-tags .ed-chip__main {
+  padding-inline-end: 1.1rem;
+}
+
+/* --- סיכום -------------------------------------------------------------- */
+.ed-name {
+  color: var(--bt-coral);
+  font-weight: 800;
+  font-size: clamp(3rem, min(7vw, 12vh), 9rem);
+  line-height: 1;
+}
+.ed-name > span {
+  display: inline-block;
+  white-space: pre;
+  animation: ed-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ed-done {
+  min-height: 64px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  padding-inline: 1.5rem 2rem;
+  background: var(--ed-blue);
+  color: var(--bt-white);
+  font-size: 1.3rem;
+  font-weight: 700;
+  animation: ed-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ed-done::before {
+  content: "";
+  width: 0.8rem;
+  height: 0.8rem;
+  background: var(--bt-coral);
+}
+
+/* --- "חזרה לשלב הקודם" (מהסרגל העליון) בשפה הזו --------------------------
+   הכפתור יושב בפינה, על הבלוק הכחול. במקום לבנת זכוכית: מלבן דק עם מסגרת
+   לבנה וטקסט לבן, כמו כפתור משני באתר ההשראה; בנגיעה מתמלא בלבן.
+   body.ed-active נדלק מ-Stage2Identification כל עוד המסך פתוח. */
+.ed-active .back-btn {
+  min-height: 56px;
+  padding-inline: 1.25rem 1.5rem;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: #fff;
+  font-family: "Heebo", var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  transform: none;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.ed-active .back-btn::before,
+.ed-active .back-btn::after {
+  display: none;
+}
+.ed-active .back-btn:hover {
+  color: #fff;
+  border-color: #fff;
+}
+.ed-active .back-btn:active {
+  background: #fff;
+  color: #2a4286;
+  transform: none;
+}
+
+/* --- המעבר בין הצעדים: פס כחול שחוצה את הזירה --------------------------- */
+/* בכל דפדוף בין צעדי ההזדהות, בלוק כחול נפרש על זירת הצעד בכיוון הדפדוף
+   (קדימה = מימין לשמאל, כמו קריאה) ונאסף לצד השני, והתוכן החדש מתגלה
+   מתחתיו. כמו הבלוק הכחול של הדף, רק בתנועה. */
+.ed-sweep {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: var(--ed-blue);
+  pointer-events: none;
+  animation: ed-sweep 0.78s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.ed-sweep--back {
+  animation-name: ed-sweep-back;
+}
+/* מה שבשורה (השדה, הכפתור, הכותרת) מוסתר עד שהפס מכסה אותה כולה, ואז
+   מתגלה כשהפס נאסף - הפס הוא הכניסה של השורה, לא צבע שעובר מעליה.
+   החיצים לא (יש להם מקום משלהם בצדדים). */
+.ed-sweep ~ :not(.ed-arrow) {
+  animation: ed-under 0.78s linear both;
+}
+@keyframes ed-under {
+  0%,
+  45% {
+    opacity: 0;
+  }
+  46%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes ed-sweep {
+  0% {
+    clip-path: inset(0 0 0 100%);
+  }
+  46%,
+  54% {
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+@keyframes ed-sweep-back {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  46%,
+  54% {
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 100%);
+  }
+}
+
+/* כשמגיעים למסך דרך מעבר הרשת (gridCurtain.ts): הבלוק הכחול כבר במקום -
+   שתי העמודות השמאליות של הרשת נשארות ונהיות הוא - ולכן בלי ניגוב משלו.
+   וכל עוד הרשת מכסה, כל אנימציות הכניסה מושהות, כדי שירוצו מול העיניים. */
+.ed-page .ed-panel {
+  animation: none;
+}
+.ed-page.is-held,
+.ed-page.is-held * {
+  animation-play-state: paused !important;
+}
+
+/* ==========================================================================
+   מעבר "רשת הריבועים" (gridCurtain.ts) - 2026-11-12
+   ========================================================================== */
+.gc {
+  /* אותם צבעים כמו .opening-editorial - השכבה יושבת ב-body, מחוץ לו */
+  --gc-blue: #2a4286;
+  --gc-coral: #f25740;
+  --gc-line: rgb(255 255 255 / 0.16);
+  --gc-ease: cubic-bezier(0.65, 0, 0.35, 1);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  pointer-events: auto;
+  font-family: "Heebo", var(--font-sans);
+  color: #fff;
+}
+.gc-cell {
+  position: absolute;
+  width: 12.5vw;
+  height: 12.5vw;
+  background: var(--gc-blue);
+  /* קווי הרשת הלבנים - על עמוד כחול מלא כן שמים קווים */
+  box-shadow:
+    inset -1px 0 0 var(--gc-line),
+    inset 0 -1px 0 var(--gc-line);
+  transform-origin: top right;
+  animation: gc-in var(--gc-cell) var(--gc-ease) calc(var(--gc-i) * var(--gc-step)) both;
+}
+@keyframes gc-in {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+/* הריקון ממשיך באותו כיוון ↙ - הריבוע נאסף אל הפינה השמאלית-תחתונה */
+.gc.is-revealing .gc-cell:not(.gc-cell--stay) {
+  transform-origin: bottom left;
+  animation: gc-out var(--gc-cell) var(--gc-ease) calc(var(--gc-out) + var(--gc-i) * var(--gc-step)) both;
+}
+@keyframes gc-out {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(0);
+  }
+}
+/* שתי העמודות השמאליות נשארות: הקווים שלהן נמוגים (בבלוק כחול לצד לבן אין
+   קווים), ובסוף הן נמוגות לתוך הבלוק הכחול האמיתי שמתחתיהן */
+.gc.is-revealing .gc-cell--stay {
+  animation: gc-lines-off 0.5s ease var(--gc-out) both,
+    gc-fade 0.45s ease calc(var(--gc-out) + var(--gc-sweep) - 300ms) forwards;
+}
+@keyframes gc-lines-off {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+@keyframes gc-fade {
+  to {
+    transform: scale(1);
+    box-shadow: none;
+    opacity: 0;
+  }
+}
+
+/* --- columns: עמודות שיורדות כמו תיבות, ובגילוי עולות חזרה למעלה ------- */
+.gc--columns .gc-cell {
+  transform-origin: top center;
+  animation-name: gc-drop;
+}
+@keyframes gc-drop {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.gc.gc--columns.is-revealing .gc-cell:not(.gc-cell--stay) {
+  transform-origin: top center;
+  animation-name: gc-lift;
+}
+@keyframes gc-lift {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(0);
+  }
+}
+
+/* --- slide: "תיבה" כחולה שלמה שעוברת מצד לצד - גלילה בין חדרים ---------
+   ב-RTL "קדימה" הוא שמאלה: התיבה נכנסת משמאל, נעצרת, וממשיכה ימינה. */
+.gc-slab {
+  position: absolute;
+  inset: 0;
+  background-color: var(--gc-blue);
+  background-image: linear-gradient(to right, var(--gc-line) 1px, transparent 1px);
+  background-size: 12.5vw 100%;
+  animation: gc-slide-in var(--gc-sweep) cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+@keyframes gc-slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.gc.is-revealing .gc-slab {
+  animation: gc-slide-out var(--gc-sweep) cubic-bezier(0.76, 0, 0.24, 1) var(--gc-out) both;
+}
+@keyframes gc-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* --- הרגע הטיפוגרפי ----------------------------------------------------- */
+.gc-type {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.gc.is-revealing .gc-type {
+  animation: gc-type-out var(--gc-out) ease-in both;
+}
+@keyframes gc-type-out {
+  to {
+    opacity: 0;
+    transform: translateY(-3vh);
+  }
+}
+@keyframes gc-type-in {
+  from {
+    opacity: 0;
+    transform: translateY(5vh);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* המספר הענק והדק - "01" מתגלגל ל-"02", כמו מונה */
+.gc-num {
+  position: absolute;
+  right: 12.5vw;
+  bottom: 12vh;
+  height: 1em;
+  overflow: hidden;
+  font-size: min(48vh, 26vw);
+  font-weight: 100;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  animation: gc-type-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--gc-sweep) * 0.6) both;
+}
+.gc-roll {
+  display: flex;
+  flex-direction: column;
+  animation: gc-roll 0.75s cubic-bezier(0.76, 0, 0.24, 1) calc(var(--gc-sweep) + 320ms) both;
+}
+.gc-roll > span {
+  display: block;
+  height: 1em;
+}
+@keyframes gc-roll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+/* שם המסך וריבוע אדום, בקו העליון של הרשת - הניגוד בין ענק לזעיר */
+.gc-meta {
+  position: absolute;
+  right: 12.5vw;
+  top: 12vh;
+  display: flex;
+  align-items: center;
+  gap: 1.2vh;
+  font-size: clamp(1.2rem, 3vh, 2rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  animation: gc-type-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--gc-sweep) + 420ms) both;
+}
+.gc-square {
+  width: 1.7vh;
+  height: 1.7vh;
+  background: var(--gc-coral);
+}
+/* חץ ↙ דק וענק, נמתח מהפינה - הכיוון שבו הרשת זורמת */
+.gc-arrow {
+  position: absolute;
+  left: 31.25vw;
+  top: 26vh;
+  width: min(30vh, 18vw);
+  height: min(30vh, 18vw);
+  animation: gc-arrow-in 0.7s cubic-bezier(0.65, 0, 0.35, 1) calc(var(--gc-sweep) + 200ms) both;
+}
+@keyframes gc-arrow-in {
+  from {
+    clip-path: inset(0 0 100% 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ==========================================================================
+   "כלל הפרקטל" בשפת "עיתונאי" (FractalFullscreen variant="editorial")
+   2026-11-12. הרשת מתמלאת בכחול (אותן .gc-cell כמו במעבר), ומתחלקת
+   לריבועים קטנים יותר ויותר מתוך ריבוע אדום באמצע - הרשת נהיית פרקטל.
+   ========================================================================== */
+.fx-page {
+  /* אותם צבעים כמו .gc / .opening-editorial */
+  --gc-blue: #2a4286;
+  --gc-coral: #f25740;
+  --gc-line: rgb(255 255 255 / 0.16);
+  --gc-ease: cubic-bezier(0.65, 0, 0.35, 1);
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  overflow: hidden;
+  /* שקוף בהתחלה: הריבועים מתמלאים מעל מסך ההזדהות עצמו */
+  background: transparent;
+  font-family: "Heebo", var(--font-sans);
+  color: #fff;
+}
+
+/* גלי החלוקה: רשת לבנה בחצי הגודל של הקודמת, נחשפת במעגל מהזרע */
+.fx-sub {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--fx-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--fx-line) 1px, transparent 1px);
+  background-size: var(--fx-size) var(--fx-size);
+  clip-path: circle(0 at var(--fx-cx) var(--fx-cy));
+  animation: fx-grow 1.7s cubic-bezier(0.65, 0, 0.35, 1) var(--fx-delay) both;
+}
+.fx-sub--1 {
+  --fx-size: 6.25vw;
+  --fx-line: rgb(255 255 255 / 0.12);
+  --fx-delay: 0.75s;
+}
+.fx-sub--2 {
+  --fx-size: 3.125vw;
+  --fx-line: rgb(255 255 255 / 0.08);
+  --fx-delay: 1.05s;
+}
+.fx-sub--3 {
+  --fx-size: 1.5625vw;
+  --fx-line: rgb(255 255 255 / 0.05);
+  --fx-delay: 1.35s;
+}
+@keyframes fx-grow {
+  to {
+    /* חצי האלכסון של המסך - מגיע לכל הפינות מכל נקודה */
+    clip-path: circle(150vmax at var(--fx-cx) var(--fx-cy));
+  }
+}
+
+/* הזרע: הריבוע האדום של הלוגו, בגודל המשבצת הקטנה ביותר. נדלק כשהרשת
+   מתמלאת, ונבלע כשהאותיות מתחילות להיבנות ממנו (1.8 שניות - ONCE_SWIRL_MS) */
+.fx-seed {
+  position: absolute;
+  background: var(--gc-coral);
+  animation:
+    fx-seed-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s both,
+    fx-seed-out 0.6s cubic-bezier(0.65, 0, 0.35, 1) 1.75s forwards;
+}
+@keyframes fx-seed-in {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes fx-seed-out {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(0) rotate(90deg);
+  }
+}
+
+/* הכותרת: לבנה ועבה, ימין-למעלה - באותו מקום כמו "מי אתן?" במסך הקודם */
+.fx-title {
+  position: absolute;
+  top: calc(12vh + 4vh);
+  right: 12.5vw;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 1.4vw;
+  font-weight: 800;
+  font-size: clamp(2.75rem, min(6vw, 10vh), 7rem);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  animation: ed-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.9s both;
+}
+.fx-title__square {
+  width: 0.28em;
+  height: 0.28em;
+  flex: none;
+  background: var(--gc-coral);
+}
+
+/* ==========================================================================
+   פופ-אפ הטיפים לשם הקבוצה (TipBubbles) - 2026-11-12
+   עמוד כחול מלא שנפרש מלמעלה, עם קווי רשת לבנים. הטיפים בעמודות הרשת.
+   ========================================================================== */
+.tp-page {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  height: auto;
+  background-color: var(--ed-blue);
+  /* קווי הרשת - אותן עמודות של 12.5vw, וקו אופקי עליון ותחתון */
+  background-image:
+    linear-gradient(to right, var(--ed-line-on-blue) 1px, transparent 1px),
+    linear-gradient(to bottom, transparent calc(var(--ed-top) - 1px), var(--ed-line-on-blue) calc(var(--ed-top) - 1px), var(--ed-line-on-blue) var(--ed-top), transparent var(--ed-top)),
+    linear-gradient(to bottom, transparent calc(var(--ed-bottom) - 1px), var(--ed-line-on-blue) calc(var(--ed-bottom) - 1px), var(--ed-line-on-blue) var(--ed-bottom), transparent var(--ed-bottom));
+  background-size: var(--ed-col) 100%, 100% 100%, 100% 100%;
+  color: var(--bt-white);
+  /* נפרש מלמעלה למטה, כמו וילון */
+  animation: tp-drop 0.6s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+@keyframes tp-drop {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.tp-title {
+  position: absolute;
+  top: calc(var(--ed-top) + 4vh);
+  right: var(--ed-col);
+  left: var(--ed-col);
+  display: flex;
+  align-items: center;
+  gap: 1.2vw;
+  font-weight: 800;
+  font-size: clamp(2.25rem, min(4.4vw, 8vh), 5.5rem);
+  line-height: 1.05;
+  animation: ed-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+.tp-title__square {
+  width: 0.3em;
+  height: 0.3em;
+  flex: none;
+  background: var(--bt-coral);
+}
+
+/* חמש עמודות בדיוק על עמודות הרשת: מתחילות עמודה אחת פנימה מימין, ונגמרות
+   לפני הקו התחתון של הרשת (88vh) - הכפתור יושב מתחתיו, ולא עליהן */
+.tp-tips {
+  position: absolute;
+  top: 36vh;
+  bottom: calc(var(--full-h, 100vh) - var(--ed-bottom));
+  right: var(--ed-col);
+  display: grid;
+  grid-template-columns: repeat(5, var(--ed-col));
+  list-style: none;
+}
+/* הקו העליון של שורת הטיפים - נמתח מימין לשמאל בכניסה */
+.tp-tips::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: rgb(255 255 255 / 0.55);
+  transform-origin: right;
+  animation: ed-draw 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.45s both;
+}
+.tp-tip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4vh;
+  padding: 2.6vh 1.3vw 2vh;
+  cursor: pointer;
+  transition: color 0.45s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+/* כל עמודה נחשפת מלמעלה למטה, בזו אחר זו מימין */
+.tp-tip > * {
+  position: relative;
+  z-index: 1;
+}
+.tp-tip {
+  animation: tp-col-in 0.75s cubic-bezier(0.65, 0, 0.35, 1) calc(0.55s + var(--tp-i) * 0.11s) both;
+}
+@keyframes tp-col-in {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+/* הזרקור: העמודה הפעילה מתמלאת בלבן מלמעלה, והטקסט מתהפך לכחול */
+.tp-tip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bt-white);
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.tp-tip.is-active::before {
+  clip-path: inset(0 0 0 0);
+}
+/* כשהזרקור עוזב, הלבן נאסף **למטה** - כך החלק העליון (המספר) מתגלה
+   ראשון. כל שורה מתהפכת ללבן בדיוק כשהקצה עובר עליה, ולא לפני: קודם
+   הצבע התחלף בבת אחת, והמספר נשאר לרגע לבן על לבן (2026-11-12). */
+.tp-tip:not(.is-active)::before {
+  clip-path: inset(100% 0 0 0);
+}
+.tp-tip__num,
+.tp-tip__title,
+.tp-tip__text {
+  transition: color 0.25s ease;
+}
+.tp-tip__title {
+  transition-delay: 0.12s;
+}
+.tp-tip__text {
+  transition-delay: 0.22s;
+}
+/* בכניסה הלבן עולה מהקו התחתון - אז הסדר הפוך: ההסבר (למטה) מתהפך
+   ראשון, והמספר (למעלה) אחרון */
+.tp-tip.is-active .tp-tip__num,
+.tp-tip.is-active .tp-tip__title {
+  color: var(--ed-blue);
+}
+.tp-tip.is-active .tp-tip__text {
+  color: var(--ed-ink);
+  transition-delay: 0.08s;
+}
+.tp-tip.is-active .tp-tip__title {
+  transition-delay: 0.2s;
+}
+.tp-tip.is-active .tp-tip__num {
+  transition-delay: 0.32s;
+}
+
+/* המילה הענקית: שם הטיפ הפעיל, בשתי העמודות הריקות משמאל, יושבת על
+   הקו התחתון של הרשת. כל מילה חדשה עולה מתחת לקו (overflow: hidden) */
+.tp-word {
+  position: absolute;
+  top: 36vh;
+  bottom: calc(var(--full-h, 100vh) - var(--ed-bottom) + 2.6vh);
+  left: 2.5vw;
+  width: calc(var(--ed-col) * 2 - 5vw);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  text-align: right;
+  font-weight: 800;
+  font-size: clamp(2.5rem, min(4.4vw, 9vh), 7rem);
+  line-height: 0.98;
+  letter-spacing: -0.015em;
+  pointer-events: none;
+}
+.tp-word__in {
+  display: block;
+  animation: tp-word-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes tp-word-in {
+  from {
+    transform: translateY(110%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.tp-page.is-leaving .tp-word {
+  animation: tp-fade-up 0.35s ease-in both;
+}
+
+/* הריבוע האדום על הקו העליון - מחליק אל הטיפ הפעיל */
+.tp-marker {
+  position: absolute;
+  top: -7px;
+  right: calc(var(--ed-col) * var(--tp-active) + var(--ed-col) / 2 - 7px);
+  z-index: 2;
+  width: 14px;
+  height: 14px;
+  background: var(--bt-coral);
+  transform: scale(0);
+  transition:
+    right 0.6s cubic-bezier(0.65, 0, 0.35, 1),
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.tp-marker.is-on {
+  transform: scale(1);
+}
+
+/* המספר: מונה שמתגלגל מ-00 אל המספר של הטיפ */
+.tp-tip__num {
+  display: block;
+  height: 1em;
+  overflow: hidden;
+  font-weight: 100;
+  font-size: clamp(3.5rem, min(7vw, 12vh), 9rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.tp-roll {
+  display: flex;
+  flex-direction: column;
+  animation: gc-roll 0.8s cubic-bezier(0.76, 0, 0.24, 1) calc(0.95s + var(--tp-i) * 0.11s) both;
+}
+.tp-roll > span {
+  display: block;
+  height: 1em;
+}
+.tp-tip__title {
+  margin-top: 1vh;
+  font-weight: 700;
+  font-size: clamp(1.3rem, min(1.9vw, 3.4vh), 2.1rem);
+  line-height: 1.15;
+}
+.tp-tip__text {
+  color: rgb(255 255 255 / 0.78);
+  font-weight: 400;
+  font-size: clamp(1rem, min(1.25vw, 2.4vh), 1.4rem);
+  line-height: 1.45;
+  transition: color 0.45s ease;
+}
+
+/* חץ ↙ דק וענק בפינה הריקה (שתי העמודות השמאליות), נמתח מהפינה */
+.tp-arrow {
+  position: absolute;
+  top: calc(var(--ed-top) + 6vh);
+  left: calc(var(--ed-col) * 0.6);
+  width: min(13vw, 24vh);
+  height: min(13vw, 24vh);
+  color: var(--bt-white);
+  animation: gc-arrow-in 0.8s cubic-bezier(0.65, 0, 0.35, 1) 0.7s both;
+}
+
+/* הכפתור ברצועה התחתונה, מתחת לקו של הרשת - מיושר לקצה השמאלי של
+   הטיפים, כך שלעולם לא יעלה על הטקסט שלהם */
+.tp-foot {
+  position: absolute;
+  left: calc(var(--ed-col) * 2);
+  top: var(--ed-bottom);
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  animation: ed-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 1.3s both;
+}
+/* --- היציאה (TipBubbles, LEAVE_MS = 1150) --------------------------------
+   1. הכפתור נלחץ פנימה ונורה בכיוון החץ שלו ↙ ונעלם.
+   2. הכותרת, החץ הגדול והריבוע האדום עולים ונמוגים.
+   3. העמודות נאספות למעלה אחת-אחת מימין - הכניסה, הפוכה.
+   4. העמוד הכחול כולו מתגלגל למעלה כמו וילון, וחושף את המסך. */
+.tp-page.is-leaving {
+  pointer-events: none;
+  animation: tp-lift 0.5s cubic-bezier(0.65, 0, 0.35, 1) 0.62s both;
+}
+@keyframes tp-lift {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+.tp-page.is-leaving .tp-btn {
+  animation: tp-btn-go 0.42s cubic-bezier(0.55, 0, 0.75, 0) both;
+}
+@keyframes tp-btn-go {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  22% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-4vw, 4vh) scale(0.9);
+    opacity: 0;
+  }
+}
+.tp-page.is-leaving .tp-title,
+.tp-page.is-leaving .tp-arrow,
+.tp-page.is-leaving .tp-marker {
+  animation: tp-fade-up 0.35s ease-in both;
+}
+@keyframes tp-fade-up {
+  to {
+    opacity: 0;
+    transform: translateY(-2.5vh);
+  }
+}
+.tp-page.is-leaving .tp-tips::before {
+  animation: tp-line-out 0.4s ease-in 0.1s both;
+}
+@keyframes tp-line-out {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.tp-page.is-leaving .tp-tip {
+  animation: tp-col-out 0.45s cubic-bezier(0.65, 0, 0.35, 1) calc(0.12s + var(--tp-i) * 0.06s) both;
+}
+@keyframes tp-col-out {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
+/* על כחול: הכפתור האדום עם טבעת מיקוד לבנה */
+.tp-btn:focus-visible {
+  outline: 3px solid var(--bt-white);
+  outline-offset: 6px;
+}
+
+/* ==========================================================================
+   פס ההתקדמות של כל הסדנה (ProjectProgressBar) - 2026-11-14
+   פס כתום דק מקצה לקצה בראש המסך, מתמלא מימין. בקשת הלקוחה: "פס טעינה
+   למעלה לאורך כל הפרויקט שיראה התקדמות בצבע כתום".
+   ========================================================================== */
+.pp-bar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 95;
+  height: 6px;
+  pointer-events: none;
+  /* מסלול שקוף-למחצה שנראה גם על הכחול וגם על הבהיר */
+  background: rgb(140 150 180 / 0.22);
+}
+.pp-bar__fill {
+  position: absolute;
+  inset: 0;
+  background: #f25740;
+  transform-origin: right;
+  transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.pp-bar {
+  transition: height 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+}
+/* הסיום: הפס מתעבה, ואור לבן עובר לאורכו פעם אחת ואז שוב כל כמה שניות -
+   "הושלם", ולא פס שנעצר באמצע */
+.pp-bar.is-complete {
+  height: 10px;
+}
+.pp-bar.is-complete .pp-bar__fill {
+  overflow: hidden;
+}
+.pp-bar.is-complete::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 18vw;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.85), transparent);
+  animation: pp-shine 2.4s cubic-bezier(0.65, 0, 0.35, 1) 0.9s infinite;
+}
+@keyframes pp-shine {
+  from {
+    right: -18vw;
+  }
+  60%,
+  to {
+    right: 100%;
+  }
+}
+
+/* פס תחתון כתום מתחת ל"מי אתן?" - נמתח מימין לשמאל, באותו צבע כמו פס
+   ההתקדמות (2026-11-14) */
+.ed-h1__line {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.14em;
+}
+.ed-h1__line::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  height: max(6px, 0.07em);
+  background: #f25740;
+  transform-origin: right;
+  animation: ed-draw 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.55s both;
+}
+
+/* ==========================================================================
+   מסך פתיחה של שלב (StageIntro) - 2026-11-15
+   בלי מסגרת. כל שורה עולה מתוך פס סמוי ("גלילה"), בזו אחר זו; מתחת לשורה
+   מודגשת נמתח קו כתום מימין לשמאל אחרי שהשורה נחתה.
+   ========================================================================== */
+.si-line {
+  padding: 0.04em 0.3em 0.22em;
+}
+.si-line__in {
+  position: relative;
+  display: inline-block;
+}
+/* הקלדה: כל אות נדלקת בזמן שלה (animation-delay inline) */
+.si-ch {
+  animation: si-type 0.14s ease-out both;
+}
+@keyframes si-type {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* שורת "רעיון / שאלה / תחושה / כיוון": איור דק מעל כל מילה */
+.si-word {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22em;
+}
+.si-art {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+  color: #2a4286;
+}
+.si-art svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+/* פעם ראשונה: הקו מצטייר (ההשהיה inline = הרגע שהמילה מתחילה להיכתב) */
+.si-art .si-draw {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+  animation: si-draw 0.9s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+@keyframes si-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* אחר כך - הנפשה משלו, מ---si-idle-at (שנייה אחרי תחילת השרטוט) */
+.si-art svg {
+  animation: 1.8s ease-in-out var(--si-idle-at, 1s) infinite both;
+}
+
+/* נורה: קרני אור נשלחות החוצה ונעלמות, בזו אחר זו */
+.si-art .si-ray {
+  /* באדום-כתום, כדי שייקראו כאור ולא כעוד קו של הנורה */
+  stroke: #f25740;
+  stroke-width: 1.4;
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+  animation: si-ray 1.8s ease-out infinite both;
+}
+@keyframes si-ray {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  35% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  70%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+/* שאלה: קפיצה קטנה, נחיתה עם כיווץ, ומנוחה */
+.si-art--question svg {
+  animation-name: si-hop;
+  transform-origin: 50% 100%;
+}
+@keyframes si-hop {
+  0%,
+  50%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  10% {
+    transform: translateY(0) scale(1.08, 0.9);
+  }
+  22% {
+    transform: translateY(-14%) scale(0.97, 1.04);
+  }
+  36% {
+    transform: translateY(0) scale(1.06, 0.93);
+  }
+  43% {
+    transform: translateY(-3%) scale(1, 1);
+  }
+}
+
+/* נורה: פעימה עדינה, יחד עם קרני האור (אותו מחזור 1.8s) */
+.si-art--idea svg {
+  animation-name: si-glow-beat;
+}
+@keyframes si-glow-beat {
+  0%,
+  60%,
+  100% {
+    transform: scale(1);
+  }
+  20% {
+    transform: scale(1.1);
+  }
+  38% {
+    transform: scale(1.03);
+  }
+}
+
+/* לב: גדל וקטן, פעימה כפולה ומנוחה */
+.si-art--feeling svg {
+  animation-name: si-beat;
+  animation-duration: 1.4s;
+}
+@keyframes si-beat {
+  0%,
+  50%,
+  100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.18);
+  }
+  26% {
+    transform: scale(1.02);
+  }
+  38% {
+    transform: scale(1.14);
+  }
+}
+
+/* חץ: זז קצת לכיוון שאליו הוא מצביע (למעלה-ימינה) וחוזר */
+.si-art--direction svg {
+  animation-name: si-nudge;
+}
+@keyframes si-nudge {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  45% {
+    transform: translate(16%, -16%);
+  }
+  60% {
+    transform: translate(12%, -12%);
+  }
+}
+.si-line__in--mark::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: -0.1em;
+  height: max(5px, 0.08em);
+  background: #f25740;
+  transform-origin: right;
+  animation: si-mark 0.7s cubic-bezier(0.65, 0, 0.35, 1) var(--si-mark-at, 0.8s) both;
+}
+@keyframes si-mark {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+/* --- קלפי הפירוק (פתיחת שלב 4) ---------------------------------------
+   ארבעה צבעים, תפקיד אחד: כחול / לבן במסגרת / אדום-כתום / נייבי. כל קלף
+   נוחת (piece-out), ואז הצבע שלו נמרח עליו מימין לשמאל (::before), והתוכן
+   עולה מתוך פס סמוי. רק clip-path/opacity על הילדים - ה-transform של
+   הקלף שייך ל-piece-out. */
+/* "פחות עמוס" (2026-11-15): רווח בין הקלפים, מספר קטן יותר, בלי חצים */
+.bd-cards {
+  gap: 1.2vw;
+}
+.bd-card__arrow {
+  display: none;
+}
+.bd-card {
+  --bd-bg: #2a4286;
+  --bd-ink: #ffffff;
+  --bd-num: #ffffff;
+  --bd-arrow: #f25740;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1vh;
+  min-height: 26vh;
+  padding: 2.8vh 1.8vw 2.6vh;
+  text-align: start;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgb(11 27 63 / 0.18);
+  color: var(--bd-ink);
+  overflow: hidden;
+  isolation: isolate;
+}
+.bd-card--2 {
+  --bd-bg: #ffffff;
+  --bd-ink: #0b1b3f;
+  --bd-num: #f25740;
+  --bd-arrow: #2a4286;
+}
+.bd-card--3 {
+  --bd-bg: #f25740;
+  --bd-ink: #ffffff;
+  --bd-num: #ffffff;
+  --bd-arrow: #0b1b3f;
+}
+.bd-card--4 {
+  --bd-bg: #0b1b3f;
+  --bd-ink: #ffffff;
+  --bd-num: #ffffff;
+  --bd-arrow: #f25740;
+}
+/* הצבע נמרח על הקלף */
+.bd-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--bd-bg);
+  clip-path: inset(0 0 0 100%);
+  animation: bd-paint 0.65s cubic-bezier(0.7, 0, 0.2, 1) var(--bd-at, 1s) forwards;
+}
+.bd-card--2::before {
+  box-shadow: inset 0 0 0 1.5px #0b1b3f;
+}
+@keyframes bd-paint {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.bd-card > * {
+  opacity: 0;
+  animation: bd-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.bd-card__num {
+  color: var(--bd-num);
+  font-size: min(7vh, 4.5rem);
+  font-weight: 100;
+  line-height: 0.85;
+  letter-spacing: -0.03em;
+  animation-delay: calc(var(--bd-at, 1s) + 0.25s);
+}
+.bd-card__q {
+  margin-top: auto;
+  font-size: min(2.5vh, 1.6rem);
+  font-weight: 500;
+  line-height: 1.25;
+  animation-delay: calc(var(--bd-at, 1s) + 0.4s);
+}
+.bd-card__a {
+  font-size: min(3.6vh, 2.4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  animation-delay: calc(var(--bd-at, 1s) + 0.55s);
+}
+.bd-card__arrow {
+  position: absolute;
+  top: 2.4vh;
+  left: 1.4vw;
+  width: min(4.5vh, 2.8rem);
+  height: min(4.5vh, 2.8rem);
+  color: var(--bd-arrow);
+  animation-delay: calc(var(--bd-at, 1s) + 0.7s);
+}
+@keyframes bd-rise {
+  from {
+    opacity: 0;
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(-20% -20% -20% -20%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bd-card::before {
+    animation: none;
+    clip-path: none;
+  }
+  .bd-card > * {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* --- שלב 4: "מערכת אפיון אוטומטית" - חוזקות וחסמים שזוהו (2026-11-15) --- */
+.pc {
+  --pc-band: #2a4286;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgb(11 27 63 / 0.14);
+  position: relative;
+}
+.pc--red {
+  --pc-band: #f25740;
+}
+
+/* --- הפתיחה, בארבע פעימות (2026-11-15: "שיופיעו יפה ומעניין") ---------
+   1. קו דק בצבע הטור נמתח לרוחב (חוזקות מימין, חסמים משמאל)
+   2. הקו "נפתח" כלפי מטה לבלוק הצבע של הראש, והמונה סופר
+   3. הדף הלבן נגלל מתחתיו כמו מגילה
+   4. השורות מתהפכות פנימה אחת-אחת, כמו כרטיסים */
+.pc {
+  --pc-at: 0.15s;
+}
+.pc--red {
+  --pc-at: 0.3s;
+}
+.pc__head {
+  animation:
+    pc-line-in 0.45s cubic-bezier(0.65, 0, 0.35, 1) var(--pc-at) both,
+    pc-open 0.55s cubic-bezier(0.65, 0, 0.35, 1) calc(var(--pc-at) + 0.45s) both;
+}
+.pc--red .pc__head {
+  animation-name: pc-line-in-l, pc-open;
+}
+@keyframes pc-line-in {
+  from {
+    clip-path: inset(0 0 calc(100% - 4px) 100%);
+  }
+  to {
+    clip-path: inset(0 0 calc(100% - 4px) 0);
+  }
+}
+@keyframes pc-line-in-l {
+  from {
+    clip-path: inset(0 100% calc(100% - 4px) 0);
+  }
+  to {
+    clip-path: inset(0 0 calc(100% - 4px) 0);
+  }
+}
+@keyframes pc-open {
+  from {
+    clip-path: inset(0 0 calc(100% - 4px) 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.pc__head > * {
+  animation: pc-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--pc-at) + 0.75s) both;
+}
+@keyframes pc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(40%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* הדף הלבן נגלל מתחת לראש */
+.pc__body,
+.pc__empty {
+  animation: pc-unroll 0.7s cubic-bezier(0.65, 0, 0.35, 1) calc(var(--pc-at) + 0.85s) both;
+}
+@keyframes pc-unroll {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+/* מסגרת הטור מופיעה רק עם הדף - בלי קופסה ריקה לפני כן */
+.pc {
+  animation: pc-frame 0.01s linear calc(var(--pc-at) + 0.85s) both;
+}
+@keyframes pc-frame {
+  from {
+    box-shadow: none;
+    background: transparent;
+  }
+}
+/* ראש הטור: בלוק צבע מלא, מספר ענק ודק וכותרת */
+.pc__head {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.4rem 1.8rem 1.2rem;
+  background: var(--pc-band);
+  color: #ffffff;
+}
+.pc__title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: min(3.4vh, 2rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+.pc__count {
+  order: 2;
+  font-size: min(9vh, 5.5rem);
+  font-weight: 100;
+  line-height: 0.8;
+  letter-spacing: -0.03em;
+}
+.pc__body {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.6rem 1.8rem 1.2rem;
+}
+.pc__legend {
+  display: grid;
+  grid-template-columns: minmax(8rem, 34%) 1fr;
+  gap: 1.4rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgb(11 27 63 / 0.25);
+  color: rgb(11 27 63 / 0.6);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.pc__groups {
+  perspective: 900px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pc__group {
+  display: grid;
+  grid-template-columns: minmax(8rem, 34%) 1fr;
+  gap: 1.4rem;
+  padding: 1.1rem 0;
+  position: relative;
+  animation: pc-row 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* קו מפריד שנמתח מימין לשמאל */
+.pc__group::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  background: rgb(11 27 63 / 0.18);
+  transform-origin: right;
+  animation: pc-line 0.6s cubic-bezier(0.65, 0, 0.35, 1) both;
+  animation-delay: inherit;
+}
+.pc__group:last-child::after {
+  display: none;
+}
+@keyframes pc-line {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.pc__group:last-child {
+  border-bottom: 0;
+}
+@keyframes pc-row {
+  from {
+    opacity: 0;
+    transform: rotateX(-80deg);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pc__group {
+  transform-origin: 50% 0;
+}
+/* המונח המקצועי - מודגש, עם ריבוע קטן בצבע הטור */
+.pc__cat {
+  position: relative;
+  padding-inline-start: 1.1rem;
+  color: #0b1b3f;
+  font-size: min(2.3vh, 1.25rem);
+  font-weight: 800;
+  line-height: 1.3;
+}
+.pc__cat::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.45em;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--pc-band);
+}
+.pc__items {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+/* קו מפריד בין שני נתונים באותו תחום (בקשת המפתחת 2026-11-16) - מקווקו
+   ועדין, שונה מהקו המלא שבין תחום לתחום */
+.pc__item + .pc__item {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed rgb(11 27 63 / 0.28);
+}
+/* הנתון - טקסט רגיל, בלי הדגשת מרקר (בקשת המפתחת) */
+.pc__item {
+  color: #0b1b3f;
+  font-size: min(2.3vh, 1.2rem);
+  line-height: 1.55;
+}
+.pc__empty {
+  padding: 2.5rem 1.8rem;
+  color: rgb(11 27 63 / 0.6);
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc,
+  .pc__group,
+  .pc__group::after {
+    animation: none;
+  }
+  .pc__head,
+  .pc__head > *,
+  .pc__body,
+  .pc__empty {
+    animation: none;
+  }
+}
+
+/* --- מעבר בין שלבים: הכניסה מחכה לרשת ------------------------------------
+   כשהרשת מכסה את המסך (data-curtain, gridCurtain.ts) כל ההנפשות של המסך
+   החדש עומדות בפריים הראשון שלהן, וממשיכות ברגע שהרשת מתחילה להיפתח - כך
+   רואים את כל הופעת האלמנטים, ולא מסך שכבר "נגמר" */
+html[data-curtain] main,
+html[data-curtain] main *,
+html[data-curtain] main *::before,
+html[data-curtain] main *::after {
+  animation-play-state: paused !important;
+}
+
+/* --- שלב 4: חלון בחירת התחום אחרי סימון (CategoryPopup, 2026-11-16) ---- */
+/* "יותר צבע, המרקר למעלה": ראש החלון בלוק בצבע הדיו, ועליו המרקר המצויר
+   בתוך ריבוע לבן; הכותרת מודגשת במרקר כמו על הדף */
+.cat-modal--green {
+  --ink: #a8e08f;
+}
+.cat-modal--red {
+  --ink: #ff9e8c;
+}
+.cat-modal {
+  overflow: hidden;
+}
+/* כפתור ה-× מעל הבלוק הצבעוני */
+.cat-modal > .glass-icon-btn {
+  z-index: 2;
+  background: #ffffff;
+  /* ה-× בכתום (בקשת המפתחת 2026-11-16) */
+  color: #f25740 !important;
+}
+.cat-band {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 7.2rem;
+  background: var(--ink);
+  animation: cat-band 0.6s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+@keyframes cat-band {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.cat-visual {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5.6rem;
+  height: 5.6rem;
+  margin: 0.6rem auto 1.4rem;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1.5px #0b1b3f;
+  animation: bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+.cat-visual svg {
+  width: 3.2rem;
+  height: 3.2rem;
+  overflow: visible;
+  animation: cat-mark 1.6s ease-in-out 0.7s infinite;
+}
+/* המרקר "מסמן" קצת - זז הלוך-חזור כאילו עובר על שורה */
+@keyframes cat-mark {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  50% {
+    transform: translateX(-8%) rotate(-4deg);
+  }
+}
+.cat-modal #modal-title {
+  color: #0b1b3f;
+}
+.cat-modal #modal-title + p {
+  margin-top: 1rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cat-band,
+  .cat-visual,
+  .cat-visual svg {
+    animation: none;
+  }
+}
+/* הקטע - ציטוט גדול, בלי תיבה ובלי הדגשה; גרשיים ענקיים ודקים בצבע הדיו */
+.cat-pop__phrase {
+  position: relative;
+  margin: 0.4rem 0 0;
+  padding: 0.6rem 2.8rem 0.4rem;
+  color: #0b1b3f;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+.cat-pop__quote {
+  position: absolute;
+  top: -0.28em;
+  right: 0.2em;
+  color: var(--ink);
+  font-size: 7rem;
+  font-weight: 200;
+  line-height: 1;
+  -webkit-text-stroke: 1px #0b1b3f;
+}
+/* לוח התחומים - שני טורים של אריחים */
+.cat-pop__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
+}
+.cat-pop__btn {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 64px;
+  padding: 0 1rem;
+  border: 0;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1.5px #0b1b3f;
+  color: #0b1b3f;
+  font-family: "Heebo", var(--font-sans);
+  text-align: start;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  animation: cat-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+/* המילוי בצבע הדיו נמרח מימין בנגיעה - כמו משיכת מרקר על האריח */
+.cat-pop__btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.cat-pop__btn:hover::before,
+.cat-pop__btn:active::before {
+  transform: scaleX(1);
+}
+.cat-pop__n {
+  color: #0b1b3f;
+  font-size: 1.6rem;
+  font-weight: 100;
+  line-height: 1;
+}
+.cat-pop__name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.cat-pop__go {
+  width: 1.1rem;
+  height: 1.1rem;
+  opacity: 0.45;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+}
+.cat-pop__btn:hover .cat-pop__go,
+.cat-pop__btn:active .cat-pop__go {
+  opacity: 1;
+  transform: translate(-4px, 4px);
+}
+@keyframes cat-in {
+  from {
+    opacity: 0;
+    transform: translateY(30%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cat-pop__btn {
+    animation: none;
+  }
+}
+/* --- שלב 5: לוח ארבע האפשרויות (2026-11-15) ---------------------------- */
+.s5-board {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  margin: 0 0 1rem;
+  padding: 2px;
+  list-style: none;
+  /* הקווים בין המשבצות - הכחול שמבצבץ ברווח של 2px, ומסגרת לבנה דקה */
+  background: rgb(255 255 255 / 0.55);
+}
+@media (min-width: 640px) {
+  .s5-board {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+}
+/* במסך רחב: ארבעת הכרטיסים בשורה אחת, זה לצד זה (בקשת הלקוחה 2026-11-16)
+   - כרטיסים לאורך, בגובה קבוע ולא בכל הגובה הפנוי */
+@media (min-width: 1024px) {
+  /* כרטיסים נפרדים וקטנים יותר, עם רווח ביניהם (2026-11-16) - בלי רקע
+     הקווים המשותף */
+  .s5-board {
+    gap: 1.6vw;
+    padding: 0;
+    background: none;
+    width: min(100%, 92rem);
+    margin-inline: auto;
+  }
+  .s5-cell {
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.55);
+    /* כניסה (2026-11-16): כל קלף מגיע הפוך - הגב הכחול שלו כלפי מעלה -
+       ומתהפך לפנים, אחד אחרי השני (ראו s5-turn ו-.s5-opt::after) */
+    animation-name: s5-turn !important;
+    animation-duration: 0.95s;
+    animation-timing-function: cubic-bezier(0.34, 1.3, 0.64, 1);
+  }
+  .s5-board {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: 1fr;
+    flex: 0 1 auto;
+    /* במסך נמוך - נגמר מעל מד ההתקדמות שבפינה (שאחרת עלה על כרטיס ד) */
+    /* מאוזן: נמוך מהרוחב (בקשת המפתחת 2026-11-16) */
+    height: min(30vh, 17rem, calc(var(--full-h, 100vh) - 26.5rem));
+    /* במסך גבוה - יורד לאמצע הגובה; במסך נמוך - צמוד למעלה, מעל מד
+       ההתקדמות שבפינה */
+    margin-block: max(3vh, calc((var(--full-h, 100vh) - 690px) * 0.6)) auto;
+  }
+  .s5-opt__label {
+    font-size: min(2.9vh, 1.65rem);
+  }
+  .s5-opt__letter {
+    font-size: min(7vh, 4.2rem);
+  }
+}
+@keyframes s5-turn {
+  0% {
+    opacity: 0;
+    transform: perspective(1400px) translateY(12%) rotateY(-180deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1400px) rotateY(0);
+  }
+}
+/* גב הקלף: כחול עם מסגרת פנימית לבנה ואות דקה - נעלם בדיוק כשהקלף עובר את
+   הקצה (חצי הדרך), ואז רואים את הפנים */
+@media (min-width: 1024px) {
+  .s5-opt::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: #2a4286;
+    box-shadow: inset 0 0 0 10px #2a4286, inset 0 0 0 11px rgb(255 255 255 / 0.6);
+    pointer-events: none;
+    animation: s5-back 0.95s linear both;
+    animation-delay: inherit;
+  }
+  .s5-cell .s5-opt {
+    animation-delay: inherit;
+  }
+}
+@keyframes s5-back {
+  0%,
+  42% {
+    opacity: 1;
+  }
+  43%,
+  100% {
+    opacity: 0;
+  }
+}@keyframes s5-deal {
+  0% {
+    opacity: 0;
+    transform: translateX(var(--deal-x, 0)) translateY(18%) rotate(var(--deal-r, 0)) scale(0.85);
+  }
+  35% {
+    opacity: 1;
+    transform: translateX(var(--deal-x, 0)) translateY(0) rotate(var(--deal-r, 0)) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+.s5-cell {
+  display: flex;
+  min-height: 0;
+  animation: s5-reveal-r 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* כל משבצת נחשפת מכיוון אחר - כמו לוח שנפתח לארבעה צדדים */
+.s5-cell:nth-child(2) {
+  animation-name: s5-reveal-l;
+}
+.s5-cell:nth-child(3) {
+  animation-name: s5-reveal-up;
+}
+.s5-cell:nth-child(4) {
+  animation-name: s5-reveal-down;
+}
+@keyframes s5-reveal-r {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes s5-reveal-l {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes s5-reveal-up {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes s5-reveal-down {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.s5-opt {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr auto;
+  width: 100%;
+  min-height: 9rem;
+  padding: 2.4vh 2vw 2.2vh;
+  border: 0;
+  background: #ffffff;
+  color: #0b1b3f;
+  font-family: "Heebo", var(--font-sans);
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.3s ease;
+}
+.s5-opt:active {
+  background: #fdf1ee;
+}
+.s5-opt__letter {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: start;
+  color: #f25740;
+  font-size: min(11vh, 6.5rem);
+  font-weight: 100;
+  line-height: 0.8;
+}
+.s5-opt__kicker {
+  grid-column: 1;
+  grid-row: 1;
+  color: rgb(11 27 63 / 0.6);
+  font-size: min(2vh, 1.05rem);
+  font-weight: 600;
+}
+.s5-opt__label {
+  grid-column: 1 / 3;
+  grid-row: 2;
+  align-self: end;
+  padding-top: 1.2vh;
+  font-size: min(3.8vh, 2.3rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+.s5-opt__go {
+  grid-column: 1 / 3;
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.6vh;
+  padding-top: 1.2vh;
+  border-top: 1px solid rgb(11 27 63 / 0.15);
+  color: #2a4286;
+  font-size: min(1.9vh, 1rem);
+  font-weight: 700;
+}
+.s5-opt__go svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.s5-opt:hover .s5-opt__go svg,
+.s5-opt:active .s5-opt__go svg {
+  transform: translate(-3px, 3px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .s5-cell {
+    animation: none;
+  }
+}
+
+/* --- שלב 4: תמונת תפקוד כוללת ומסקנה מעשית (2026-11-15) ---------------- */
+.fp-pieces {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+@media (min-width: 1024px) {
+  .fp-pieces {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.fp-piece {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6vh;
+  padding: 3.2vh 2.4vw 3.6vh;
+  text-align: start;
+}
+.fp-piece--a {
+  background: #2a4286;
+  color: #ffffff;
+  animation: fp-in-r 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+.fp-piece--b {
+  background: #ffffff;
+  color: #0b1b3f;
+  box-shadow: inset 0 0 0 2px #2a4286;
+  animation: fp-in-l 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+@keyframes fp-in-r {
+  from {
+    opacity: 0;
+    transform: translateX(18%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fp-in-l {
+  from {
+    opacity: 0;
+    transform: translateX(-18%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fp-piece__n {
+  font-size: min(8vh, 4.8rem);
+  font-weight: 100;
+  line-height: 0.8;
+  letter-spacing: -0.03em;
+}
+.fp-piece--b .fp-piece__n {
+  color: #f25740;
+}
+.fp-piece__t {
+  font-size: min(2.9vh, 1.55rem);
+  font-weight: 500;
+  line-height: 1.6;
+}
+/* הריבוע שננעץ בתפר בין שתי הפיסות - "מתחברות" */
+.fp-seam {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .fp-seam {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1.6rem;
+    height: 1.6rem;
+    margin: -0.8rem 0 0 -0.8rem;
+    background: #f25740;
+    animation: fp-seam 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1s both;
+  }
+}
+@keyframes fp-seam {
+  from {
+    transform: scale(0) rotate(-90deg);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* המסקנה המעשית - שורת כתיבה */
+.fp-write {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4vh;
+  animation: fp-write-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 1.2s both;
+}
+@keyframes fp-write-in {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(-10% -5% -10% -5%);
+  }
+}
+.fp-write__label {
+  position: relative;
+  padding-inline-start: 1.4rem;
+  color: #0b1b3f;
+  font-size: min(2.6vh, 1.35rem);
+  font-weight: 800;
+  text-align: start;
+}
+.fp-write__label::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.4em;
+  width: 0.65rem;
+  height: 0.65rem;
+  background: #f25740;
+}
+.fp-write__input {
+  width: 100%;
+  min-height: 5.5rem;
+  resize: none;
+  padding: 1rem 1.2rem;
+  border: 0;
+  border-bottom: 3px solid #2a4286;
+  border-radius: 0;
+  background: #ffffff;
+  color: #0b1b3f;
+  font-family: "Heebo", var(--font-sans);
+  font-size: min(2.9vh, 1.5rem);
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.25s ease;
+}
+.fp-write__input::placeholder {
+  color: rgb(11 27 63 / 0.4);
+}
+.fp-write__input:focus {
+  border-bottom-color: #f25740;
+}
+.fp-write__input.is-missing {
+  border-bottom-color: #f25740;
+  box-shadow: inset 0 0 0 2px #f25740;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fp-piece--a,
+  .fp-piece--b,
+  .fp-seam,
+  .fp-write {
+    animation: none;
+  }
+}
+
+/* --- שלב 7: "מרעיון למנגנון" על הכחול (2026-11-15) ---------------------- */
+/* ששת התחומים (2026-11-15: "יותר יפים ומעוצבים") - רצועה אחת לבנה במסגרת
+   נייבי, מחולקת לשישה תאים בקווים דקים. בכל תא: מספר זעיר באדום-כתום
+   בפינה, סמל בקו נייבי, והמילה. פס כתום נמתח בראש כל תא בזה אחר זה */
+.s7-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  /* 2026-11-16 (הלקוחה): "מספיק פס, לא מסגרת שלמה" - בלי הקופסה הלבנה
+     והמסגרת; נשאר רק הפס הכתום בראש כל תא, ישר על הנייבי */
+  background: transparent;
+  list-style: none;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  animation: s7-strip-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+/* 2026-11-16: פס כתום אחד מתחת לכל השורה (במקום פס תקוע בראש כל תא),
+   נמתח מימין לשמאל אחרי שהאייקונים הצטיירו */
+.s7-strip::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #f25740;
+  transform-origin: right;
+  animation: si-mark 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.9s both;
+}
+/* --- "מרעיון למנגנון" - מסך מפוצל (2026-11-16) ----------------------------
+   עמודה ימנית (RTL: הראשונה בגריד) בדיוק ברוחב הבלוק הכחול (37.5vw פחות
+   ריווח ה-main), והבמה בכל השאר */
+/* "המסקנה שלנו" - שורה עליונה ממורכזת, מעל שני הצדדים */
+.s7-top {
+  /* צף מעל הגריד ולא תופס גובה - אחרת הוא דוחף את הכיתוב שבמלבן
+     למטה (2026-11-16). ממורכז מעל החפיסה (האזור הנייבי), לא מעל כל
+     המסך - המלבן תופס את הצד השמאלי */
+  position: absolute;
+  z-index: 2;
+  /* (2026-11-16) הכול מעט למטה - לא צמוד לראש המסך */
+  top: 3.5vh;
+  right: 0;
+  left: calc(25 * var(--sw, 1vw) - 2rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4vh;
+  pointer-events: none;
+}
+.s7-top > * {
+  pointer-events: auto;
+}
+/* הכותרת על הנייבי - לבנה, עם הקו הכתום מתחתיה כמו בשאר השלבים */
+.s7-title {
+  position: relative;
+  /* הכותרת וההסבר יורדים מעט; "המסקנה שלנו" נשארת למעלה (2026-11-17) */
+  margin-top: 5vh;
+  padding-bottom: 1.2vh;
+  color: #ffffff;
+  font-size: min(5.6vh, 3.4rem);
+  font-weight: 800;
+  line-height: 1.05;
+  text-align: center;
+  animation: s7-panel-in 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.3s both;
+}
+.s7-intro {
+  max-width: 52rem;
+  color: rgb(255 255 255 / 0.85);
+  font-size: min(2.4vh, 1.3rem);
+  line-height: 1.5;
+  text-align: center;
+  animation: pod-fade 0.6s ease 0.6s both;
+}
+.s7-title::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: #f25740;
+  transform-origin: right;
+  animation: si-mark 0.6s cubic-bezier(0.65, 0, 0.35, 1) 0.9s both;
+}
+.s7-split {
+  display: grid;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: 1fr calc(25 * var(--sw, 1vw) - 2rem);
+}
+.s7-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.4vh;
+  /* בצד שמאל (order 2 ב-RTL), על הבלוק הלבן; למטה מקום למד ההתקדמות */
+  order: 2;
+  /* 16vh: מתחת ל-"07" שירד אל מתחת לכפתור החזרה */
+  padding: 16vh 2rem 22vh 2.5rem;
+  color: #0b1b3f;
+  text-align: start;
+}
+.s7-panel__title {
+  position: relative;
+  padding-bottom: 1.6vh;
+  color: #0b1b3f;
+  font-size: min(5.6vh, 3.4rem);
+  font-weight: 800;
+  line-height: 1.02;
+  animation: s7-panel-in 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.3s both;
+}
+.s7-panel__title::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 4.5rem;
+  height: 4px;
+  background: #f25740;
+  transform-origin: right;
+  animation: si-mark 0.6s cubic-bezier(0.65, 0, 0.35, 1) 0.9s both;
+}
+@keyframes s7-panel-in {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.s7-panel__intro {
+  max-width: 26rem;
+  color: rgb(11 27 63 / 0.78);
+  font-size: min(2.3vh, 1.2rem);
+  line-height: 1.5;
+  animation: pod-fade 0.6s ease 0.6s both;
+}
+.s7-panel__changes {
+  width: 100%;
+  margin-top: 2.5vh;
+}
+.s7-panel__label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.2vh;
+  color: #0b1b3f;
+  font-size: min(2.6vh, 1.4rem);
+  font-weight: 800;
+}
+.s7-panel__label::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: #f25740;
+}
+.s7-list {
+  display: grid;
+  /* אחד מתחת לשני (בקשת המפתחת 2026-11-16) */
+  grid-template-columns: 1fr;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.s7-list__item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1vh 0;
+  border-top: 1px solid rgb(11 27 63 / 0.15);
+  animation: pod-fade 0.5s ease both;
+}
+.s7-list__item .s7-chg__icon {
+  width: auto;
+  height: auto;
+}
+.s7-list__label {
+  color: #0b1b3f;
+  font-size: min(2.3vh, 1.2rem);
+  font-weight: 700;
+}
+/* --- הסיכום של "מרעיון למנגנון": המנגנון "עובד" (2026-11-16) ------------
+   1. חוט כתום דק נמתח מימין לשמאל מתחת לשורת הכרטיסים, ונקודת אור לבנה
+      רצה עליו שוב ושוב - כמו זרם שעובר בין החלקים המחוברים.
+   2. בצד, ששת התחומים "נדלקים" אחד אחרי השני בלולאה - כל אחד מהם הוא חלק
+      שהמנגנון מפעיל. */
+.s7-wire {
+  position: absolute;
+  top: calc(50% + 3.6rem);
+  left: 50%;
+  width: min(1030px, 92%);
+  height: 2px;
+  translate: -50% 0;
+  background: #f25740;
+  transform-origin: right;
+  animation: si-mark 1s cubic-bezier(0.65, 0, 0.35, 1) 0.6s both;
+  pointer-events: none;
+}
+.s7-wire::before,
+.s7-wire::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  translate: 0 -50%;
+  background: #f25740;
+}
+.s7-wire::before {
+  right: -5px;
+}
+.s7-wire::after {
+  left: -5px;
+}
+.s7-wire__spark {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 46px;
+  height: 4px;
+  translate: 0 -50%;
+  background: #ffffff;
+  animation: s7-spark 2.6s cubic-bezier(0.45, 0, 0.55, 1) 1.6s infinite both;
+}
+@keyframes s7-spark {
+  0% {
+    right: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    right: calc(100% - 46px);
+    opacity: 0;
+  }
+}
+/* התחומים בצד נדלקים בתורם: האייקון קופץ קלות והשורה מקבלת פס כתום */
+.s7-panel.is-done .s7-list__item {
+  position: relative;
+}
+.s7-panel.is-done .s7-list__item::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -0.9rem;
+  width: 4px;
+  background: #f25740;
+  opacity: 0;
+  animation: s7-lit 2.7s ease-in-out var(--pulse-at, 1s) infinite;
+}
+.s7-panel.is-done .s7-list__item .s7-chg__icon {
+  animation: s7-lit-icon 2.7s ease-in-out var(--pulse-at, 1s) infinite;
+}
+@keyframes s7-lit {
+  0%,
+  30%,
+  100% {
+    opacity: 0;
+  }
+  8%,
+  20% {
+    opacity: 1;
+  }
+}
+@keyframes s7-lit-icon {
+  0%,
+  30%,
+  100% {
+    scale: 1;
+  }
+  10% {
+    scale: 1.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s7-wire,
+  .s7-wire__spark,
+  .s7-panel.is-done .s7-list__item::after,
+  .s7-panel.is-done .s7-list__item .s7-chg__icon {
+    animation: none;
+  }
+}
+
+/* הבמה - הכול ממורכז על הנייבי */
+.s7-stage {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  /* צמוד מלמעלה (ולא ממורכז) - "לכל שינוי יש לשאול" יושב קרוב מתחת
+     להסבר שצף מעליו, בלי חור באמצע (בקשת המפתחת 2026-11-16) */
+  justify-content: flex-start;
+  padding-inline: 2rem;
+  padding-top: 31vh;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .s7-panel__title,
+  .s7-panel__title::after,
+  .s7-panel__intro,
+  .s7-list__item {
+    animation: none;
+  }
+}
+
+/* מסך הסיכום (הכרטיסים בשורה, משפט הסיום והכפתור) - יורד למטה, רחוק
+   מהכותרת וההסבר (בקשת המפתחת 2026-11-17) */
+.s7-stage.s7-stage--done {
+  padding-top: 38vh;
+}
+
+/* --- הבסיס של "מרעיון למנגנון" (2026-11-16) ------------------------------
+   רצועה כחולה ברוחב המסך כולו, צמודה לתחתית, עם קו כתום דק מעליה שנמתח
+   מימין לשמאל. "מה משתנה?" בצד השורה, מופרד בקו לבן דק. בתוך הרצועה
+   אין צורך בפס הכתום שמתחת לאייקונים - הרצועה עצמה היא הבסיס */
+.s7-base {
+  position: relative;
+  display: flex;
+  width: 100vw;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  /* יוצא מהעמודה אל קצות המסך, ויורד עד התחתית (ריווח ה-main + ה-p-3) */
+  margin-inline: calc(50% - 50vw);
+  margin-top: auto;
+  margin-bottom: calc(-1.5rem - 0.75rem);
+  padding: 2.2vh 1rem 2.6vh;
+  background: #2a4286;
+  clip-path: inset(0 0 0 0);
+  animation: s7-base-in 0.8s cubic-bezier(0.65, 0, 0.35, 1) 0.5s both;
+}
+.s7-base::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: #f25740;
+  transform-origin: right;
+  animation: si-mark 1s cubic-bezier(0.65, 0, 0.35, 1) 1.1s both;
+}
+@keyframes s7-base-in {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+}
+.s7-base--gone {
+  display: none;
+}
+.s7-base__title {
+  flex: none;
+  padding-inline-end: 2.5rem;
+  border-inline-end: 1px solid rgb(255 255 255 / 0.35);
+  color: #ffffff;
+  font-size: min(2.8vh, 1.6rem);
+  font-weight: 800;
+}
+.s7-base .s7-strip::after {
+  display: none;
+}
+.s7-base .s7-chg {
+  padding-block: 0.4vh;
+}
+/* "לכל שינוי יש לשאול:" - תווית שקטה עם ריבוע כתום, צמודה לחפיסה */
+.s7-ask {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: rgb(255 255 255 / 0.85);
+  font-size: min(2.6vh, 1.4rem);
+  font-weight: 700;
+}
+.s7-ask::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: #f25740;
+}
+@media (prefers-reduced-motion: reduce) {
+  .s7-base,
+  .s7-base::before {
+    animation: none;
+  }
+}
+@keyframes s7-strip-in {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.s7-chg {
+  position: relative;
+  display: flex;
+  width: min(9.5vw, 8.5rem);
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 2.2vh 0.6rem 1.8vh;
+  border-inline-start: 0;
+}
+.s7-chg:first-child {
+  border-inline-start: 0;
+}
+/* הפס בראש כל תא הוסר - במקומו פס אחד מתחת לשורה (.s7-strip::after) */
+.s7-chg::before {
+  content: none;
+}
+/* האייקון בכתום של המספרים והפס, ומצטייר בקו (כמו האיורים בשלב 3) */
+.s7-chg__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(5.6vh, 3rem);
+  height: min(5.6vh, 3rem);
+  color: #f25740;
+  animation-delay: inherit;
+}
+.s7-chg__icon path {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  animation: s7-icon-draw 1s cubic-bezier(0.65, 0, 0.35, 1) both;
+  animation-delay: inherit;
+}
+.s7-chg__icon svg {
+  animation-delay: inherit;
+}
+@keyframes s7-icon-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes s7-pop {
+  from {
+    opacity: 0;
+    transform: translateY(40%) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.s7-chg__label {
+  color: #ffffff;
+  font-size: min(2.3vh, 1.2rem);
+  font-weight: 800;
+  line-height: 1;
+  animation: s7-label 0.5s ease both;
+  animation-delay: inherit;
+}
+@keyframes s7-label {
+  from {
+    opacity: 0;
+  }
+}
+.s7-chg__n {
+  position: absolute;
+  top: 0.7rem;
+  inset-inline-start: 0.7rem;
+  color: #f25740;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* הבמה הכחולה מאחורי החפיסה - הוסרה: הרקע של המסך חלק (בקשת המפתחת) */
+.s7-deck::before {
+  display: none;
+}
+/* (הגדרת הבמה נשארת למטה למקרה שנחזיר אותה) */
+.s7-deck::before {
+  content: "";
+  position: absolute;
+  top: 6%;
+  bottom: 6%;
+  left: -50vw;
+  right: -50vw;
+  z-index: 0;
+  background: #2a4286;
+  animation: s7-stage-in 0.8s cubic-bezier(0.65, 0, 0.35, 1) 0.3s both;
+}
+.s7-deck.is-finished::before {
+  top: 0;
+  bottom: 0;
+}
+@keyframes s7-stage-in {
+  from {
+    clip-path: inset(50% 0 50% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+/* הסיכום על הנייר - בנייבי */
+html[data-scene="s7-mech"] .s7-close {
+  color: #0b1b3f;
+}
+/* חיצי ההחלקה בשורת ההסבר - כתומים, אחרת נבלעו בכחול */
+html[data-stage="7"] main p > .text-accent {
+  color: #f25740;
+}
+
+/* כרטיס השאלה - לבן וחד, מספר ענק ודק, פס זמן כתום */
+.s7-q {
+  backface-visibility: hidden;
+}
+.s7-q__n {
+  display: flex;
+  color: #f25740;
+  font-size: min(6vh, 3.6rem);
+  font-weight: 100;
+  line-height: 0.85;
+}
+.s7-q.is-done .s7-q__n {
+  color: #2a4286;
+}
+/* --- "המסקנה שלנו" בכותרת של כל שלב (2026-11-16) --------------------------
+   בלי קופסה: ריבוע כתום, תווית זעירה, קו מפריד, המסקנה, ופס כתום שנמתח
+   מתחת. יורש צבע מהעמוד (לבן על כחול, נייבי על נייר) */
+.pc-tag {
+  position: relative;
+  display: inline-flex;
+  max-width: min(80vw, 46rem);
+  min-height: 48px;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+  padding: 0.35rem 0.25rem 0.55rem;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pc-tag::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: #f25740;
+  transform-origin: right;
+  animation: si-mark 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.5s both;
+}
+.pc-tag__sq {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  background: #f25740;
+}
+.pc-tag__label {
+  flex: none;
+  padding-inline-end: 0.75rem;
+  border-inline-end: 1px solid currentColor;
+  font-size: 0.8rem;
+  font-weight: 500;
+  opacity: 0.75;
+  line-height: 1.6;
+}
+.pc-tag__text {
+  min-width: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.pc-tag--long .pc-tag__text {
+  font-size: 0.95rem;
+}
+.pc-tag__more {
+  opacity: 0.6;
+}
+.pc-tag:active .pc-tag__text {
+  color: #f25740;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-tag::after {
+    animation: none;
+  }
+}
+
+/* --- שלב 9: פודיום של עמודות רשת (2026-11-16) ---------------------------- */
+.pod__col {
+  display: flex;
+  width: min(12.5vw, 13rem);
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+.pod__name {
+  display: flex;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  overflow: hidden;
+  color: #0b1b3f;
+  font-size: min(2.3vh, 1.25rem);
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: pod-fade 0.5s ease both;
+}
+.pod__stars {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #f25740;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+@keyframes pod-fade {
+  from {
+    opacity: 0;
+  }
+}
+.pod__block {
+  position: relative;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  background: #2a4286;
+  /* קו לבן דק בין בלוקים צמודים - כמו קו רשת */
+  box-shadow: inset -1px 0 0 rgb(255 255 255 / 0.5);
+  animation: pod-rise 0.8s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.pod__block--win {
+  background: #f25740;
+}
+@keyframes pod-rise {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.pod__place {
+  padding-top: 0.2rem;
+  color: #ffffff;
+  font-size: min(5vh, 3rem);
+  font-weight: 100;
+  line-height: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pod__name,
+  .pod__block {
+    animation: none;
+  }
+}
+
+/* בסיכום - הכרטיס האחרון בכתום מלא (בקשת המפתחת 2026-11-16) */
+.s7-q.s7-q--last .s7-q__n {
+  color: #ffffff;
+}
+.s7-q__track {
+  width: 100%;
+  height: 4px;
+  background: rgb(11 27 63 / 0.12);
+}
+.s7-q__fill {
+  height: 100%;
+  background: #f25740;
+}
+/* החפיסה: הכרטיס שבבסיס מבצבץ בפס כתום עבה, וכל הכרטיסים עם קו נייבי
+   דק בתחתית - כך המדרגות שמתחת לנוכחי נראות כשכבות נפרדות */
+.s7-q {
+  box-shadow: inset 0 -1px 0 rgb(11 27 63 / 0.25) !important;
+}
+.s7-q.is-under > * {
+  visibility: hidden;
+}
+.s7-q.is-base {
+  box-shadow: inset 0 -10px 0 #f25740 !important;
+}
+.s7-q.is-base.is-current {
+  box-shadow: inset 0 -6px 0 #f25740 !important;
+}
+
+/* הקלף שבמרכז "נוחת" כשהוא מגיע */
+.s7-q.is-current {
+  animation: s7-land 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* outline ולא box-shadow - ה-box-shadow של החפיסה מוגדר עם !important */
+@keyframes s7-land {
+  from {
+    outline: 6px solid #f25740;
+    outline-offset: -6px;
+  }
+  to {
+    outline: 0 solid transparent;
+    outline-offset: 0;
+  }
+}
+
+/* הסיכום - ישר על הכחול */
+.s7-close {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1vh;
+  color: #ffffff;
+  text-align: center;
+}
+.s7-close__line,
+.s7-close__big {
+  animation: s7-write 0.8s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.s7-close__line {
+  font-size: min(3.2vh, 1.9rem);
+  font-weight: 600;
+}
+.s7-close__big {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.18em;
+  font-size: min(5vh, 3rem);
+  font-weight: 800;
+}
+.s7-close__big::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  height: max(5px, 0.08em);
+  background: #f25740;
+  transform-origin: right;
+  animation: si-mark 0.7s cubic-bezier(0.65, 0, 0.35, 1) 1.5s both;
+}
+@keyframes s7-write {
+  from {
+    clip-path: inset(-20% 0 -20% 100%);
+  }
+  to {
+    clip-path: inset(-20% -5% -20% -5%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s7-strip,
+  .s7-strip::after,
+  .s7-chg__icon path,
+  .s7-deck::before,
+  .s7-chg__icon,
+  .s7-chg__label,
+  .s7-q.is-current,
+  .s7-close__line,
+  .s7-close__big,
+  .s7-close__big::after {
+    animation: none;
+  }
+  .s7-chg__icon path {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* --- שלב 7: הוראות הסימולציה כרשימה על הנייבי (2026-11-15) -------------- */
+.s7-step {
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+  padding: 1.4rem 0.5rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.22);
+  color: #ffffff;
+  animation: s7-step-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.s7-step:first-child {
+  border-top: 1px solid rgb(255 255 255 / 0.22);
+}
+@keyframes s7-step-in {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(-20% -5% -20% -5%);
+  }
+}
+.s7-step__n {
+  flex: none;
+  width: 4.2rem;
+  color: #f25740;
+  font-size: 3.6rem;
+  font-weight: 100;
+  line-height: 0.85;
+  letter-spacing: -0.03em;
+}
+.s7-step__icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.55);
+  color: #ffffff;
+}
+.s7-step__t {
+  font-size: clamp(1.25rem, 2.6vh, 1.6rem);
+  font-weight: 700;
+  line-height: 1.35;
+}
+@media (prefers-reduced-motion: reduce) {
+  .s7-step {
+    animation: none;
+  }
+}
+
+/* --- שעון החול של שלב 6 (Hourglass.tsx) -------------------------------- */
+.hg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2vh;
+  color: #0b1b3f;
+}
+/* יותר נוכחות (2026-11-15): גדול יותר, קו עבה יותר וגוון זכוכית */
+.hg__glass {
+  /* קטן ושמן יותר (2026-11-15): רחב ביחס לגובה */
+  width: min(24vh, 13rem);
+  aspect-ratio: 140 / 190;
+}
+.hg__tint {
+  fill: rgb(42 66 134 / 0.07);
+}
+.hg__glass svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.hg__glass--flip {
+  animation: hg-flip 1s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+@keyframes hg-flip {
+  from {
+    transform: rotate(180deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.hg__sand {
+  fill: #f25740;
+}
+.hg__sand rect {
+  transition: y 0.2s linear, height 0.2s linear;
+}
+.hg__stream {
+  stroke: #f25740;
+  stroke-width: 1.6;
+  stroke-dasharray: 3 3;
+  animation: hg-stream 0.4s linear infinite;
+}
+@keyframes hg-stream {
+  to {
+    stroke-dashoffset: -6;
+  }
+}
+/* בזמן ההיפוך הזרם מוסתר - אחרת הוא נראה זורם "למעלה" באמצע הסיבוב */
+.hg__glass--flip .hg__stream {
+  opacity: 0;
+  animation:
+    hg-stream 0.4s linear infinite,
+    hg-show 0.2s ease 1s forwards;
+}
+@keyframes hg-show {
+  to {
+    opacity: 1;
+  }
+}
+.hg__line {
+  fill: none;
+  stroke: #0b1b3f;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.hg__plate {
+  fill: #2a4286;
+}
+.hg__time {
+  font-size: min(7vh, 4.4rem);
+  font-weight: 200;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+}
+.hg__label {
+  font-size: min(2.2vh, 1.15rem);
+  font-weight: 500;
+  color: rgb(11 27 63 / 0.7);
+}
+.hg__minutes {
+  display: flex;
+  gap: 0.45rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.4vh 0 0;
+  direction: rtl;
+}
+.hg__minutes li {
+  width: 0.8rem;
+  height: 0.8rem;
+  box-shadow: inset 0 0 0 1.2px #2a4286;
+  transition: background 0.4s ease;
+}
+.hg__minutes li.is-done {
+  background: #2a4286;
+}
+.hg__minutes li.is-now {
+  background: #f25740;
+  box-shadow: none;
+  animation: hg-now 1.6s ease-in-out infinite;
+}
+@keyframes hg-now {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hg__glass--flip,
+  .hg__stream,
+  .hg__minutes li.is-now {
+    animation: none;
+  }
+}
+
+/* --- שלב 10: העיקרון (2026-11-16, בקו של כל הפרויקט) --------------------
+   המשפט בנייבי, גדול, עם מירכאות כתומות מצוירות; המילים עולות אחת-אחת
+   ואחריהן נמתח קו כתום. מתחת - שורת סיום קטנה */
+/* מירכאות בתוך השורה - אותו גודל ואותה צורה בפתיחה ובסגירה */
+.s10-qm {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.55em;
+  vertical-align: 0.55em;
+  fill: #f25740;
+  animation: s10-mark-in 0.7s cubic-bezier(0.22, 1.3, 0.36, 1) both;
+}
+
+/* --- רקע הסיום (2026-11-16, "רקע מושלם לסיום שישאיר טעם טוב") ----------
+   מהשפה של כל הפרויקט: נייר עם הרשת, ריבועים כחולים/כתומים/נייבי, ומספרים
+   קטנים. 1. "המסלול" - עשרה ריבועים בתחתית, אחד לכל שלב, שנדלקים בכתום
+   בזה אחר זה עד ה-10 - כל הדרך שעברו. 2. "מדרגות פרקטל" - ריבועים שקטנים
+   פי שניים בכל צעד, בשני צידי המסך, כמו הלוגו: מה שחוזר בקטן נראה בגדול */
+.s10-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.s10-stairs span {
+  position: absolute;
+  animation: sc-cube-in 0.6s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.s10-stairs span:nth-child(1) {
+  width: 8vw;
+  height: 8vw;
+  background: #2a4286;
+  animation-delay: 0.2s;
+}
+.s10-stairs span:nth-child(2) {
+  width: 4vw;
+  height: 4vw;
+  background: #f25740;
+  animation-delay: 0.4s;
+}
+.s10-stairs span:nth-child(3) {
+  width: 2vw;
+  height: 2vw;
+  background: #0b1b3f;
+  animation-delay: 0.6s;
+}
+.s10-stairs span:nth-child(4) {
+  width: 1vw;
+  height: 1vw;
+  background: #2a4286;
+  animation-delay: 0.8s;
+}
+/* מדרגות בצד ימין - יורדות מהקצה פנימה, מיושרות לתחתית */
+.s10-stairs--start span {
+  top: calc(30vh + 8vw);
+  translate: 0 -100%;
+}
+.s10-stairs--start span:nth-child(1) {
+  right: 0;
+}
+.s10-stairs--start span:nth-child(2) {
+  right: 8vw;
+}
+.s10-stairs--start span:nth-child(3) {
+  right: 12vw;
+}
+.s10-stairs--start span:nth-child(4) {
+  right: 14vw;
+}
+/* מדרגות בצד שמאל - מראה, מיושרות למעלה */
+.s10-stairs--end span {
+  top: 40vh;
+}
+.s10-stairs--end span:nth-child(1) {
+  left: 0;
+}
+.s10-stairs--end span:nth-child(2) {
+  left: 8vw;
+}
+.s10-stairs--end span:nth-child(3) {
+  left: 12vw;
+}
+.s10-stairs--end span:nth-child(4) {
+  left: 14vw;
+}
+/* המסלול: עשרה ריבועים על קו דק בתחתית, בין הפאנלים שבפינות */
+.s10-path {
+  position: absolute;
+  bottom: 5vh;
+  left: 50%;
+  display: flex;
+  width: min(40vw, 46rem);
+  justify-content: space-between;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  translate: -50% 0;
+}
+.s10-path::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: rgb(11 27 63 / 0.3);
+  transform-origin: right;
+  animation: si-mark 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.3s both;
+}
+.s10-path li {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #0b1b3f;
+  background: #f4f6fb;
+  animation: s10-step 0.4s ease both;
+}
+.s10-path li:last-child {
+  width: 22px;
+  height: 22px;
+}
+@keyframes s10-step {
+  from {
+    background: #f4f6fb;
+    border-color: #0b1b3f;
+  }
+  to {
+    background: #f25740;
+    border-color: #f25740;
+  }
+}
+.s10-path__n {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  translate: -50% 0;
+  color: rgb(11 27 63 / 0.55);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+/* העשירי - הילה כתומה שנושמת: "הגעתן" */
+.s10-path li:last-child::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border: 1.5px solid #f25740;
+  animation: s10-halo 2.4s ease-in-out 3s infinite;
+}
+@keyframes s10-halo {
+  0%,
+  100% {
+    opacity: 0;
+    scale: 0.7;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.25;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s10-stairs span,
+  .s10-path::before,
+  .s10-path li,
+  .s10-path li:last-child::after,
+  .s10-qm {
+    animation: none;
+  }
+  .s10-path li {
+    background: #f25740;
+    border-color: #f25740;
+  }
+}
+
+/* הכותרת יורדת למטה, קרוב יותר למשפט (בקשת המפתחת 2026-11-16) */
+.s10-main .sh-head {
+  margin-top: 14vh;
+}
+.s10-poster {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4vh;
+  padding-bottom: 6vh;
+  text-align: center;
+}
+.s10-quote {
+  position: relative;
+  max-width: min(66rem, 66vw);
+  margin: 0;
+}
+
+
+@keyframes s10-mark-in {
+  from {
+    opacity: 0;
+    translate: 0 -30%;
+  }
+}
+.s10-sentence {
+  position: relative;
+  padding-bottom: 2.4vh;
+  color: #0b1b3f;
+  font-size: min(5.6vh, 3.4rem);
+  font-weight: 800;
+  line-height: 1.3;
+  /* שורות מאוזנות - בלי מילה בודדת בשורה האחרונה (בדפדפן ישן: שבירה רגילה) */
+  text-wrap: balance;
+}
+.s10-sentence::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 9rem;
+  height: 4px;
+  translate: -50% 0;
+  background: #f25740;
+  animation: si-mark 0.8s cubic-bezier(0.65, 0, 0.35, 1) var(--s10-line-at, 2s) both;
+}
+.s10-foot {
+  color: rgb(11 27 63 / 0.6);
+  font-size: min(2vh, 1rem);
+  font-weight: 600;
+  animation: pod-fade 0.8s ease both;
+}
+.s10-wait {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: rgb(11 27 63 / 0.75);
+  font-size: min(2.8vh, 1.5rem);
+  font-weight: 600;
+}
+.s10-wait__dots {
+  display: flex;
+  gap: 6px;
+}
+.s10-wait__dots span {
+  width: 12px;
+  height: 12px;
+  background: #f25740;
+  animation: s10-dot 1.2s ease-in-out infinite;
+}
+.s10-wait__dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.s10-wait__dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes s10-dot {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s10-quote__mark,
+  .s10-sentence::after,
+  .s10-foot,
+  .s10-wait__dots span {
+    animation: none;
+  }
+}
+
+/* --- שלב 8, מסך המסר: מדרגות פרקטל בקו לבן (2026-11-16) ----------------
+   ריבועים חלולים בקו לבן דק, כל אחד חצי מהקודם, יורדים מהפינה פנימה -
+   מצטיירים בזה אחר זה, והקטן ביותר מלא בכתום. אחד בפינה ימנית-עליונה
+   ואחד, הפוך, בשמאלית-תחתונה (מעל מד ההתקדמות) */
+.s8-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.s8-stairs span {
+  position: absolute;
+  border: 1.5px solid rgb(255 255 255 / 0.35);
+  animation: sc-cube-in 0.7s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.s8-stairs span:nth-child(1) {
+  width: 18vw;
+  height: 18vw;
+  animation-delay: 0.3s;
+}
+.s8-stairs span:nth-child(2) {
+  width: 9vw;
+  height: 9vw;
+  animation-delay: 0.55s;
+}
+.s8-stairs span:nth-child(3) {
+  width: 4.5vw;
+  height: 4.5vw;
+  animation-delay: 0.8s;
+}
+.s8-stairs span:nth-child(4) {
+  width: 2.25vw;
+  height: 2.25vw;
+  border-color: #f25740;
+  background: #f25740;
+  animation-delay: 1.05s;
+}
+/* פינה ימנית-עליונה: מהקצה פנימה ולמטה, מתחת לתג הקבוצה */
+.s8-stairs--a span:nth-child(1) {
+  top: 14vh;
+  right: -6vw;
+}
+.s8-stairs--a span:nth-child(2) {
+  top: calc(14vh + 18vw);
+  right: 12vw;
+}
+.s8-stairs--a span:nth-child(3) {
+  top: calc(14vh + 27vw);
+  right: 21vw;
+}
+.s8-stairs--a span:nth-child(4) {
+  top: calc(14vh + 31.5vw);
+  right: 25.5vw;
+}
+/* פינה שמאלית-עליונה, הפוך: מהקצה פנימה ולמטה, מתחת למספר השלב */
+.s8-stairs--b span:nth-child(1) {
+  top: 18vh;
+  left: -6vw;
+}
+.s8-stairs--b span:nth-child(2) {
+  top: calc(18vh + 18vw);
+  left: 12vw;
+}
+.s8-stairs--b span:nth-child(3) {
+  top: calc(18vh + 27vw);
+  left: 21vw;
+}
+.s8-stairs--b span:nth-child(4) {
+  top: calc(18vh + 31.5vw);
+  left: 25.5vw;
+}
+@media (prefers-reduced-motion: reduce) {
+  .s8-stairs span {
+    animation: none;
+  }
+}
+
+/* --- שלב 9, מסך הסיום: בלי מסגרת, והמשפט המודגש נכתב (2026-11-16) ------- */
+.s9-lines {
+  /* ריווח נדיב בין השורות (בקשת המפתחת 2026-11-16) */
+  gap: 2.2vh !important;
+  margin-bottom: 2.5vh;
+}
+.s9-lines p {
+  color: inherit;
+  line-height: 1.5;
+}
+/* מסך המסר של שלב 8 - עשר שורות, ולכן ריווח צפוף יותר כדי שייכנס */
+.s9-lines.s9-lines--dense {
+  gap: 0.7vh !important;
+}
+.s9-lines--dense p {
+  line-height: 1.35;
+}
+.s9-big {
+  position: relative;
+  width: fit-content;
+  white-space: nowrap;
+  margin-top: 1.6vh;
+  padding-bottom: 1.2vh;
+  color: #ffffff;
+  font-weight: 800;
+  line-height: 1.2;
+}
+/* רקע מסך הסיום: מסגרות מרובעות מקוננות (פרקטל) שגדלות מהמרכז ונמוגות.
+   6 מסגרות, כל אחת 2 שניות אחרי הקודמת, מחזור של 12 שניות - תנועה איטית
+   ושקטה מאחורי הטקסט. האחרונה בכל מחזור בכתום */
+.s9-frames {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.s9-frames span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40vh;
+  height: 40vh;
+  border: 1.5px solid rgb(255 255 255 / 0.35);
+  translate: -50% -50%;
+  animation: s9-grow 12s linear infinite;
+}
+.s9-frames span:nth-child(3n) {
+  border-color: rgb(242 87 64 / 0.6);
+}
+@keyframes s9-grow {
+  0% {
+    opacity: 0;
+    transform: scale(0.15) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3.6) rotate(45deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s9-frames {
+    display: none;
+  }
+}
+/* כל אות נוחתת מלמעלה, גדולה ובאדום-כתום, ומתיישבת בלבן */
+.s9-word {
+  display: inline-block;
+}
+/* "בצורה מעניינת יותר" (2026-11-16): כל אות עפה פנימה מנקודה מפוזרת אחרת
+   במסך (--dx/--dy/--rot מהקוד), מסתובבת ומתחברת למקומה כמו חלק בפאזל -
+   באדום-כתום, ומתיישבת בלבן. החלקים מתחברים למשפט שלם */
+.s9-ch {
+  display: inline-block;
+  animation: s9-assemble 1.3s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+@keyframes s9-assemble {
+  0% {
+    opacity: 0;
+    transform: translate(var(--dx, 0), var(--dy, -80px)) rotate(var(--rot, 0deg)) scale(0.3);
+    color: #f25740;
+  }
+  20% {
+    opacity: 1;
+  }
+  70% {
+    transform: none;
+    color: #f25740;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    color: #ffffff;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s9-ch {
+    animation: none;
+  }
+}
+/* קו כתום שנמתח מימין לשמאל אחרי שהאות האחרונה נחתה */
+.s9-big::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: #f25740;
+  transform-origin: right;
+  animation: si-mark 0.8s cubic-bezier(0.65, 0, 0.35, 1) var(--s9-line-at, 2s) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .s9-big::after {
+    animation: none;
+  }
+}
+
+/* --- שלב 6: המילים עולות אחת-אחת (2026-11-15) --------------------------- */
+.s6-line {
+  position: relative;
+  display: inline;
+}
+.s6-w {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding: 0.05em 0 0.12em;
+}
+.s6-w__in {
+  display: inline-block;
+  animation: s6-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* גם opacity, ולא רק הזזה: ה-"10" הענק גבוה מהפס החותך, והחלק העליון שלו
+   הציץ לפני שהשורה שלו הגיעה */
+@keyframes s6-rise {
+  from {
+    transform: translateY(110%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+/* מספר בתוך השורה - ענק, דק, אדום-כתום */
+.s6-num {
+  color: #f25740;
+  font-size: 1.9em;
+  font-weight: 200;
+  line-height: 0.8;
+  letter-spacing: -0.02em;
+}
+/* "התוצר": משיכת מרקר אדום-כתום בהיר מתחת לשורה, נמרחת אחרי המילה האחרונה */
+.s6-line--mark {
+  background-image: linear-gradient(rgb(242 87 64 / 0.28), rgb(242 87 64 / 0.28));
+  background-repeat: no-repeat;
+  background-position: 100% 88%;
+  background-size: 0% 0.55em;
+  animation: s6-mark 0.8s cubic-bezier(0.65, 0, 0.35, 1) var(--s6-mark-at, 1.5s) forwards;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+@keyframes s6-mark {
+  to {
+    background-size: 100% 0.55em;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s6-w__in {
+    animation: none;
+  }
+  .s6-line--mark {
+    animation: none;
+    background-size: 100% 0.55em;
+  }
+}
+
+/* "בעיה" במסך הפתיחה של שלב 4: אדום-כתום, נמחק בקו נייבי של טוש ודוהה */
+.si-strike {
+  position: relative;
+  display: inline-block;
+  color: #f25740;
+  font-weight: 800;
+  animation: si-strike-fade 0.6s ease var(--si-strike-at, 1s) both;
+  animation-delay: calc(var(--si-strike-at, 1s) + 0.5s);
+}
+.si-strike::after {
+  content: "";
+  position: absolute;
+  inset-inline: -0.12em;
+  top: 52%;
+  height: 0.13em;
+  background: #0b1b3f;
+  /* קו ישר (בקשת המפתחת 2026-11-15) */
+  transform: scaleX(0);
+  transform-origin: right;
+  animation: si-strike-draw 0.5s cubic-bezier(0.65, 0, 0.35, 1) var(--si-strike-at, 1s) forwards;
+}
+@keyframes si-strike-draw {
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes si-strike-fade {
+  from {
+    color: #f25740;
+  }
+  to {
+    color: rgb(242 87 64 / 0.55);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .si-strike::after {
+    animation: none;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .si-ch,
+  .si-art svg,
+  .si-line__in--mark::after {
+    animation: none;
+  }
+  .si-art .si-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .si-art .si-ray {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   שלב 3 - השמש (2026-11-15)
+   מעוין מלא ואטום במרכז, קרניים דקות, מספר סדר על משבצת שנבחרה, ופיצוץ
+   המעוין למסך כחול מלא במעבר לשלב הבא.
+   ========================================================================== */
+.sun-core-wrap {
+  transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sun-core {
+  width: 70.7%;
+  height: 70.7%;
+  transform: rotate(45deg);
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1.5px #0b1b3f;
+}
+/* מסגרת פנימית דקה - "פספרטו", כמו בעבודות בגלריה */
+.sun-core__inner {
+  position: absolute;
+  inset: 9px;
+  border: 1px solid rgb(42 66 134 / 0.35);
+}
+/* ריבוע אדום בקודקוד העליון (הפינה השמאלית-עליונה של הריבוע המסובב) */
+.sun-core__dot {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  width: 14px;
+  height: 14px;
+  background: #f25740;
+}
+.sun-core__text {
+  color: #0b1b3f;
+}
+.sun-ring-track {
+  stroke: rgb(42 66 134 / 0.18);
+}
+.sun-ring-fill {
+  stroke: #f25740;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sun-ray {
+  background: rgb(11 27 63 / 0.35);
+  transition:
+    height 0.4s ease,
+    background 0.4s ease;
+}
+.sun-ray.is-lit {
+  background: #f25740;
+}
+/* ריבוע לבן קטן שרץ לאורך הקרן מהמשבצת פנימה אל המעוין */
+.sun-ray__run {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  background: #ffffff;
+  animation: sun-run 1.8s linear infinite;
+}
+@keyframes sun-run {
+  from {
+    left: 100%;
+  }
+  to {
+    left: -10px;
+  }
+}
+
+/* משבצת שנבחרה - כתום מלא עם כתב לבן (בקשת המפתחת 2026-11-15). ספציפיות
+   גבוהה בכוונה: גוברת על .glass-active (כחול) ועל .glass-3d (לבן) ב-skin */
+html[data-skin="editorial"] .glass.glass-3d.glass-active.slot-chosen,
+html[data-skin="editorial"] .glass.glass-3d.glass-active.slot-chosen:hover:not(:disabled),
+html[data-skin="editorial"] .glass.glass-3d.glass-active.slot-chosen:active:not(:disabled) {
+  background-color: #f25740;
+  background-image: none;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px #f25740;
+}
+
+/* בלחיצה על משבצת - ישר כתום: גם הרקע של מצב הלחיצה וגם עיגול המגע
+   (TouchGlow) כתומים, במקום הכחול הכללי של כפתורים */
+/* (ספציפיות 0,8,1 - מעל כלל הלחיצה הכחול של ה-skin, 0,7,1) */
+html[data-skin="editorial"] .glass.glass-3d.glass-interactive.btn-rect.sun-slot:active:not(:disabled),
+html[data-skin="editorial"] .glass.glass-3d.glass-interactive.btn-rect.sun-slot.is-pressed:not(:disabled) {
+  background-color: #f25740;
+  color: #ffffff;
+}
+.sun-slot .tf {
+  background: #f25740;
+}
+
+/* מספר סדר הבחירה על משבצת שנבחרה */
+.sun-order {
+  position: absolute;
+  top: -0.9rem;
+  right: -0.9rem;
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  background: #0b1b3f;
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 200;
+  line-height: 1;
+  animation: sun-order-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes sun-order-in {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* "כתבו כאן" נעלם ברגע שהסמן נכנס למשבצת (ב-glass.css כלל
+   :placeholder-shown::placeholder החזיר אותו) */
+html[data-skin="editorial"] .slot-input:focus::placeholder {
+  color: transparent;
+  opacity: 0;
+}
+
+/* --- הפיצוץ למסך מלא -------------------------------------------------- */
+.core-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  overflow: hidden;
+  pointer-events: auto;
+}
+.core-zoom__diamond {
+  position: absolute;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1.5px #0b1b3f;
+  transition:
+    transform 1.05s cubic-bezier(0.7, 0, 0.2, 1),
+    background-color 0.5s ease 0.25s;
+}
+.core-zoom.is-open .core-zoom__diamond {
+  background-color: #2a4286;
+}
+.core-zoom__grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background-image: linear-gradient(to left, rgb(255 255 255 / 0.22) 1px, transparent 1px);
+  background-size: 12.5vw 100%;
+  transition: opacity 0.6s ease 0.9s;
+}
+.core-zoom.is-open .core-zoom__grid {
+  opacity: 1;
+}
+.core-zoom__copy {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5vh;
+  padding: 0 8vw;
+  color: #ffffff;
+  text-align: center;
+}
+.core-zoom__title {
+  font-size: min(7vh, 4.5rem);
+  font-weight: 800;
+  line-height: 1.15;
+  opacity: 0;
+}
+.core-zoom.is-open .core-zoom__title {
+  animation: sh-write 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.85s both;
+  opacity: 1;
+}
+.core-zoom__line {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.14em;
+}
+.core-zoom__line::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  height: max(6px, 0.07em);
+  background: #f25740;
+  transform: scaleX(0);
+  transform-origin: right;
+}
+.core-zoom.is-open .core-zoom__line::after {
+  animation: si-mark 0.7s cubic-bezier(0.65, 0, 0.35, 1) 1.5s both;
+}
+.core-zoom__picks {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  width: min(100%, 75vw);
+  list-style: none;
+}
+.core-zoom__picks li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1vh;
+  padding: 2.2vh 1.4vw;
+  border-inline-start: 1px solid rgb(255 255 255 / 0.55);
+  text-align: start;
+  opacity: 0;
+}
+.core-zoom.is-open .core-zoom__picks li {
+  animation: core-pick 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes core-pick {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+.core-zoom__n {
+  font-size: min(8vh, 5rem);
+  font-weight: 100;
+  line-height: 1;
+}
+.core-zoom__t {
+  font-size: min(2.6vh, 1.6rem);
+  font-weight: 700;
+  line-height: 1.3;
+}
+@media (prefers-reduced-motion: reduce) {
+  .core-zoom__diamond {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   זוהר מגע (TouchGlow) - 2026-11-14
+   מרכז לבן (נראה על כחול) והילה כחולה עדינה (נראית על הבהיר). נדלק מתחת
+   לאצבע, מתרחב ונמוג תוך חצי שנייה. רק transform/opacity - בלי גמגום.
+   ========================================================================== */
+.tg {
+  position: fixed;
+  z-index: 9999;
+  width: 220px;
+  height: 220px;
+  margin: -110px 0 0 -110px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgb(255 255 255 / 0.95) 0,
+    rgb(255 255 255 / 0.55) 9%,
+    rgb(255 255 255 / 0.16) 24%,
+    /* בלי הילה כחולה (2026-11-15) - הילה כתומה עדינה */
+    rgb(242 87 64 / 0.12) 40%,
+    rgb(242 87 64 / 0) 68%
+  );
+  will-change: transform, opacity;
+  animation: tg-bloom 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes tg-bloom {
+  0% {
+    transform: scale(0.25);
+    opacity: 0.95;
+  }
+  60% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   עיגול שממלא כפתור מנקודת הנגיעה (TouchGlow, 2026-11-15)
+   ========================================================================== */
+/* שכבת החיתוך: בגודל הכפתור בדיוק, מתחת לתוכן שלו */
+.tf-clip {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.tf {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  translate: -50% -50%;
+  transform: scale(0);
+  animation: tf-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+/* העיגול שמתמלא מנקודת הנגיעה הוחזר בכל המסכים (בקשת המפתחת 2026-11-15:
+   "הלחיצה שהייתה קודם, עגולה, לפי הכיוון") - חוץ מהטושים של שלב 4 */
+.mk-cute .tf-clip,
+.cat-modal .tf-clip {
+  display: none !important;
+}
+.tf--primary,
+.tf--solid {
+  background: #2a4286;
+}
+.tf--soft {
+  background: rgb(42 66 134 / 0.14);
+}
+.tf.tf--out {
+  transform: scale(1);
+  animation: tf-out 0.34s ease-out forwards;
+}
+@keyframes tf-in {
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes tf-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* --- תנועת כניסה -------------------------------------------------------- */
+
+@keyframes ed-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ed-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes ed-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes ed-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.ed-rise {
+  animation: ed-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ==========================================================================
+   המסך הרביעי - /screen/4 (2026-11-19). פלזמה משותפת לכל החדר.
+   הבלוק הכחול עם הלוגו משמאל (כמו מסך הפתיחה), ושלוש הקבוצות בעמודות
+   על הנייר: מספר המסך הזעיר, שם הקבוצה, מספר השלב הנוכחי ענק ודק
+   באדום-כתום, ומסלול השלבים - מה שעברו מלא, הנוכחי מסגרת כתומה.
+   ========================================================================== */
+.rs-groups {
+  position: absolute;
+  top: var(--ed-top);
+  bottom: calc(var(--full-h, 100vh) - var(--ed-bottom));
+  right: var(--ed-col);
+  left: calc(var(--ed-col) * 3);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.rs-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2.2vh;
+  padding: 0 2.5vw;
+  border-inline-start: 1px solid var(--ed-line);
+  animation: pod-fade 0.7s ease both;
+}
+.rs-group:first-child {
+  border-inline-start: 0;
+}
+.rs-group__screen {
+  color: var(--ed-ink-2);
+  font-size: min(2vh, 1.05rem);
+  font-weight: 600;
+}
+.rs-group__name {
+  color: var(--ed-ink);
+  font-size: min(5.4vh, 3.4rem);
+  font-weight: 800;
+  line-height: 1.05;
+}
+.rs-group__stage {
+  color: #f25740;
+  font-size: min(22vh, 13rem);
+  font-weight: 100;
+  line-height: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+.rs-track {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rs-track li {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--ed-ink);
+  transition: background 0.4s ease, border-color 0.4s ease;
+}
+.rs-track li.is-done {
+  background: #f25740;
+  border-color: #f25740;
+}
+.rs-track li.is-current {
+  border-color: #f25740;
+  box-shadow: 0 0 0 3px rgb(242 87 64 / 0.25);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rs-group {
+    animation: none;
+  }
+}
+
+/* --- המסך הרביעי, שלב 1: ברוכות הבאות + שני הלוגואים (2026-11-19) ------- */
+.rs-welcome__body {
+  position: absolute;
+  inset: var(--ed-top) 0 calc(var(--full-h, 100vh) - var(--ed-bottom)) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7vh;
+}
+.rs-welcome__title {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 0.28em;
+  color: var(--ed-ink);
+  font-size: min(17vh, 11rem);
+  font-weight: 800;
+  line-height: 0.95;
+}
+/* כל מילה עולה מתוך פס סמוי - כמו כותרות הפתיחה */
+.rs-welcome__word {
+  display: inline-block;
+  animation: rs-word 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes rs-word {
+  from {
+    clip-path: inset(0 0 100% 0);
+    translate: 0 40%;
+  }
+  to {
+    clip-path: inset(0 0 -10% 0);
+    translate: 0 0;
+  }
+}
+.rs-logos {
+  display: flex;
+  align-items: center;
+  gap: 4vw;
+  animation: pod-fade 0.9s ease 1s both;
+}
+.rs-logo {
+  height: min(20vh, 12rem);
+  width: auto;
+  object-fit: contain;
+}
+.rs-logos__sep {
+  width: 1px;
+  height: min(14vh, 8rem);
+  background: var(--ed-line-strong);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rs-welcome__word,
+  .rs-logos {
+    animation: none;
+  }
+}
+/* בלי הבלוק הכחול - הקווים האופקיים לכל הרוחב */
+.rs-welcome .ed-hline {
+  left: 0;
+}
+
+/* ==========================================================================
+   לופים של המסך הרביעי (RoomLoop, 2026-11-19) - לפי האפיון של הלקוחה:
+   חידה/תשובה - כחול מלא, טקסט לבן, כרטיסים לבנים; הנכון באדום.
+   הסבר/מידע - נייר בהיר, טקסט נייבי, תווית "ההסבר" באדום.
+   "ועכשיו אצלכן" - אדום מלא, טקסט לבן, הגדול מכולם.
+   כותרת הלופ קבועה בימין למעלה עם ריבוע אדום; פס התקדמות דק בתחתית.
+   ========================================================================== */
+.rl-page {
+  position: relative;
+  height: var(--full-h, 100dvh);
+  overflow: hidden;
+  font-family: "Heebo", var(--font-sans);
+  transition: background-color 0.8s ease, color 0.8s ease;
+  --rl-line: rgb(11 27 63 / 0.1);
+  background: #f4f6fb;
+  color: #0b1b3f;
+}
+.rl-page--riddle,
+.rl-page--answer {
+  --rl-line: rgb(255 255 255 / 0.16);
+  background: #2a4286;
+  color: #ffffff;
+}
+.rl-page--now {
+  --rl-line: rgb(255 255 255 / 0.18);
+  background: #f25740;
+  color: #ffffff;
+}
+.rl-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--rl-line) 1px, transparent 1px),
+    linear-gradient(to bottom, transparent calc(12vh - 1px), var(--rl-line) calc(12vh - 1px), var(--rl-line) 12vh, transparent 12vh),
+    linear-gradient(to bottom, transparent calc(88vh - 1px), var(--rl-line) calc(88vh - 1px), var(--rl-line) 88vh, transparent 88vh);
+  background-size: 12.5vw 100%, 100% 100%, 100% 100%;
+}
+.rl-title {
+  position: absolute;
+  z-index: 2;
+  top: 4vh;
+  right: 3vw;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: min(3.4vh, 2rem);
+  font-weight: 800;
+}
+.rl-title__sq {
+  width: 14px;
+  height: 14px;
+  background: #f25740;
+}
+.rl-page--now .rl-title__sq {
+  background: #ffffff;
+}
+/* השקף עצמו - נכנס בעמעום רך */
+.rl-slide {
+  position: absolute;
+  inset: 14vh 9vw 14vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rl-in 0.9s ease both;
+}
+@keyframes rl-in {
+  from {
+    opacity: 0;
+    translate: 0 2vh;
+  }
+}
+.rl-label {
+  display: inline-block;
+  color: #f25740;
+  font-size: min(3vh, 1.8rem);
+  font-weight: 800;
+}
+.rl-page--riddle .rl-label,
+.rl-page--answer .rl-label {
+  color: #ffffff;
+  padding-bottom: 0.4vh;
+  border-bottom: 3px solid #f25740;
+}
+/* --- חידה / תשובה --- */
+.rl-qa {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 4.5vh;
+  text-align: center;
+}
+.rl-question {
+  max-width: 62rem;
+  font-size: min(7vh, 4.4rem);
+  font-weight: 800;
+  line-height: 1.2;
+}
+.rl-options {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  gap: 2vw;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rl-options li {
+  display: flex;
+  flex: 1;
+  max-width: 24vw;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.5vh;
+  padding: 3vh 2vw;
+  background: #ffffff;
+  color: #0b1b3f;
+  font-size: min(3.8vh, 2.3rem);
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: start;
+  transition: background 0.6s ease, color 0.6s ease, opacity 0.6s ease;
+  animation: rl-in 0.7s ease both;
+}
+.rl-options__letter {
+  color: #f25740;
+  font-size: min(7vh, 4.4rem);
+  font-weight: 100;
+  line-height: 0.8;
+}
+.rl-options li.is-correct {
+  background: #f25740;
+  color: #ffffff;
+}
+.rl-options li.is-correct .rl-options__letter {
+  color: #ffffff;
+}
+.rl-options li.is-dim {
+  opacity: 0.3;
+}
+.rl-answer {
+  max-width: 64rem;
+  font-size: min(4.4vh, 2.7rem);
+  font-weight: 700;
+  line-height: 1.35;
+}
+/* --- הסבר / מידע --- */
+.rl-explain {
+  display: flex;
+  max-width: 70rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2.6vh;
+  text-align: start;
+}
+.rl-lead {
+  color: rgb(11 27 63 / 0.75);
+  font-size: min(4vh, 2.4rem);
+  font-weight: 600;
+  line-height: 1.35;
+}
+.rl-text {
+  font-size: min(5vh, 3.1rem);
+  font-weight: 700;
+  line-height: 1.35;
+}
+.rl-second {
+  transition: opacity 1.2s ease;
+}
+/* --- ועכשיו אצלכן --- */
+.rl-now {
+  display: flex;
+  max-width: 72rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 4vh;
+  text-align: center;
+}
+.rl-now__label {
+  font-size: min(4vh, 2.4rem);
+  font-weight: 600;
+  opacity: 0.9;
+}
+.rl-now__text {
+  font-size: min(9.5vh, 6rem);
+  font-weight: 800;
+  line-height: 1.12;
+}
+/* מקורות - שורה קטנה ואפורה בתחתית */
+.rl-source {
+  position: absolute;
+  z-index: 2;
+  bottom: 6vh;
+  right: 9vw;
+  font-size: min(2vh, 1.05rem);
+  font-weight: 500;
+  opacity: 0.6;
+}
+.rl-progress {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: rgb(127 127 127 / 0.2);
+}
+.rl-progress span {
+  display: block;
+  height: 100%;
+  background: #f25740;
+  transition: width 0.2s linear;
+}
+.rl-page--now .rl-progress span {
+  background: #ffffff;
+}
+/* --- תוספות ויזואליות לפי לופ --- */
+/* עיניים בקו דק שמצטייר */
+.rl-eyes {
+  width: min(34vw, 30rem);
+  height: auto;
+  margin-bottom: 1vh;
+  overflow: visible;
+}
+.rl-draw {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: rl-draw 2.2s ease forwards 0.5s;
+}
+.rl-draw--late {
+  stroke: #f25740;
+  animation-delay: 1.8s;
+}
+.rl-eyes__pupil {
+  fill: #f25740;
+  opacity: 0;
+  animation: rl-fade 0.6s ease forwards 2.8s;
+}
+@keyframes rl-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes rl-fade {
+  to {
+    opacity: 1;
+  }
+}
+/* מספר ענק ודק */
+.rl-explain--number {
+  align-items: flex-start;
+}
+.rl-bignum {
+  color: #f25740;
+  font-size: min(30vh, 18rem);
+  font-weight: 100;
+  line-height: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+/* רקע רשת: עיגולים מחוברים בקווים דקים */
+.rl-net {
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  pointer-events: none;
+  color: #2a4286;
+  opacity: 0.35;
+}
+.rl-page--riddle .rl-net,
+.rl-page--answer .rl-net {
+  color: #ffffff;
+  opacity: 0.25;
+}
+.rl-net line {
+  stroke: currentColor;
+  stroke-width: 1;
+}
+.rl-net circle {
+  fill: currentColor;
+  animation: rl-pulse 4.8s ease-in-out infinite;
+}
+@keyframes rl-pulse {
+  50% {
+    fill: #f25740;
+  }
+}
+/* כשיש תוספת מעל - מקרבים מעט את המרווחים כדי שהכול ייכנס במסך אחד */
+.rl-qa--visual {
+  gap: 3vh;
+}
+/* השאלה לבדה על המסך (שלב 8, הפרפר) */
+.rl-qa--alone .rl-question {
+  max-width: 70rem;
+  font-size: min(9vh, 5.6rem);
+  line-height: 1.15;
+}
+/* נוסחה בגדול */
+.rl-formula {
+  color: #f25740;
+  font-size: min(20vh, 12rem);
+  font-weight: 200;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.rl-explain--number .rl-formula {
+  align-self: center;
+}
+.rl-page--answer .rl-formula {
+  color: #ffffff;
+}
+/* --- שלב 3: שעון יורד + מהדק --- */
+.rl-timer {
+  display: flex;
+  align-items: center;
+  gap: 3vw;
+}
+.rl-clip {
+  width: auto;
+  height: 17vh;
+  overflow: visible;
+}
+.rl-timer__dial {
+  position: relative;
+  width: 17vh;
+  height: 17vh;
+}
+.rl-timer__dial svg {
+  width: 100%;
+  height: 100%;
+}
+.rl-timer__track {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.2);
+  stroke-width: 2;
+}
+.rl-timer__arc {
+  fill: none;
+  stroke: #f25740;
+  stroke-width: 3;
+  transition: stroke-dashoffset 0.2s linear;
+}
+.rl-timer__num {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: min(8vh, 5rem);
+  font-weight: 100;
+  font-variant-numeric: tabular-nums;
+}
+/* --- שלב 3: רשימה שמתארכת (בצד) --- */
+.rl-page--side .rl-slide {
+  inset: 14vh 9vw 14vh calc(12.5 * var(--sw, 1vw) * 2 + 4vw);
+}
+.rl-side {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 4vw;
+  width: calc(12.5 * var(--sw, 1vw) * 2 - 2vw);
+  translate: 0 -50%;
+}
+.rl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6vh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rl-list li {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  opacity: 0;
+  animation: rl-list-in 0.5s ease forwards;
+}
+@keyframes rl-list-in {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+.rl-list__n {
+  width: 2.2em;
+  color: rgb(11 27 63 / 0.5);
+  font-size: min(2.4vh, 1.4rem);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+}
+.rl-list__bar {
+  height: 2px;
+  background: #0b1b3f;
+}
+.rl-list li.is-late .rl-list__n {
+  color: #f25740;
+  font-weight: 700;
+}
+.rl-list li.is-late .rl-list__bar {
+  height: 5px;
+  background: #f25740;
+}
+/* --- שלב 4: שדה כוחות --- */
+.rl-forces {
+  width: min(52vw, 46rem);
+  height: auto;
+  overflow: visible;
+}
+.rl-forces path,
+.rl-forces line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rl-forces__push path {
+  stroke: #8fa6e8;
+}
+.rl-page--explain .rl-forces__push path {
+  stroke: #2a4286;
+}
+.rl-forces__hold path {
+  stroke: #f25740;
+}
+.rl-forces__push,
+.rl-forces__hold {
+  opacity: 0;
+  animation: rl-fade 0.6s ease forwards;
+}
+.rl-forces__line {
+  stroke: currentColor;
+  stroke-width: 2;
+}
+/* שקף 7: חץ אדום נעלם, והקו זז */
+.rl-forces__hold.is-gone {
+  animation: rl-gone 1.4s ease forwards 1.4s;
+  opacity: 1;
+}
+@keyframes rl-gone {
+  to {
+    opacity: 0;
+    translate: -40px 0;
+  }
+}
+.rl-forces.is-released .rl-forces__line {
+  animation: rl-line-move 1.6s ease both 2.2s;
+}
+@keyframes rl-line-move {
+  from {
+    translate: 30px 0;
+  }
+}
+/* --- 4b: ספירה יורדת בספרות ענק --- */
+.rl-countdown-pair {
+  display: flex;
+  align-items: center;
+  gap: 2.5vw;
+  font-weight: 100;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.rl-countdown-pair__from {
+  font-size: min(11vh, 7rem);
+  opacity: 0.5;
+}
+.rl-countdown-pair__to {
+  font-size: min(15vh, 9.5rem);
+  font-weight: 200;
+}
+.rl-countdown-pair__arrow {
+  width: 5vw;
+  height: auto;
+  fill: none;
+  stroke: #f25740;
+  stroke-width: 2;
+}
+/* --- 4b: שני משפטים, מעומעם מול מודגש --- */
+.rl-contrast {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4vh;
+  padding-inline-start: 1.6vw;
+  border-inline-start: 3px solid #f25740;
+}
+.rl-contrast__dim {
+  color: rgb(11 27 63 / 0.4);
+  font-size: min(3.8vh, 2.3rem);
+  font-weight: 400;
+}
+.rl-contrast__bold {
+  font-size: min(4.6vh, 2.8rem);
+  font-weight: 800;
+}
+/* --- 4b: ציטוטים עם מירכאות אדומות גדולות --- */
+.rl-explain--quote {
+  align-items: center;
+  text-align: center;
+}
+.rl-quote-mark {
+  height: min(16vh, 10rem);
+  color: #f25740;
+  font-size: min(30vh, 19rem);
+  font-weight: 800;
+  line-height: 0.9;
+}
+.rl-quote {
+  max-width: 60rem;
+  font-size: min(7vh, 4.4rem);
+  font-weight: 800;
+  line-height: 1.25;
+}
+.rl-quote__pre {
+  display: block;
+  margin-bottom: 1.5vh;
+  font-size: 0.55em;
+  font-weight: 500;
+  opacity: 0.75;
+}
+.rl-quote__close {
+  color: #f25740;
+  margin-inline-start: 0.1em;
+}
+/* --- שלב 5: חיצים שמתכנסים --- */
+.rl-converge {
+  width: min(40vw, 34rem);
+  height: auto;
+  overflow: visible;
+}
+.rl-converge path {
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.rl-converge__target {
+  fill: #f25740;
+  opacity: 0;
+  animation: rl-fade 0.6s ease forwards 1.6s;
+}
+/* --- שלב 9: "שפל היישום" - עקומה שיורדת ואז עולה (משמאל לימין, כמו גרף) --- */
+.rl-dip {
+  width: min(40vw, 34rem);
+  height: auto;
+  overflow: visible;
+  direction: ltr;
+}
+.rl-dip path {
+  fill: none;
+  stroke: #2a4286;
+  stroke-width: 3;
+  stroke-linecap: round;
+  animation-duration: 3s;
+}
+.rl-dip__base {
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-dasharray: 4 6;
+  opacity: 0.35;
+}
+.rl-dip__low {
+  fill: #f25740;
+  opacity: 0;
+  animation: rl-fade 0.6s ease forwards 1.6s;
+}
+/* --- שלב 5: "מה הקשר" - שני אייקונים וקו ביניהם --- */
+.rl-link {
+  position: absolute;
+  z-index: 1;
+  top: 16vh;
+  right: 6vw;
+  left: 6vw;
+  display: flex;
+  align-items: center;
+  gap: 2vw;
+}
+.rl-link__icon {
+  width: 14vh;
+  height: 14vh;
+  flex: none;
+}
+.rl-link__line {
+  flex: 1;
+  height: 0;
+  border-top: 3px dashed currentColor;
+  opacity: 0.6;
+}
+.rl-link.is-solid .rl-link__line {
+  border-top-style: solid;
+  border-color: #f25740;
+  opacity: 1;
+  animation: rl-link-draw 1.2s ease both 0.8s;
+}
+@keyframes rl-link-draw {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.rl-page:has(.rl-link) .rl-slide {
+  inset: 30vh 9vw 14vh;
+}
+/* --- שלב 6: מדרגות "חמש פעמים למה" --- */
+.rl-stairs {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2vh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rl-stairs li {
+  font-size: min(4.2vh, 2.6rem);
+  font-weight: 700;
+  line-height: 1.25;
+  opacity: 0;
+  animation: rl-step-in 0.6s ease forwards;
+}
+@keyframes rl-step-in {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+.rl-stairs li.is-last {
+  color: #f25740;
+  font-weight: 800;
+}
+.rl-text--after-stairs {
+  margin-top: 1.5vh;
+  font-size: min(3.6vh, 2.2rem);
+  font-weight: 600;
+  opacity: 0;
+  animation: rl-fade 0.8s ease forwards 9.5s;
+}
+/* --- אייקונים קוויים --- */
+.rl-icon {
+  overflow: visible;
+}
+.rl-icon path,
+.rl-eyes path,
+.rl-clip path,
+.rl-converge path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rl-icon path {
+  stroke-width: 2.4;
+}
+.rl-tool-icon {
+  width: 9vh;
+  height: 9vh;
+}
+.rl-tool-icon path:last-child {
+  stroke: #f25740;
+}
+/* --- שלב 6: מחוון התקדמות מעגלי --- */
+.rl-ring {
+  position: absolute;
+  z-index: 2;
+  bottom: 4vh;
+  left: 3vw;
+  width: 8vh;
+  height: 8vh;
+}
+.rl-ring__track {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  opacity: 0.15;
+}
+.rl-ring__arc {
+  fill: none;
+  stroke: #f25740;
+  stroke-width: 5;
+  transition: stroke-dashoffset 0.2s linear;
+}
+.rl-page--now .rl-ring__arc {
+  stroke: #ffffff;
+}
+/* --- שלב 8: ריבועים שמצטברים (בצד) --- */
+.rl-squares {
+  display: grid;
+  width: min(22vw, 34vh);
+  aspect-ratio: 1;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.rl-squares span {
+  background: #2a4286;
+  opacity: 0;
+  animation: rl-sq-in 0.4s ease forwards;
+}
+.rl-squares span:nth-child(25) {
+  background: #f25740;
+}
+@keyframes rl-sq-in {
+  from {
+    opacity: 0;
+    scale: 0.3;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+/* --- רקע: ענפים (שלב 3) --- */
+.rl-branches {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  pointer-events: none;
+  color: #2a4286;
+  opacity: 0.13;
+}
+.rl-page--riddle .rl-branches,
+.rl-page--answer .rl-branches,
+.rl-page--now .rl-branches {
+  color: #ffffff;
+  opacity: 0.18;
+}
+.rl-branches line {
+  stroke: currentColor;
+  stroke-linecap: round;
+}
+.rl-branches line.is-new {
+  animation: rl-fade-from 1.6s ease both 0.4s;
+}
+@keyframes rl-fade-from {
+  from {
+    opacity: 0;
+  }
+}
+/* --- רקע: זום פרקטלי (שלב 8) --- */
+.rl-fzoom {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: #2a4286;
+  opacity: 0.16;
+}
+.rl-page--riddle .rl-fzoom,
+.rl-page--answer .rl-fzoom,
+.rl-page--now .rl-fzoom {
+  color: #ffffff;
+  opacity: 0.14;
+}
+.rl-fzoom svg {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+.rl-fzoom rect {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+}
+.rl-fzoom rect.is-accent {
+  stroke: #f25740;
+}
+.rl-page--now .rl-fzoom rect.is-accent {
+  stroke: #ffffff;
+}
+.rl-fzoom__spin {
+  transform-origin: 0 0;
+  animation: rl-fzoom 9s linear infinite;
+}
+@keyframes rl-fzoom {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    /* צעד אחד בסדרה: 1/0.82, ו-8° אחורה - המחזור מתחבר בלי קפיצה */
+    transform: scale(1.219512) rotate(-8deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rl-slide,
+  .rl-options li,
+  .rl-net circle,
+  .rl-fzoom__spin {
+    animation: none;
+  }
+  .rl-list li,
+  .rl-stairs li,
+  .rl-squares span,
+  .rl-forces__push,
+  .rl-forces__hold,
+  .rl-text--after-stairs,
+  .rl-converge__target {
+    animation: none;
+    opacity: 1;
+  }
+  .rl-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .rl-eyes__pupil {
+    animation: none;
+    opacity: 1;
+  }
+}

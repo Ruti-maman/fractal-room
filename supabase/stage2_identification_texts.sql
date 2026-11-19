@@ -16,7 +16,7 @@ set content = content || jsonb_build_object(
     'shape_line', 'עכשיו משנים צורה, שמים את הפרקטל על השולחן.',
     'tables_title', 'התחלקנה לשולחנות עבודה.',
     'participants_title', 'הזינו את פרטי המשתתפות.',
-    'name_title', 'בחרנה שם מקורי, קצר ומייצג לקבוצה,',
+    'name_title', 'בחרנה שם מקורי, קצר ומייצג לקבוצה.',
     'name_bonus', 'וצברו עליו ניקוד נוסף.',
     'tips_title', 'איך יוצרים שם שלא נשכח?',
     'tips', jsonb_build_array(

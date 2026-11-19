@@ -50,61 +50,36 @@ const CLIP_TILE_H = `min(calc(${CLIP_TILE_W} * 3 / 4), calc(100dvh - 31rem))`;
  * לאורכו, והילה צבעונית שנושמת לאט. קו כהה דק מתחת לקו הצבעוני שומר שה-V
  * ייקרא גם על פריים בהיר של הסרטון.
  */
-function BigCheck({ id }: { id: string }) {
-  const gid = `check-grad-${id}`;
-  // אורך הנתיב בערך - draw-stroke מצייר מ-0 עד אורך מלא
+function BigCheck({ id: _id }: { id: string }) {
+  // 2026-11-16 (בקשת המפתחת): V בכתום אחיד של האתר - בלי גרדיאנט, בלי
+  // הבזק אור ובלי הילה שמחליפים צבעים. רק נכתב פנימה פעם אחת.
   const len = 135;
   return (
-    <svg
-      viewBox="0 0 120 100"
-      className="h-24 w-28"
-      aria-hidden="true"
-      style={{ animation: "check-glow 2.4s 1s ease-in-out infinite", overflow: "visible" }}
-    >
-      <defs>
-        {/* stopColor דרך style ולא כתכונה - כך הוא מקבל את משתני הקשת */}
-        <linearGradient id={gid} x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0%" style={{ stopColor: "var(--ds-rainbow-1)" }} />
-          <stop offset="35%" style={{ stopColor: "var(--ds-rainbow-2)" }} />
-          <stop offset="65%" style={{ stopColor: "var(--ds-rainbow-3)" }} />
-          <stop offset="100%" style={{ stopColor: "var(--ds-rainbow-4)" }} />
-        </linearGradient>
-      </defs>
-      {/* צל כהה דק - קריאוּת על כל רקע */}
+    <svg viewBox="0 0 120 100" className="h-24 w-28" aria-hidden="true" style={{ overflow: "visible" }}>
       <path
         d="M14 54 L44 82 L106 16"
         fill="none"
-        stroke="rgba(0,0,0,0.35)"
-        strokeWidth={17}
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        stroke="#f25740"
+        strokeWidth={12}
+        strokeLinecap="square"
+        strokeLinejoin="miter"
         style={{ ["--dash" as string]: len, strokeDasharray: len, animation: "draw-stroke 0.7s 0.15s var(--ds-ease) both" }}
       />
-      {/* ה-V הצבעוני */}
-      <path
-        d="M14 54 L44 82 L106 16"
-        fill="none"
-        stroke={`url(#${gid})`}
-        strokeWidth={13}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        style={{ ["--dash" as string]: len, strokeDasharray: len, animation: "draw-stroke 0.7s 0.15s var(--ds-ease) both" }}
-      />
-      {/* הבזק אור שרץ לאורך הקו אחרי שהוא נכתב */}
+      {/* זוהר לבן שרץ לאורך ה-V כל כמה שניות (בקשת המפתחת) - הצבע עצמו
+          נשאר כתום, רק פס האור עובר עליו */}
       <path
         d="M14 54 L44 82 L106 16"
         fill="none"
         stroke="white"
-        strokeOpacity={0.85}
-        strokeWidth={5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        style={{ strokeDasharray: `18 ${len}`, animation: "check-shine 2.4s 0.9s ease-in-out infinite" }}
+        strokeOpacity={0.9}
+        strokeWidth={4}
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+        style={{ strokeDasharray: `16 ${len}`, animation: "check-shine 2.4s 0.9s ease-in-out infinite" }}
       />
     </svg>
   );
 }
-
 function ClipTiles({
   workshopId,
   stageNumber,
@@ -195,10 +170,16 @@ function WaitingScreen({ stageNumber, allGroups, workshopId }: Props) {
   const percent = sorted.length > 0 ? Math.round((arrivedCount / sorted.length) * 100) : 0;
   const showClips = stageNumber === 8 && Boolean(workshopId);
 
+  // רקע חי למסך ההמתנה (SceneSet: .sc-wait) - בקשת המפתחת 2026-11-16
+  useEffect(() => {
+    document.documentElement.setAttribute("data-waiting", "");
+    return () => document.documentElement.removeAttribute("data-waiting");
+  }, []);
+
   return (
     <StageShell
       stage={stageNumber}
-      kicker="שלב משותף"
+      // בלי התגית "שלב משותף" (בקשת המפתחת 2026-11-16)
       icon="users"
       // "צוותים" ולא "קבוצות" - הנחיית הלקוחה במצגת: "באופן כללי במקום
       // קבוצות צוותי עבודה" (טקסטי המערכת; התסריט עצמו נשאר כפי שנכתב)

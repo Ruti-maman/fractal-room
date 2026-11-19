@@ -40,7 +40,8 @@ function InspirationsLadder({ workshopId }: Props) {
   return (
     <aside
       aria-label="סולם ההשראות שנבחרו"
-      className="glass glass-brick glass-raised pointer-events-none fixed top-24 left-4 z-20 hidden w-[11.5rem] flex-col gap-2 rounded-xl p-3 lg:flex"
+      // insp-ladder: מתחת לשורת כפתור החזרה ומספר השלב (stage-scenes.css)
+      className="insp-ladder glass glass-brick glass-raised pointer-events-none fixed top-24 left-4 z-20 hidden w-[11.5rem] flex-col gap-2 rounded-xl p-3 lg:flex"
       style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
     >
       <div className="text-ink-3 flex items-center gap-1.5 px-1 text-[11px] font-bold tracking-wide">
@@ -64,7 +65,9 @@ function InspirationsLadder({ workshopId }: Props) {
           >
             <span
               aria-hidden="true"
-              className={`bubble bubble--${(i % 5) + 1} flex h-7 w-7 flex-none items-center justify-center text-[11px] font-extrabold`}
+              // שני צבעים בלבד לסירוגין - קורל ונייבי של הלוגו, בלי החום
+              // (בקשת הלקוחה, 2026-11-11). קודם: חמשת צבעי הבועות לפי הסדר.
+              className={`bubble bubble--${(i % 2) + 1} flex h-7 w-7 flex-none items-center justify-center text-[11px] font-extrabold`}
             >
               {i + 1}
             </span>

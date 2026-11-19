@@ -18,7 +18,9 @@ import {
 import type { Group } from "../../types/group";
 import type { MediaItem } from "../../types/media";
 import { BackgroundLayers } from "../ui/AppBackground";
+import SceneSet from "../SceneSet";
 import Icon, { type IconName } from "../ui/Icon";
+import PosterizeOverlay from "../PosterizeOverlay";
 // תג השלב העגול - אותו תג כמו בכותרת של StageShell בכל שאר השלבים
 import { LevelBadge } from "../ui/GameTile";
 import { ConclusionInHeader } from "../PracticalConclusionBanner";
@@ -363,7 +365,11 @@ function SolutionAndRecord({
     if (!box) return;
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const measure = () => {
-      const w = Math.min(box.clientWidth, (box.clientHeight * 16) / 9, 76 * rem, window.innerWidth - 42 * rem);
+      // גם תצוגת המצלמה קטנה ב-15% כמו כל הממשק (--ui-scale ב-index.css):
+      // המקום הפנוי נמדד בפיקסלים אמיתיים (כפול היחס), אחרת היא ממלאת אותו
+      // ו"בולעת" את ההקטנה. התקרות ב-rem כבר מוקטנות לבד
+      const ui = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1;
+      const w = Math.min(box.clientWidth * ui, (box.clientHeight * ui * 16) / 9, 76 * rem, window.innerWidth - 42 * rem);
       setPlayerWidth(Math.max(22 * rem, Math.floor(w)));
     };
     measure();
@@ -632,44 +638,57 @@ function SolutionAndRecord({
     שההוראה החדשה מגיעה למרכז האזור. אם כבר רואים אותה, לא זזים.
   */
   const glideFrameRef = useRef(0);
-  function glideTo(box: HTMLElement, el: HTMLElement) {
-    const boxRect = box.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-    const target = Math.max(
-      0,
-      Math.min(
-        box.scrollHeight - box.clientHeight,
-        box.scrollTop + (elRect.top + elRect.height / 2) - (boxRect.top + boxRect.height / 2),
-      ),
-    );
-    const from = box.scrollTop;
-    if (Math.abs(target - from) < 4) return;
-    cancelAnimationFrame(glideFrameRef.current);
-    const duration = 1100;
-    const t0 = performance.now();
-    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-    const step = (now: number) => {
-      const t = Math.min(1, (now - t0) / duration);
-      box.scrollTop = from + (target - from) * ease(t);
-      if (t < 1) glideFrameRef.current = requestAnimationFrame(step);
-    };
-    glideFrameRef.current = requestAnimationFrame(step);
-  }
+  /*
+    2026-11-16 (בקשת המפתחת: "גלילה איטית, רכה ונעימה, לא קופצת"): במקום
+    קפיצה קצרה אל כל הוראה שמופיעה (7 גלילות נפרדות - נראה כמו קפיצות),
+    גלילה **אחת רציפה ואיטית** מההוראה הראשונה ועד הכפתור, באותו קצב שבו
+    ההוראות נחשפות. נגיעה או גלגלת של המשתמשות עוצרת אותה, כדי לא להיאבק בהן.
+  */
   useEffect(() => {
     if (phase !== "solution") return;
-    const timers = Array.from({ length: SIMULATION_STEPS.length + 2 }, (_, i) =>
-      window.setTimeout(
-        () => {
-          const box = stepsScrollRef.current;
-          const el = box?.querySelector<HTMLElement>(`[data-step="${i}"]`);
-          if (box && el) glideTo(box, el);
-        },
-        ((i + 1) * STEP_DELAY_SECONDS + (i >= SIMULATION_STEPS.length ? 0.4 : 0.3)) * 1000,
-      ),
-    );
-    return () => {
-      timers.forEach((t) => window.clearTimeout(t));
+    const last = SIMULATION_STEPS.length + 1;
+    const startMs = (STEP_DELAY_SECONDS + 0.3) * 1000;
+    const endMs = ((last + 1) * STEP_DELAY_SECONDS + 1.2) * 1000;
+    let stopped = false;
+    const stop = () => {
+      stopped = true;
       cancelAnimationFrame(glideFrameRef.current);
+    };
+    const box = stepsScrollRef.current;
+    box?.addEventListener("pointerdown", stop);
+    box?.addEventListener("wheel", stop, { passive: true });
+    box?.addEventListener("touchstart", stop, { passive: true });
+    const timer = window.setTimeout(() => {
+      const b = stepsScrollRef.current;
+      const el = b?.querySelector<HTMLElement>(`[data-step="${last}"]`);
+      if (!b || !el || stopped) return;
+      const boxRect = b.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      // היעד: הכפתור בתחתית האזור (לא במרכז) - כך כל ההוראות נשארות גלויות כמה שאפשר
+      const target = Math.max(
+        0,
+        Math.min(b.scrollHeight - b.clientHeight, b.scrollTop + (elRect.bottom - boxRect.bottom) + 24),
+      );
+      const from = b.scrollTop;
+      if (Math.abs(target - from) < 4) return;
+      const duration = endMs - startMs;
+      const t0 = performance.now();
+      // סינוס - האצה והאטה רכות מאוד, בלי "משיכה" באמצע
+      const ease = (t: number) => (1 - Math.cos(Math.PI * t)) / 2;
+      const step = (now: number) => {
+        if (stopped) return;
+        const t = Math.min(1, (now - t0) / duration);
+        b.scrollTop = from + (target - from) * ease(t);
+        if (t < 1) glideFrameRef.current = requestAnimationFrame(step);
+      };
+      glideFrameRef.current = requestAnimationFrame(step);
+    }, startMs);
+    return () => {
+      window.clearTimeout(timer);
+      stop();
+      box?.removeEventListener("pointerdown", stop);
+      box?.removeEventListener("wheel", stop);
+      box?.removeEventListener("touchstart", stop);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
@@ -706,14 +725,12 @@ function SolutionAndRecord({
         `}</style>
 
         <BackgroundLayers variant="deep" />
+        <SceneSet stage={7} />
 
         <div className="relative flex flex-none flex-col items-center gap-2" style={{ animation: "fade-up 0.7s ease-out both" }}>
-          <LevelBadge value={7} progress={0.7} size={88} />
+          <LevelBadge value={7} progress={0.7} size={88} className="stage-badge" />
           <div className="header-pair mt-3 flex flex-wrap items-center justify-center gap-3">
-            <span className="glass glass-chip text-accent-soft gap-2">
-              <Icon name="camera" size={15} />
-              סימולציות
-            </span>
+            {/* התגית "סימולציות" הוסרה (בקשת המפתחת 2026-11-15) */}
             <ConclusionInHeader />
           </div>
           <h1 className="glass-title text-3xl sm:text-4xl">הוראות לעריכת הסימולציה</h1>
@@ -768,48 +785,27 @@ function SolutionAndRecord({
           מסודרים בזיגזג ומוטים קלות לסירוגין, וכל אחד "נוחת" במקומו בתורו.
           כל ההוראות באותו גודל ובאותו משקל - אין ביניהן היררכיה.
         */}
-        <ol className="relative flex w-full max-w-3xl flex-none flex-col gap-4 text-right">
-          {SIMULATION_STEPS.map((step, i) => {
-            const tilt = i % 2 === 0 ? -1.2 : 1.2;
-            return (
-              <li
-                key={i}
-                data-step={i}
-                className={cx(
-                  "relative flex w-[88%] items-center gap-5 rounded-2xl bg-white px-5 py-4",
-                  i % 2 === 0 ? "self-start" : "self-end",
-                )}
-                style={
-                  {
-                    "--tilt": `${tilt}deg`,
-                    border: `3px solid ${step.color}`,
-                    boxShadow: `0 14px 28px -16px ${step.color}`,
-                    animation: `quest-in 0.7s ${(i + 1) * STEP_DELAY_SECONDS}s var(--ds-ease-spring) both`,
-                  } as React.CSSProperties
-                }
-              >
-                {/* המעוין: הסמל של ההוראה, ומספר קטן בפינה */}
-                <span
-                  aria-hidden="true"
-                  className="relative flex h-16 w-16 shrink-0 items-center justify-center diamond text-white"
-                  style={{
-                    background: `radial-gradient(circle at 32% 26%, color-mix(in srgb, ${step.color} 55%, white), ${step.color} 55%)`,
-                    boxShadow: `0 6px 14px -6px ${step.color}`,
-                  }}
-                >
-                  <Icon name={step.icon} size={28} />
-                </span>
-                <span
-                  aria-hidden="true"
-                  className="text-ink-3 absolute -top-3 start-3 rounded-sm bg-white px-2.5 text-sm font-extrabold"
-                  style={{ border: `2px solid ${step.color}` }}
-                >
-                  {i + 1}
-                </span>
-                <span className="text-ink text-xl font-bold sm:text-2xl">{step.text}</span>
-              </li>
-            );
-          })}
+        {/* 2026-11-15 (בקשת המפתחת - הקלפים המוטים נראו "נורא", והטקסט
+            הנייבי שלהם נבלע כלבן-על-לבן ברקע הכהה): רשימה עיתונאית על הנייבי -
+            בלי קופסאות. לכל הוראה מספר ענק ודק באדום-כתום, סמל בקו לבן דק,
+            והטקסט בלבן, עם קו מפריד דק. כל שורה נחשפת בתורה. s7-step ב-editorial.css */}
+        <ol className="s7-steps relative flex w-full max-w-3xl flex-none flex-col text-right">
+          {SIMULATION_STEPS.map((step, i) => (
+            <li
+              key={i}
+              data-step={i}
+              className="s7-step"
+              style={{ animationDelay: `${(i + 1) * STEP_DELAY_SECONDS}s` }}
+            >
+              <span className="s7-step__n" aria-hidden="true">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="s7-step__icon" aria-hidden="true">
+                <Icon name={step.icon} size={26} />
+              </span>
+              <span className="s7-step__t">{step.text}</span>
+            </li>
+          ))}
         </ol>
 
         <div
@@ -1099,6 +1095,7 @@ function SolutionAndRecord({
 
       {/* הרקע הקבוע של הסדנה (הבועות הצפות) - חסר היה רק במסך הזה */}
       <BackgroundLayers variant="deep" />
+        <SceneSet stage={7} />
 
       {/* כתמי אור מטושטשים בפינות - קו העיצוב הקבוע של כל מסכי הסדנה */}
       <div className="pointer-events-none absolute top-[-12%] right-[8%] h-96 w-96 rounded-full bg-glow-soft blur-[110px]" />
@@ -1123,13 +1120,10 @@ function SolutionAndRecord({
       {/* כותרת דחוסה (תג קטן יותר, התגית והמסקנה בשורה אחת, ההסבר בשורה
           אחת) - כל פיקסל שנחסך כאן הולך לתצוגת המצלמה */}
       <div className="relative flex flex-none flex-col items-center gap-2" style={{ animation: "fade-up 0.7s ease-out both" }}>
-        <LevelBadge value={7} progress={0.7} size={64} />
+        <LevelBadge value={7} progress={0.7} size={64} className="stage-badge" />
         {/* header-pair: התגית והמסקנה ממורכזות סביב האמצע (בקשת הלקוחה) */}
         <div className="header-pair mt-2 flex flex-wrap items-center justify-center gap-2">
-          <span className="glass glass-chip text-accent-soft gap-2">
-            <Icon name="record" size={15} />
-            הקלטה
-          </span>
+          {/* בלי התגית "הקלטה" (בקשת המפתחת 2026-11-16) */}
           <ConclusionInHeader />
         </div>
         <h1 className="glass-title text-3xl">היכונו להקלטה מול המצלמה</h1>
@@ -1309,6 +1303,9 @@ export function GroupClip({
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [captionsUrl, setCaptionsUrl] = useState<string | null>(null);
+  // סטופ-מושן (6 תמונות בשנייה) - PosterizeOverlay מעל הסרטון בזמן ניגון
+  const clipVideoRef = useRef<HTMLVideoElement>(null);
+  const [clipPlaying, setClipPlaying] = useState(false);
 
   // הכתוביות נבנות כקובץ WebVTT בזיכרון ומוצמדות לסרטון כ-<track>. ככה הן
   // כתוביות אמיתיות של הנגן - עם כפתור CC משלו - ולא טקסט שמצויר מעל הווידאו.
@@ -1365,16 +1362,28 @@ export function GroupClip({
   // נגן ברירת המחדל של הדפדפן, לפי בקשת הלקוחה - חזרה לעיצוב שהיה קודם.
   // בקרות הקול והמסך המלא של הדפדפן זמינות כאן כרגיל.
   return (
+    // relative: שכבת הסטופ-מושן (PosterizeOverlay) יושבת מעל הסרטון בדיוק
+    <div className="relative" style={{ height }}>
     <video
+      ref={clipVideoRef}
       src={src}
       controls
       playsInline
       preload="metadata"
       title={title}
       onError={() => setFailed(true)}
-      onPlay={() => onPlayingChange?.(true)}
-      onPause={() => onPlayingChange?.(false)}
-      onEnded={() => onPlayingChange?.(false)}
+      onPlay={() => {
+        setClipPlaying(true);
+        onPlayingChange?.(true);
+      }}
+      onPause={() => {
+        setClipPlaying(false);
+        onPlayingChange?.(false);
+      }}
+      onEnded={() => {
+        setClipPlaying(false);
+        onPlayingChange?.(false);
+      }}
       // object-cover ממלא את המסגרת: ההקלטה היא 4:3 והמסגרת רחבה יותר, ובלי
       // זה נוספים פסים שחורים בצדדים.
       // הגובה נגזר מהגובה הפנוי (בין הכותרת לפאנלים שבפינות), לא קבוע.
@@ -1383,6 +1392,14 @@ export function GroupClip({
     >
       {captionsUrl && <track kind="captions" srcLang="he" label="עברית" src={captionsUrl} default />}
     </video>
+    <PosterizeOverlay
+      videoRef={clipVideoRef}
+      active={clipPlaying}
+      fit="cover"
+      drawCaptions
+      onTap={() => clipVideoRef.current?.pause()}
+    />
+    </div>
   );
 }
 
@@ -1706,6 +1723,7 @@ function SharedViewing({
       className="relative flex h-dvh flex-col items-center gap-5 overflow-hidden px-8 pt-20 pb-6 text-center lg:pt-6"
     >
       <BackgroundLayers variant="deep" />
+        <SceneSet stage={7} />
 
       {/* שדה כוכבים על כל המסך - אותו מוטיב של הדירוג, בצבעי הפלטה. הם
           מרחפים לאט מלמטה למעלה בכל רוחב העמוד, בשקיפות נמוכה, כדי שייתנו
@@ -1743,14 +1761,11 @@ function SharedViewing({
         className="relative flex flex-col items-center gap-2"
         style={{ animation: "fade-up 0.7s ease-out both" }}
       >
-        <LevelBadge value={7} progress={0.7} size={88} />
+        <LevelBadge value={7} progress={0.7} size={88} className="stage-badge" />
         {/* התגית והמסקנה באותה שורה (כמו ב-StageShell) - כל שורה שנחסכת
             כאן הולכת לגובה של הסרטונים */}
         <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
-          <span className="glass glass-chip text-accent-soft gap-2">
-            <Icon name="film" size={15} />
-            צפייה משותפת
-          </span>
+          {/* בלי התגית "צפייה משותפת" (בקשת המפתחת 2026-11-16) */}
           <ConclusionInHeader />
         </div>
         <h1 className="glass-title text-3xl sm:text-4xl">צפייה משותפת בכל ההסרטות</h1>

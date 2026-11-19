@@ -60,6 +60,9 @@ interface Props {
    */
   shatter?: boolean;
   shatterDelay?: number;
+  /** ניסוי שלב 1: כל ריבוע נכנס בתורו, מהגזע אל הענפים (ראו brand-trial.css). */
+  grow?: boolean;
+  growDelay?: number;
 }
 
 /* מרכז הסמל (בערך) - כל ריבוע עף בכיוון שמרכזו -> מרכז הריבוע */
@@ -86,7 +89,15 @@ function shardStyle(s: Square, i: number, delay: number): CSSProperties {
   };
 }
 
-function FractalLogo({ className, emblemOnly = false, style, shatter = false, shatterDelay = 0.9 }: Props) {
+function FractalLogo({
+  className,
+  emblemOnly = false,
+  style,
+  shatter = false,
+  shatterDelay = 0.9,
+  grow = false,
+  growDelay = 0.3,
+}: Props) {
   return (
     <svg
       // צמוד לגבולות הלוגו עצמו (בלי שוליים ריקים), כדי שימלא את המקום שנותנים לו
@@ -103,16 +114,28 @@ function FractalLogo({ className, emblemOnly = false, style, shatter = false, sh
           style={{
             fill: s.coral ? "var(--ds-brand-coral)" : "var(--ds-brand-ink)",
             ...(shatter ? shardStyle(s, i, shatterDelay) : null),
+            ...(grow ? { animationDelay: `${growDelay + i * 0.07}s` } : null),
           }}
         />
       ))}
       {!emblemOnly && (
-        <g style={shatter ? { animation: `shard-fade 0.9s ${shatterDelay}s ease-out both` } : undefined}>
+        <g
+          style={
+            shatter
+              ? { animation: `shard-fade 0.9s ${shatterDelay}s ease-out both` }
+              : grow
+                ? { animation: `fade-up 0.8s ${growDelay + SQUARES.length * 0.07}s ease-out both` }
+                : undefined
+          }
+        >
           <text
             x={0}
             y={58}
             textAnchor="middle"
             direction="rtl"
+            // הפונט המקורי של הלוגו - לא Heebo. הלקוחה (2026-11-12): "הפונט של
+            // הלוגו השתנה, רציתי להשאיר כמו שהוא". במסך הפתיחה מוצג קובץ הלוגו
+            // שלה עצמו (public/brand/fractal-logo-on-*.png)
             style={{ fill: "var(--ds-brand-coral)", font: "800 64px Assistant, sans-serif" }}
           >
             פרקטל

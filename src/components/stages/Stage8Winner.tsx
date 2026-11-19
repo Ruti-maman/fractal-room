@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { GlassButton } from "../ui/Glass";
 import SandText from "../SandText";
 import { normalizeVotes, useRatings } from "../../hooks/useRatings";
 import type { Group } from "../../types/group";
 import { BackgroundLayers } from "../ui/AppBackground";
+import SceneSet from "../SceneSet";
 import Icon from "../ui/Icon";
 // תג השלב העגול - אותו תג כמו בכותרת של StageShell בכל שאר השלבים
 import { LevelBadge } from "../ui/GameTile";
 import { ConclusionInHeader } from "../PracticalConclusionBanner";
 import { cx } from "../../lib/cx";
+import { UI_SOUNDS_ENABLED } from "../../lib/tapFeedback";
 
 /** שורה בכרטיסי הטקסט של השלב. `bold` לשורות שהלקוחה הדגישה. */
 interface Line {
@@ -100,7 +102,9 @@ interface Props {
  * 60 פתיתים זה מספיק לתחושת חגיגה בלי להעמיס על הפלזמות (סעיף 2
  * ב-CLAUDE.md - דפדפן שעשוי להיות ישן).
  */
-const SHARD_COLORS = ["#f5300f", "#f26a50", "#f4c7bc", "#c8955f", "#283d5b"];
+// 2026-11-16: קונפטי של ריבועים בצבעי שפת "עיתונאי" - כחול, אדום-כתום,
+// נייבי - כמו הריבועים שברקע השלב
+const SHARD_COLORS = ["#2a4286", "#f25740", "#0b1b3f", "#f25740", "#2a4286"];
 
 const CONFETTI = Array.from({ length: 60 }, (_, i) => {
   const rand = (seed: number) => (Math.sin(i * seed) + 1) / 2;
@@ -119,6 +123,7 @@ const CONFETTI = Array.from({ length: 60 }, (_, i) => {
 
 /** פנפרת ניצחון קצרה - רצף עולה ואז אקורד. */
 function playWinSound() {
+  if (!UI_SOUNDS_ENABLED) return;
   try {
     const AudioContextClass =
       window.AudioContext ||
@@ -229,26 +234,70 @@ function GlassTrophy() {
 }
 
 /** דיסקית מקום - מחליפה את אמוג'י המדליה. */
-function PlaceDisc({ place }: { place: number }) {
+/** כרטיס טקסט - השורות עולות אחת אחרי השנייה. גודל הכתב נגזר מגובה המסך. */
+function LinesCard({ lines, bare = false, dense = false }: { lines: Line[]; bare?: boolean; dense?: boolean }) {
+  /*
+    bare (מסך הסיום של שלב 9, בקשת המפתחת 2026-11-16): בלי מסגרת, ישר על
+    הרקע הכחול, והמשפט המודגש האחרון "נכתב" מילה אחרי מילה ואז נמתח מתחתיו
+    קו כתום (s6-w מ-editorial.css, s9-big).
+  */
+  const LETTER_GAP = 0.045;
+  const bigAt = 0.4 + lines.length * 0.18;
   return (
-    <span
-      aria-hidden="true"
+    <div
       className={cx(
-        "flex h-12 w-12 items-center justify-center text-lg font-extrabold",
-        place === 1 ? "bubble bubble--4" : place === 2 ? "bubble bubble--2" : "bubble bubble--5",
+        "relative flex w-full flex-col items-center gap-[0.6vh] text-center",
+        bare ? cx("s9-lines max-w-6xl", dense && "s9-lines--dense") : "glass glass-brick glass-raised max-w-3xl rounded-2xl px-10 py-[2.6vh]",
       )}
     >
-      {place}
-    </span>
-  );
-}
-
-/** כרטיס טקסט - השורות עולות אחת אחרי השנייה. גודל הכתב נגזר מגובה המסך. */
-function LinesCard({ lines }: { lines: Line[] }) {
-  return (
-    <div className="glass glass-brick glass-raised relative flex w-full max-w-3xl flex-col items-center gap-[0.6vh] rounded-2xl px-10 py-[2.6vh] text-center">
       {lines.map((line, i) => {
         const last = i === lines.length - 1;
+        const big = last && line.bold;
+        if (bare && big) {
+          const words = line.text.split(/\s+/).filter(Boolean);
+          const letters = words.join("").length;
+          const endAt = bigAt + letters * LETTER_GAP + 0.7;
+          return (
+            <p
+              key={i}
+              className="s9-big"
+              style={{ fontSize: "min(5.2vh, 3.1rem)", ["--s9-line-at" as string]: `${endAt}s` }}
+            >
+              <span className="sr-only">{line.text}</span>
+              <span aria-hidden="true">
+                {/* "הנפשה רצינית יותר" (2026-11-16): כל אות נוחתת מלמעלה בתורה,
+                    גדולה ובאדום-כתום, ומתיישבת בלבן - גל שעובר על המשפט */}
+                {(() => {
+                  let n = 0;
+                  return words.map((w, wi) => (
+                    <Fragment key={wi}>
+                      <span className="s9-word">
+                        {Array.from(w).map((ch, ci) => (
+                          <span
+                            key={ci}
+                            className="s9-ch"
+                            style={(() => {
+                              // כל אות מגיעה מנקודה אחרת "מפוזרת" במסך ומתחברת למשפט
+                              const k = n++;
+                              return {
+                                animationDelay: `${bigAt + k * LETTER_GAP}s`,
+                                ["--dx" as string]: `${Math.round(Math.sin(k * 12.9898) * 260)}px`,
+                                ["--dy" as string]: `${Math.round(Math.cos(k * 7.233) * 190)}px`,
+                                ["--rot" as string]: `${Math.round(Math.sin(k * 3.17) * 120)}deg`,
+                              } as React.CSSProperties;
+                            })()}
+                          >
+                            {ch}
+                          </span>
+                        ))}
+                      </span>{" "}
+                    </Fragment>
+                  ));
+                })()}
+              </span>
+            </p>
+          );
+        }
         // השורה המסכמת ("כי מה שחוזר בקטן — בסוף נראה בגדול") - טקסט רגיל
         // בגרדיאנט הקשת. אפקט ה"נוף" (קווי אופק) הוסר לבקשת הלקוחה.
         return (
@@ -256,10 +305,10 @@ function LinesCard({ lines }: { lines: Line[] }) {
             key={i}
             className={cx(
               "leading-snug",
-              last && line.bold ? "glass-title mt-[0.8vh]" : line.bold ? "text-ink font-extrabold" : "text-ink-2",
+              big ? "glass-title mt-[0.8vh]" : line.bold ? "text-ink font-extrabold" : "text-ink-2",
             )}
             style={{
-              fontSize: last && line.bold ? "min(4.4vh, 2.6rem)" : line.bold ? "min(3.3vh, 1.9rem)" : "min(2.9vh, 1.6rem)",
+              fontSize: big ? "min(4.4vh, 2.6rem)" : line.bold ? "min(3.3vh, 1.9rem)" : "min(2.9vh, 1.6rem)",
               animation: `fade-up 0.6s ${0.15 + i * 0.14}s var(--ds-ease) both`,
             }}
           >
@@ -310,13 +359,36 @@ function Stage8Winner({
         likes[groupId] = (likes[groupId] ?? 0) + votes.length;
       }
     }
+    // תצוגה מקדימה בלבד (שרת הפיתוח): ?demoVotes=1 ממלא כוכבים לדוגמה, כדי
+    // לראות את מסך הניצחון בלי לעבור את כל ההצבעה. לא קיים באתר שבענן.
+    const demo = import.meta.env.DEV && location.search.includes("demoVotes");
+    /*
+      בדיקה עם קבוצה אחת (בקשת המפתחת 2026-11-17): בשרת הפיתוח בלבד, אם אף
+      קבוצה לא קיבלה כוכבים - הקבוצה של המסך הזה היא המנצחת (כוכב אחד), כדי
+      שאפשר יהיה לראות את מסך הניצחון בלי להפעיל שלוש קבוצות. באתר שבענן
+      (סדנה אמיתית) זה לא קורה - שם מוצג "אף קבוצה לא קיבלה כוכבים עדיין".
+    */
+    const noVotes = Object.values(likes).every((n) => !n);
+    const soloTest = import.meta.env.DEV && !demo && noVotes;
     return allGroups
-      .map((group) => ({ group, likes: likes[group.id] ?? 0 }))
+      .map((group, gi) => ({
+        group,
+        likes: demo ? ([7, 4, 2][gi] ?? 1) : soloTest ? (group.id === myGroup.id ? 1 : 0) : (likes[group.id] ?? 0),
+      }))
       .sort((a, b) => b.likes - a.likes || a.group.screen_number - b.group.screen_number);
-  }, [rows, allGroups]);
+  }, [rows, allGroups, myGroup.id]);
 
   const winner = ranking[0];
   const hasVotes = ranking.some((entry) => entry.likes > 0);
+
+  // מסך הסיום של שלב 9 - רקע כחול מלא (stage-scenes.css, s9-close)
+  // ומסך המסר של שלב 8 - כחול בלי רשת, עם מדרגות פרקטל (s8-msg)
+  useEffect(() => {
+    const scene = phase === "closing" ? "s9-close" : phase === "reflection" ? "s8-msg" : null;
+    if (!scene) return;
+    document.documentElement.setAttribute("data-scene", scene);
+    return () => document.documentElement.removeAttribute("data-scene");
+  }, [phase]);
 
   // הפנפרה ברגע ההכרזה עצמה, לא בכניסה לשלב
   useEffect(() => {
@@ -348,15 +420,12 @@ function Stage8Winner({
       className="relative flex flex-none flex-col items-center gap-2"
       style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
     >
-      <LevelBadge value={stageNumber} progress={stageNumber / 10} size={88} />
+      <LevelBadge value={stageNumber} progress={stageNumber / 10} size={88} className="stage-badge" />
       <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
-        <span className="glass glass-chip text-accent-soft gap-2">
-          <Icon name="trophy" size={15} />
-          {t.kicker}
-        </span>
+        {/* בלי התגית "ברינה קצורה" (בקשת המפתחת 2026-11-16) */}
         <ConclusionInHeader />
       </div>
-      <span className="text-ink-3 -mt-1 text-sm font-bold">{t.kicker_sub}</span>
+      {/* בלי "סיום ונצחון" (בקשת המפתחת 2026-11-16) */}
     </div>
   );
 
@@ -365,10 +434,43 @@ function Stage8Winner({
     return (
       <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-[2vh] overflow-hidden px-6 pt-20 pb-8 text-center lg:pt-8">
         <BackgroundLayers variant="night" />
+        <SceneSet stage={stageNumber} />
+        {/* מסך הסיום: מסגרות מרובעות מקוננות שגדלות לאט מהמרכז החוצה -
+            "מה שחוזר בקטן בסוף נראה בגדול" (בקשת המפתחת 2026-11-16) */}
+        {/* מסך המסר: "מדרגות פרקטל" בקו לבן דק בשני הצדדים - ריבועים שקטנים
+            פי שניים בכל צעד, כמו השורה האחרונה: "מה שחוזר בקטן - בסוף נראה
+            בגדול" (בקשת המפתחת 2026-11-16) */}
+        {phase === "reflection" && (
+          <div className="s8-bg" aria-hidden="true">
+            <div className="s8-stairs s8-stairs--a">
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="s8-stairs s8-stairs--b">
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+        )}
+        {phase === "closing" && (
+          <div className="s9-frames" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, i) => (
+              <span key={i} style={{ animationDelay: `${-i * 2}s` }} />
+            ))}
+          </div>
+        )}
         {header}
         <LinesCard
           key={phase}
           lines={isReflection ? t.reflection_lines : t.closing_lines}
+          // בשני המסכים (מסר + סיום) - בלי מסגרת ועם הנפשת המשפט האחרון
+          // (בקשת המפתחת 2026-11-16). במסר יש הרבה שורות - ריווח צפוף יותר
+          bare
+          dense={isReflection}
         />
         {/* שלב 8: "ויש לנו גם מנצחות" עובר לשלב 9 (ההכרזה).
             שלב 9, אחרי טקסט הסיום: "להמשך" עובר לשלב 10. */}
@@ -385,6 +487,7 @@ function Stage8Winner({
     // justify-center-safe: אם בכל זאת אין מקום - מצמיד למעלה, לא חותך.
     <main className="relative flex h-dvh flex-col items-center justify-center-safe gap-3 overflow-hidden px-6 pt-20 pb-4 text-center lg:pt-4">
       <BackgroundLayers variant="night" />
+      <SceneSet stage={stageNumber} />
 
       {/* קונפטי - רק כשיש תוצאה אמיתית להכריז עליה.
           `motion-safe` מוודא שהוא לא רץ כשביקשו פחות תנועה. */}
@@ -396,11 +499,12 @@ function Stage8Winner({
               className="absolute top-0"
               style={{
                 insetInlineStart: `${piece.left}%`,
-                width: piece.width,
-                height: piece.round ? piece.width : piece.height,
+                // ריבועים חדים בלבד (בלי עיגולים ומלבנים)
+                width: piece.width + 3,
+                height: piece.width + 3,
                 background: piece.color,
-                opacity: 0.85,
-                borderRadius: piece.round ? "9999px" : "2px",
+                opacity: 0.9,
+                borderRadius: 0,
                 ["--drift" as string]: `${piece.drift}px`,
                 ["--spin" as string]: `${piece.spin}deg`,
                 animation: `confetti-fall ${piece.duration}s ${piece.delay}s linear infinite`,
@@ -416,7 +520,8 @@ function Stage8Winner({
       <div className="relative flex h-28 w-28 flex-none items-center justify-center">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute hidden h-[26rem] w-[26rem] opacity-50 motion-safe:block"
+          // winner-rays: מוסתר בשפת "עיתונאי" (editorial-skin.css) - בלי קרני אור
+          className="winner-rays pointer-events-none absolute hidden h-[26rem] w-[26rem] opacity-50 motion-safe:block"
           style={{
             background:
               "conic-gradient(from 0deg, rgba(242,106,80,0.4) 0deg, transparent 22deg, rgba(200,149,95,0.35) 45deg, transparent 67deg, rgba(242,106,80,0.35) 90deg, transparent 112deg, rgba(200,149,95,0.35) 135deg, transparent 157deg, rgba(242,106,80,0.35) 180deg, transparent 202deg, rgba(200,149,95,0.35) 225deg, transparent 247deg, rgba(242,106,80,0.35) 270deg, transparent 292deg, rgba(200,149,95,0.35) 315deg, transparent 337deg)",
@@ -506,32 +611,36 @@ function Stage8Winner({
 
       {/* פודיום עם כל שלוש הקבוצות */}
       {hasVotes && (
-        <div className="relative flex items-end justify-center gap-3 pb-1 sm:gap-4">
+        /* 2026-11-16: פודיום של "עמודות רשת" - שלושה בלוקים מרובעים צמודים
+           זה לזה שעולים מלמטה (clip-path), המנצחת באדום-כתום והשאר בכחול,
+           ומספר המקום ענק ודק בלבן בתוך הבלוק. השם והכוכבים מעליו. pod-* */
+        <div className="pod relative flex items-end justify-center pb-1">
           {podium.map((entry, i) => {
             const isWinner = entry.likes === winner?.likes;
+            const place = placeFor(entry.likes);
             return (
-              <div
-                key={entry.group.id}
-                className="flex w-28 flex-col items-center gap-2 sm:w-40"
-              >
-                <PlaceDisc place={placeFor(entry.likes)} />
-                <span className="text-ink truncate text-sm font-bold sm:text-base">
+              <div key={entry.group.id} className="pod__col">
+                <span
+                  className="pod__name"
+                  style={{ animationDelay: `${0.9 + i * 0.15}s` }}
+                >
                   {entry.group.name ?? `מסך ${entry.group.screen_number}`}
-                </span>
-                <span className="text-accent-soft flex items-center gap-1 text-sm font-bold">
-                  <Icon name="star" size={14} filled />
-                  {entry.likes}
+                  <span className="pod__stars">
+                    <Icon name="star" size={14} filled />
+                    {entry.likes}
+                  </span>
                 </span>
                 <div
-                  className={cx(
-                    "glass w-full origin-bottom rounded-t-lg",
-                    isWinner && "glass-active",
-                  )}
+                  className={cx("pod__block", isWinner && "pod__block--win")}
                   style={{
-                    height: heightFor(entry.likes),
-                    animation: `podium-rise 0.7s ${0.5 + i * 0.15}s var(--ds-ease-spring) both`,
+                    height: heightFor(entry.likes) + 36,
+                    animationDelay: `${0.5 + i * 0.15}s`,
                   }}
-                />
+                >
+                  <span className="pod__place" aria-label={`מקום ${place}`}>
+                    {place}
+                  </span>
+                </div>
               </div>
             );
           })}

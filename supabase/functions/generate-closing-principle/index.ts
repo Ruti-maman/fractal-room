@@ -19,6 +19,35 @@ const corsHeaders = {
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 /*
+  2026-11-16: Gemini החזיר 503 ("high demand") לאורך יום שלם, וה-AI נכשל.
+  לכן כל מודל מקבל כמה ניסיונות עם המתנה, ואם הוא עדיין עמוס או לא קיים -
+  עוברים למודל הבא. (אותו מנגנון כמו generate-functioning-picture.)
+*/
+const GEMINI_FALLBACK_MODELS = [GEMINI_MODEL, "gemini-3.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-flash"];
+const TRIES_PER_MODEL = 2;
+const RETRY_DELAY_MS = 1500;
+const TRANSIENT = new Set([429, 500, 502, 503, 504]);
+
+/** קריאה ל-generateContent עם ניסיונות חוזרים ומעבר בין מודלים. מחזירה את התשובה האחרונה. */
+async function fetchGemini(apiKey: string, body: string): Promise<Response> {
+  let last: Response | null = null;
+  for (const model of GEMINI_FALLBACK_MODELS) {
+    for (let t = 1; t <= TRIES_PER_MODEL; t++) {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body },
+      );
+      if (res.ok) return res;
+      last = res;
+      console.error("Gemini API error:", model, res.status);
+      if (!TRANSIENT.has(res.status)) break;
+      if (t < TRIES_PER_MODEL) await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * t));
+    }
+  }
+  return last!;
+}
+
+/*
   עברית נקייה: Gemini גלש בפועל באמצע מילה לאות אנגלית ("מהתבוננות לקkה")
   ולאותיות קנאדה. ניסוח כזה נפסל ומבוקש מחדש, ובכל מקרה לא נשמר כך.
   (אותו כלל כמו src/lib/hebrewText.ts - Edge Function לא יכולה לייבא משם.)
@@ -178,7 +207,9 @@ Deno.serve(async (req) => {
         "  משהו כבר מחר בכיתה - לא תיאור של מה שקרה בסדנה ולא הכרזה על סיומה.",
         "- משפט אחד בלבד, עד 25 מילים, עברית תקנית ומדויקת.",
         "- אותיות עבריות בלבד: אסורה כל אות לועזית (אנגלית או כל כתב אחר), גם לא באמצע מילה.",
-        "- לשון רבים, פונה למשתתפות.",
+        // 2026-11-16 (בקשת המפתחת): המשפט בלשון זכר, ולא בפנייה למשתתפות
+        "- לשון זכר בלבד (למשל: \"מזהים\", \"בונים\", \"כשאנחנו משנים\"), גם אם החומר",
+        "  שלמעלה כתוב בלשון נקבה. אסור לשון נקבה ואסור לפנות למשתתפות בלשון נקבה.",
         "- רציני ומכובד. בלי סימני קריאה, בלי סיסמאות שיווקיות, בלי מליצות.",
         "- אסורות המילים: מדהים, מרגש, כל הכבוד, מסע, קסם, מסחרר.",
         "- שהמסר ינבע ממה שהן עצמן אמרו, ולא יהיה אמירה שמתאימה לכל סדנה בעולם.",
@@ -205,17 +236,13 @@ Deno.serve(async (req) => {
     };
 
     async function askGemini(stricter: boolean): Promise<string> {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: buildPrompt(stricter) }] }],
-            // טמפרטורה נמוכה בכוונה: רוצים ניסוח נאמן לחומר, לא יצירתיות
-            generationConfig: { temperature: 0.35, responseMimeType: "application/json" },
-          }),
-        },
+      const res = await fetchGemini(
+        apiKey!,
+        JSON.stringify({
+          contents: [{ parts: [{ text: buildPrompt(stricter) }] }],
+          // טמפרטורה נמוכה בכוונה: רוצים ניסוח נאמן לחומר, לא יצירתיות
+          generationConfig: { temperature: 0.35, responseMimeType: "application/json" },
+        }),
       );
       if (!res.ok) throw new Error((await res.text()).slice(0, 300));
       const json = await res.json();

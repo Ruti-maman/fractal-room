@@ -12,63 +12,27 @@
  */
 
 import {
-  useCallback,
   useRef,
-  useState,
   type ButtonHTMLAttributes,
   type ElementType,
   type HTMLAttributes,
   type InputHTMLAttributes,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type Ref,
 } from "react";
 import { cx } from "../../lib/cx";
 import { buzz, playTap } from "../../lib/tapFeedback";
 import Icon, { type IconName } from "./Icon";
+import { useHoldPress } from "./useHoldPress"; // HOLD
+import { useTapRipple } from "./useTapRipple";
 
-/* ==========================================================================
-   משוב מגע
-   ========================================================================== */
-
-/**
- * אדוות מגע. כל נגיעה יוצרת עיגול שמתפשט **מנקודת הנגיעה עצמה** ונמוג.
- *
- * למה זה לא קישוט: על מסך מגע אין סמן ואין hover, והאצבע מכסה בדיוק את
- * מה שנגעו בו. בלי משוב שיוצא מתחת לאצבע אין שום דרך לדעת אם הלחיצה
- * נקלטה - וזו הסיבה המרכזית שמשתתפת לוחצת פעמיים.
- *
- * ה-timeout לא מנוקה בכוונה: `setRipples` על רכיב שכבר ירד הוא no-op
- * ב-React 18+, והאדווה ממילא נעלמת יחד עם הכפתור.
+/*
+ * HOLD (ניסוי 2026-11-11): כל כפתור "הבא" ראשי וגדול (primary + lg + חץ
+ * המשך) עובד בהחזקה ולא בלחיצה - ראו useHoldPress.ts. `hold` על כפתור
+ * בודד דורס את ברירת המחדל לשני הכיוונים. להסרה: false כאן, או למחוק את
+ * כל השורות המסומנות HOLD.
  */
-function useTapRipple() {
-  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
-  const nextId = useRef(0);
-
-  const spawn = useCallback((e: ReactPointerEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const id = nextId.current++;
-    setRipples((current) => [
-      ...current,
-      { id, x: e.clientX - rect.left, y: e.clientY - rect.top },
-    ]);
-    window.setTimeout(
-      () => setRipples((current) => current.filter((r) => r.id !== id)),
-      560,
-    );
-  }, []);
-
-  const layer =
-    ripples.length > 0 ? (
-      <span className="tap-ripples" aria-hidden="true">
-        {ripples.map((r) => (
-          <span key={r.id} className="tap-ripple" style={{ left: r.x, top: r.y }} />
-        ))}
-      </span>
-    ) : null;
-
-  return { spawn, layer };
-}
+const HOLD_TO_ADVANCE = false; // בוטל 2026-11-11 לבקשת המפתחת: לחיצה רגילה מעבירה שלב
 
 /* ==========================================================================
    משטח כללי
@@ -184,6 +148,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   block?: boolean;
   /** בלי צליל הלחיצה (האדווה והרטט נשארים). */
   silent?: boolean;
+  /** HOLD: הפעלה בהחזקה במקום בלחיצה. ברירת המחדל: כפתורי "הבא" הגדולים. */
+  hold?: boolean;
   ref?: Ref<HTMLButtonElement>;
 }
 
@@ -195,28 +161,77 @@ export function GlassButton({
   loading = false,
   block = false,
   silent = false,
+  hold, // HOLD
   disabled,
   className,
   children,
   onPointerDown,
+  onPointerUp, // HOLD
+  onPointerCancel, // HOLD
+  onLostPointerCapture, // HOLD
+  onClick, // HOLD
+  ref, // HOLD
   ...rest
 }: ButtonProps) {
   const iconSize = size === "lg" ? 26 : size === "sm" ? 18 : 22;
-  const { spawn, layer } = useTapRipple();
+  const { spawn, release, pressed, layer } = useTapRipple();
+
+  // HOLD - התחלה
+  const innerRef = useRef<HTMLButtonElement | null>(null);
+  const holdOn =
+    (hold ?? (HOLD_TO_ADVANCE && variant === "primary" && size === "lg" && iconAfter === "arrowNext")) &&
+    !disabled &&
+    !loading;
+  const holdPress = useHoldPress({
+    enabled: holdOn,
+    // click() יוצר אירוע עם detail=0 - בדיוק כמו מקלדת - ועובר במסנן למטה
+    onComplete: () => innerRef.current?.click(),
+  });
+  // HOLD - סוף
 
   return (
     <button
       type="button"
+      ref={(el) => {
+        innerRef.current = el; // HOLD
+        if (typeof ref === "function") ref(el);
+        else if (ref) ref.current = el;
+      }}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       onPointerDown={(e) => {
         if (!disabled && !loading) {
           spawn(e);
-          if (!silent) playTap(variant === "primary" ? "primary" : "soft");
+          // HOLD: בהחזקה הצליל הראשי נשמר לסיום; בלחיצה רגילה כמו קודם
+          if (!silent) playTap(variant === "primary" && !holdOn ? "primary" : "soft");
           buzz();
         }
+        if (holdOn) holdPress.handlers.onPointerDown(e); // HOLD
         onPointerDown?.(e);
       }}
+      // HOLD - התחלה (וגם: שחרור העיגול מתחת לאצבע)
+      onPointerUp={(e) => {
+        release();
+        if (holdOn) holdPress.handlers.onPointerUp(e);
+        onPointerUp?.(e);
+      }}
+      onPointerCancel={(e) => {
+        release();
+        if (holdOn) holdPress.handlers.onPointerCancel(e);
+        onPointerCancel?.(e);
+      }}
+      onLostPointerCapture={(e) => {
+        release();
+        if (holdOn) holdPress.handlers.onLostPointerCapture(e);
+        onLostPointerCapture?.(e);
+      }}
+      // לחיצת עכבר/מגע רגילה (detail>0) לא מפעילה כפתור החזקה; מקלדת
+      // ו-click() (detail=0) כן - נגישות
+      onClick={(e) => {
+        if (holdOn && e.detail > 0) return;
+        onClick?.(e);
+      }}
+      // HOLD - סוף
       className={cx(
         // glass-3d נותן לכפתור דופן, צל מקורקע ונסיעה בלחיצה (ראו glass.css).
         // `ghost` יוצא מהכלל: הוא כפתור "שטוח" בכוונה ואין לו גוף להרים.
@@ -229,10 +244,25 @@ export function GlassButton({
         variant === "ghost" && "!bg-transparent !shadow-none",
         variant === "danger" && "text-danger",
         block && "w-full",
+        holdOn && "hold-btn", // HOLD
+        pressed && !disabled && !loading && "is-pressed",
         className,
       )}
       {...rest}
+      // אחרי {...rest} כדי שלא יידרס. בכפתור החזקה האצבע "נלכדת" ונשארת שלו
+      // גם מחוצה לו - שם השחרור מגיע מ-onLostPointerCapture
+      onPointerLeave={(e) => {
+        if (!holdOn) release();
+        rest.onPointerLeave?.(e);
+      }}
     >
+      {/* HOLD - התחלה */}
+      {holdOn && (
+        <span aria-hidden="true" className="hold-fill" style={{ ["--hold" as string]: holdPress.progress }} />
+      )}
+      {/* התגית מתחת לכפתור ("החזיקו כדי להמשיך" / "N אצבעות יחד") הוסרה
+          לבקשת הלקוחה, 2026-11-11 */}
+      {/* HOLD - סוף */}
       {layer}
       {loading ? (
         <Spinner size={iconSize} />
@@ -274,10 +304,13 @@ export function GlassIconButton({
   filled = false,
   className,
   onPointerDown,
+  onPointerUp,
+  onPointerCancel,
+  onPointerLeave,
   disabled,
   ...rest
 }: IconButtonProps) {
-  const { spawn, layer } = useTapRipple();
+  const { spawn, release, pressed, layer } = useTapRipple();
 
   return (
     <button
@@ -294,10 +327,23 @@ export function GlassIconButton({
         }
         onPointerDown?.(e);
       }}
+      onPointerUp={(e) => {
+        release();
+        onPointerUp?.(e);
+      }}
+      onPointerCancel={(e) => {
+        release();
+        onPointerCancel?.(e);
+      }}
+      onPointerLeave={(e) => {
+        release();
+        onPointerLeave?.(e);
+      }}
       className={cx(
         "glass glass-interactive glass-icon-btn glass-3d",
         ICON_BTN_SIZE[size],
         active ? "glass-active" : "text-ink-2",
+        pressed && !disabled && "is-pressed",
         className,
       )}
       {...rest}

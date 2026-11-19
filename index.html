@@ -1,5 +1,7 @@
 <!doctype html>
-<html lang="he" dir="rtl" data-theme="light">
+<!-- data-skin="editorial": שפת "עיתונאי" לכל הסדנה (2026-11-14) - ראו
+     src/styles/editorial-skin.css. להחזרת שפת הזכוכית: למחוק את התכונה. -->
+<html lang="he" dir="rtl" data-theme="light" data-skin="editorial">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -19,8 +21,9 @@
         try {
           // מפתח v2: המצב הבהיר הפך לברירת המחדל, ומסך שבחר פעם "כהה"
           // תחת המפתח הישן לא אמור להיתקע בו.
-          var saved = localStorage.getItem("fractal-theme-v2");
-          var theme = saved === "dark" ? "dark" : "light";
+          // 2026-11-14: שפת "עיתונאי" בהירה בלבד, ומתג הכהה הוסר מהמסכים -
+          // מסך שנשמר בו פעם "כהה" לא אמור להיתקע בו
+          var theme = "light";
           document.documentElement.setAttribute("data-theme", theme);
           var effects = localStorage.getItem("fractal-effects");
           if (effects === "lite") document.documentElement.setAttribute("data-effects", "lite");

@@ -34,6 +34,10 @@ export function useFunctioningPicture(workshopId: string, groupId: string) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const latestOpRef = useRef(0);
+  // מזהה ייחודי לכל מופע של ה-hook: שם ערוץ זהה בשני מופעים (או בהרכבה
+  // כפולה של StrictMode, לפני ש-removeChannel הספיק) מפיל את המסך - באג 3
+  // ב-CLAUDE.md. נתפס ב-2026-11-16 במסך "מרעיון למנגנון".
+  const instanceRef = useRef(Math.random().toString(36).slice(2, 8));
 
   async function fetchRow() {
     const { data } = await supabase
@@ -61,7 +65,7 @@ export function useFunctioningPicture(workshopId: string, groupId: string) {
     const interval = setInterval(refetch, SAFETY_NET_INTERVAL_MS);
 
     const channel = supabase
-      .channel(`functioning-picture-${workshopId}-${groupId}`)
+      .channel(`functioning-picture-${workshopId}-${groupId}-${instanceRef.current}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "responses", filter: `workshop_id=eq.${workshopId}` },

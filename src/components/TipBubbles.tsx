@@ -1,34 +1,36 @@
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import type { Tip } from "./TipPopups";
-import GlassModal from "./ui/GlassModal";
 
 /*
  * ============================================================================
- *  פופ-אפ טיפים לשם הקבוצה (שלב 2) - "מסלול השלבים"
+ *  פופ-אפ טיפים לשם הקבוצה (שלב 2) - בשפת "עיתונאי" (2026-11-12)
  * ============================================================================
  *
- *  דרישת הלקוחה: "שיקפצו חלוניות פופאפ" עם ההוראות - ברור, מובן, חוויתי
- *  וחדשני. לכן הפופ-אפ בנוי כמו **מפת שלבים במשחק**: חמש בועות צבעוניות
- *  ממוספרות יושבות על שביל זיגזג מקווקו, מימין לשמאל, כמו תחנות בדרך
- *  לשם מנצח.
+ *  דרישת הלקוחה מהאפיון: "שיקפצו חלוניות פופאפ" עם ההוראות - ברור, מובן,
+ *  חוויתי וחדשני. עד 2026-11-12 זה היה חלון זכוכית עם "מסלול שלבים" של
+ *  מעוינים צבעוניים על שביל מקווקו. עכשיו - כמו כל מסכי ההזדהות - בשפה
+ *  הטיפוגרפית מההשראה של הלקוחה:
  *
- *  הכול נבנה מול העיניים: השביל נמתח לאורכו, וכל בועה "נוחתת" על התחנה
- *  שלה בתורה, עם שם הטיפ בצבע שלה וההסבר מתחתיו. כך הסדר נקרא כמסלול
- *  (קודם קצר, אחר כך קליט...), וכל חמשת הטיפים גלויים יחד.
+ *   - **עמוד כחול מלא** נפרש מלמעלה, עם קווי רשת לבנים (בעמוד כחול מלא כן
+ *     שמים קווים - knowledge/grid-lines-on-color-blocks.md).
+ *   - **הטיפים יושבים בדיוק בעמודות הרשת**, ובכל אחד מספר ענק ודק שמתגלגל
+ *     פנימה כמו מונה - הניגוד בין ענק לזעיר.
+ *   - **"זרקור" שעובר בין הטיפים** (בקשת המפתחת: "יותר עניין ותזוזה"):
+ *     העמודה הפעילה מתמלאת בלבן והטקסט מתהפך לכחול - בלוק הפוך, כמו
+ *     בגלריה בהשראה - וריבוע אדום מחליק לאורך הקו העליון אליה. כך התנועה
+ *     גם מובילה את הקריאה: טיפ אחד בכל פעם. נגיעה בטיפ מעבירה אליו את הזרקור.
  *
- *  כפתור אחד בלבד - "הבנו, בואו נבחר שם!" (בלי "סגירה" ובלי ×, שעשו אותו דבר).
- *  משמש גם בשלב 6 (טיפים לדיון טוב), עם כפתור בנוסח משלו.
+ *  כפתור אחד בלבד - "הבנו, בואו נבחר שם!" (בלי "סגירה" ובלי ×, שעשו אותו
+ *  דבר - דרישת הלקוחה). CSS: .tp-* ב-styles/editorial.css.
  */
 
-/** מרכזי התחנות על השביל: x באחוזים (RTL - הראשונה מימין), y בפיקסלים. */
-const STOPS = [
-  { x: 90, y: 34 },
-  { x: 70, y: 86 },
-  { x: 50, y: 34 },
-  { x: 30, y: 86 },
-  { x: 10, y: 34 },
-];
-const TRACK_H = 120;
-const BUBBLE = 68;
+/** כמה זמן הזרקור נשאר על כל טיפ */
+const SPOT_MS = 2600;
+/** מתי הזרקור מתחיל - אחרי שכל העמודות נכנסו */
+const SPOT_START_MS = 1700;
+/** משך היציאה - תואם ל-.tp-page.is-leaving ב-editorial.css */
+const LEAVE_MS = 1150;
 
 function TipBubbles({
   open,
@@ -41,98 +43,140 @@ function TipBubbles({
   onClose: () => void;
   title: string;
   tips: Tip[];
-  /** הכפתור היחיד בפופ-אפ (משמש גם בשלב 6, עם נוסח משלו). */
+  /** הכפתור היחיד בפופ-אפ. */
   confirmLabel?: string;
 }) {
-  const stops = STOPS.slice(0, tips.length);
-  // שביל מעוגל בין התחנות (קשתות בזיגזג)
-  const path = stops
-    .map((s, i) => {
-      if (i === 0) return `M ${s.x * 10} ${s.y}`;
-      const p = stops[i - 1];
-      const mx = ((p.x + s.x) / 2) * 10;
-      return `C ${mx} ${p.y}, ${mx} ${s.y}, ${s.x * 10} ${s.y}`;
-    })
-    .join(" ");
+  const btnRef = useRef<HTMLButtonElement>(null);
+  /**
+   * יציאה (בקשת המפתחת, 2026-11-12: "שיזוז בצורה יפה, שייעלם בצורה
+   * מעניינת"): הכפתור נלחץ ונורה לכיוון החץ שלו ↙, העמודות נאספות למעלה
+   * אחת-אחת, והעמוד הכחול כולו מתגלגל למעלה כמו וילון וחושף את המסך. רק
+   * בסוף - onClose.
+   */
+  const [leaving, setLeaving] = useState(false);
+  const leaveRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+  function leave() {
+    if (leaveRef.current) return;
+    leaveRef.current = true;
+    setLeaving(true);
+    window.setTimeout(() => {
+      leaveRef.current = false;
+      setLeaving(false);
+      onCloseRef.current();
+    }, LEAVE_MS);
+  }
+  /** הטיפ שעליו הזרקור (-1 = עוד לא התחיל) */
+  const [active, setActive] = useState(-1);
+  /** מתחלף בכל נגיעה - מאתחל את הספירה, כדי שהזרקור לא יקפוץ מיד הלאה */
+  const [tick, setTick] = useState(0);
 
-  return (
-    <GlassModal
-      open={open}
-      onClose={onClose}
-      title={title}
-      icon="lightbulb"
-      confirmLabel={confirmLabel}
-      onConfirm={onClose}
-      hideCancel
-      // גם בלי ×: הוא עשה בדיוק מה שהכפתור עושה (דרישת הלקוחה - אין שני
-      // כפתורים עם אותה פעולה)
-      dismissable={false}
-      className="!max-w-5xl"
+  // המיקוד עובר לכפתור היחיד, ו-Escape סוגר - כמו בחלון רגיל
+  useEffect(() => {
+    if (!open) return;
+    btnRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") leave();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // leave יציבה מספיק: היא קוראת רק ל-refs ול-setState
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // הזרקור: מתחיל אחרי הכניסה, ועובר טיפ-טיפ בלולאה
+  useEffect(() => {
+    if (!open || tips.length === 0) {
+      setActive(-1);
+      return;
+    }
+    const first = window.setTimeout(
+      () => setActive((a) => (a < 0 ? 0 : a)),
+      tick === 0 ? SPOT_START_MS : 0,
+    );
+    const loop = window.setInterval(() => setActive((a) => (a + 1) % tips.length), SPOT_MS);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(loop);
+    };
+  }, [open, tips.length, tick]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      className={`tp-page ${leaving ? "is-leaving" : ""}`}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tp-title"
     >
-      <div className="relative">
-        {/* השביל - נמתח פנימה */}
-        <svg
-          viewBox={`0 0 1000 ${TRACK_H}`}
-          preserveAspectRatio="none"
-          className="absolute inset-x-0 top-0 w-full"
-          style={{ height: TRACK_H }}
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id="tips-trail" gradientUnits="userSpaceOnUse" x1="1000" y1="0" x2="0" y2="0">
-              <stop offset="0%" style={{ stopColor: "var(--ds-rainbow-1)" }} />
-              <stop offset="50%" style={{ stopColor: "var(--ds-rainbow-3)" }} />
-              <stop offset="100%" style={{ stopColor: "var(--ds-rainbow-5)" }} />
-            </linearGradient>
-          </defs>
-          <path
-            d={path}
-            fill="none"
-            stroke="url(#tips-trail)"
-            strokeWidth={4}
-            strokeLinecap="round"
-            strokeDasharray="2 14"
-            vectorEffect="non-scaling-stroke"
-            style={{ ["--dash" as string]: 1400, animation: "tips-trail 1.4s 0.2s var(--ds-ease) both" }}
-          />
-        </svg>
+      <h2 id="tp-title" className="tp-title">
+        <span className="tp-title__square" aria-hidden="true" />
+        {title}
+      </h2>
 
-        {/* התחנות - כל עמודה: בועה על השביל, ומתחתיה הטיפ */}
-        <ol className="relative grid" style={{ gridTemplateColumns: `repeat(${tips.length}, minmax(0, 1fr))` }}>
-          {tips.map((tip, i) => {
-            const color = `var(--ds-bubble-${(i % 5) + 1})`;
-            const delay = 0.35 + i * 0.28;
-            return (
-              <li key={tip.title} className="flex flex-col items-center px-2 text-center">
-                <div className="relative w-full" style={{ height: TRACK_H }}>
-                  <span
-                    aria-hidden="true"
-                    className={`bubble bubble--${(i % 5) + 1} absolute left-1/2 flex items-center justify-center text-2xl font-extrabold text-white`}
-                    style={{
-                      width: BUBBLE,
-                      height: BUBBLE,
-                      top: stops[i].y - BUBBLE / 2,
-                      marginLeft: -BUBBLE / 2,
-                      textShadow: "0 1px 3px rgba(0,0,0,0.35)",
-                      boxShadow: `0 10px 26px -10px ${color}`,
-                      animation: `tip-pop 0.6s ${delay}s var(--ds-ease-spring) both`,
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                </div>
-                <div style={{ animation: `fade-up 0.5s ${delay + 0.2}s var(--ds-ease) both` }}>
-                  <p className="text-xl leading-tight font-extrabold" style={{ color }}>
-                    {tip.title}
-                  </p>
-                  <p className="text-ink mt-1 text-base leading-snug font-semibold">{tip.text}</p>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+      {/* (חץ ↙ דק וענק בפינה הריקה - הוסר לבקשת המפתחת, 2026-11-12) */}
+
+      {/* האלמנט הזכיר של המסך ("עוד עניין", 2026-11-12): שם הטיפ שעליו
+          הזרקור, ענק ועבה, בשתי העמודות הריקות משמאל. מתחלף עם הזרקור -
+          המילה החדשה עולה מתוך הקו התחתון של הרשת. הטיפוגרפיה עצמה היא
+          הקישוט, בלי שום צורה נוספת. */}
+      <div className="tp-word" aria-hidden="true">
+        {active >= 0 && tips[active] && (
+          <span key={active} className="tp-word__in">
+            {tips[active].title}
+          </span>
+        )}
       </div>
-    </GlassModal>
+
+      <ol className="tp-tips" style={{ "--tp-active": Math.max(0, active) } as CSSProperties}>
+        {/* הריבוע האדום שמחליק לאורך הקו העליון אל הטיפ הפעיל */}
+        <span className={`tp-marker ${active >= 0 ? "is-on" : ""}`} aria-hidden="true" />
+        {tips.map((tip, i) => (
+          <li
+            key={tip.title}
+            className={`tp-tip ${i === active ? "is-active" : ""}`}
+            style={{ "--tp-i": i } as CSSProperties}
+            onPointerDown={() => {
+              setActive(i);
+              setTick((n) => n + 1);
+            }}
+          >
+            {/* המספר מתגלגל מ-00 אל המספר שלו, כמו מונה */}
+            <span className="tp-tip__num" aria-hidden="true">
+              <span className="tp-roll">
+                <span>00</span>
+                <span>{String(i + 1).padStart(2, "0")}</span>
+              </span>
+            </span>
+            <span className="tp-tip__title">{tip.title}</span>
+            <span className="tp-tip__text">{tip.text}</span>
+          </li>
+        ))}
+      </ol>
+
+      <div className="tp-foot">
+        <button ref={btnRef} type="button" className="bt-btn ed-btn tp-btn" onClick={leave}>
+          <span className="bt-btn__label">
+            {confirmLabel}
+            <svg viewBox="0 0 24 24" className="ed-btn__arrow" aria-hidden="true">
+              <path
+                d="M19 5 L5 19 M5 8 L5 19 L16 19"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="square"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+          </span>
+        </button>
+      </div>
+    </div>,
+    document.body,
   );
 }
 

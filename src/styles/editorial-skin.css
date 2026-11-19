@@ -1,0 +1,393 @@
+/* ==========================================================================
+   שפת "עיתונאי" לכל הסדנה (2026-11-14)
+   --------------------------------------------------------------------------
+   בקשת המפתחת: "לעשות את כל הפרויקט לפי העיצוב החדש" - השפה של מסך הפתיחה
+   וההזדהות (styles/editorial.css): נייר בהיר עם רשת קווים, כחול הלקוחה
+   #2a4286, נגיעות אדומות-כתומות #f25740, טקסט נייבי #0b1b3f, Heebo, בלי
+   זכוכית, בלי צללים, בלי גרדיאנטים, מסגרות מרובעות דקות.
+
+   איך: שכבה אחת מעל כל הרכיבים הקיימים, במקום לשכתב עשרה שלבים. הקובץ
+   **מחוץ ל-@layer**, ולכן גובר על כל glass.css (שכולו ב-@layer components)
+   בלי !important ובלי מרוץ ספציפיות (סעיף 3 ב-CLAUDE.md).
+   מופעל על ידי data-skin="editorial" על <html> (index.html). למחוק את
+   התכונה = חזרה מלאה לשפת הזכוכית, בלי לגעת בקוד.
+   ========================================================================== */
+
+/* --- 1. טוקנים: אותם שמות, ערכים של השפה החדשה -------------------------
+   html:root[...] ולא html[...]: הטוקנים של המצב הבהיר יושבים על
+   :root[data-theme="light"] (ספציפיות 0,2,0), ובלי :root הם גברו כאן -
+   ככה נשאר טקסט חום בשלב 4. */
+html:root[data-skin="editorial"] {
+  /* כתמי הרקע של האורורה (משמשים גם את חלון הטיפים בשלב 6) - כבויים */
+  --ds-blob-a: transparent;
+  --ds-blob-b: transparent;
+  --ds-blob-c: transparent;
+
+  color-scheme: light;
+
+  /* פלטת הלקוחה בתפקידים החדשים: כחול לאלמנטים, אדום-כתום לנגיעות */
+  --ds-pal-3: #f25740;
+  --ds-pal-4: #f47a66;
+  --ds-pal-5: #dfe4f1;
+  --ds-pal-6: #eef1f8;
+  --ds-pal-7: #f6f8fc;
+  --ds-navy: #2a4286;
+  --ds-wood: #2a4286;
+  --ds-wood-deep: #1f3266;
+  --ds-brand-coral: #f25740;
+  --ds-brand-coral-vivid: #f25740;
+  --ds-brand-coral-vivid-deep: #d9452f;
+  --ds-brand-ink: #0b1b3f;
+
+  /* רקע: הנייר של מסך הפתיחה */
+  --ds-bg-from: #f4f6fb;
+  --ds-bg-via: #f4f6fb;
+  --ds-bg-to: #f4f6fb;
+  --ds-bg-solid: #f4f6fb;
+
+  /* משטחים: לבן אטום, בלי זכוכית */
+  --ds-glass: #ffffff;
+  --ds-glass-strong: #ffffff;
+  --ds-glass-raised: #ffffff;
+  --ds-glass-opaque: #ffffff;
+  --ds-glass-opaque-strong: #ffffff;
+  --ds-glass-opaque-raised: #ffffff;
+  --ds-blur: 0px;
+  --ds-blur-strong: 0px;
+  --ds-saturate: 100%;
+
+  /* קווים: נייבי שקוף, כמו קווי הרשת */
+  --ed-skin-line: rgb(11 27 63 / 0.11);
+  --ed-skin-line-strong: rgb(11 27 63 / 0.22);
+  --ds-edge: rgb(11 27 63 / 0.22);
+  --ds-edge-bright: rgb(11 27 63 / 0.22);
+  --ds-edge-dim: rgb(11 27 63 / 0.11);
+  --ds-specular: transparent;
+  --ds-specular-soft: transparent;
+
+  /* הדגשה: כחול הלקוחה */
+  --ds-accent: #2a4286;
+  --ds-accent-soft: #2a4286;
+  --ds-accent-pale: #dfe4f1;
+  --ds-accent-deep: #1f3266;
+  --ds-accent-deeper: #16244b;
+  --ds-accent-ink: #ffffff;
+  --ds-active-from: #2a4286;
+  --ds-active-mid: #2a4286;
+  --ds-active-to: #2a4286;
+  --ds-on-active: #ffffff;
+  --ds-primary-from: #f25740;
+  --ds-primary-via: #f25740;
+  --ds-primary-to: #f25740;
+  --ds-glow: transparent;
+  --ds-glow-soft: transparent;
+
+  --ds-rainbow-1: #f25740;
+  --ds-rainbow-2: #f25740;
+  --ds-rainbow-3: #2a4286;
+  --ds-rainbow-4: #2a4286;
+  --ds-rainbow-5: #0b1b3f;
+
+  /* צבעי ההבדלה: כחול, אדום, נייבי - בלי חום ובלי אפור */
+  --ds-bubble-1: #2a4286;
+  --ds-bubble-2: #f25740;
+  --ds-bubble-3: #0b1b3f;
+  --ds-bubble-4: #4a64a8;
+  --ds-bubble-5: #d9452f;
+
+  /* טקסט */
+  --ds-text: #0b1b3f;
+  --ds-text-2: rgb(11 27 63 / 0.72);
+  --ds-text-3: rgb(11 27 63 / 0.52);
+  --ds-text-on-accent: #ffffff;
+  /* אזהרות: אדום-כתום שקוף ולא חום */
+  --ds-warn: #d9452f;
+  --ds-warn-fill: rgb(242 87 64 / 0.08);
+
+  /* בלי צללים ובלי נפח */
+  --ds-shadow-sm: none;
+  --ds-shadow: none;
+  --ds-shadow-lg: none;
+  --ds-inset-top: inset 0 0 0 0 transparent;
+  --ds-inset-bottom: inset 0 0 0 0 transparent;
+  --ds-inset-deep: inset 0 0 0 0 transparent;
+  --ds-3d-gloss: transparent;
+  --ds-3d-gloss-soft: transparent;
+  --ds-3d-shade: transparent;
+  --ds-3d-rim: transparent;
+  --ds-3d-shadow-near: transparent;
+  --ds-3d-shadow-far: transparent;
+  --ds-3d-halo: transparent;
+
+  --ds-focus-ring: 0 0 0 3px #ffffff, 0 0 0 5px #2a4286;
+  --ds-scrim: rgb(11 27 63 / 0.55);
+  --ds-vignette: transparent;
+
+  --ds-title-from: #0b1b3f;
+  --ds-title-via: #0b1b3f;
+  --ds-title-to: #0b1b3f;
+
+  --font-sans: "Heebo", "Assistant", "Segoe UI", system-ui, sans-serif;
+}
+
+html[data-skin="editorial"] body {
+  background: #f4f6fb;
+  color: #0b1b3f;
+}
+/* Heebo בכל מקום: כפתורים ושדות לא יורשים פונט מעצמם בכל דפדפן (ובדפדפן
+   ישן של פלזמה זה בדיוק המקום שבו ייפול פונט מערכת). הלוגו המצויר נשאר
+   בפונט המקורי שלו (SVG עם font מפורש) - בקשת הלקוחה */
+html[data-skin="editorial"] :is(button, input, textarea, select, option) {
+  font-family: "Heebo", var(--font-sans);
+}
+
+/* --- 2. הרקע: נייר עם רשת הקווים של מסך הפתיחה --------------------------
+   כל שכבות האווירה (כתמי אור, סמלים מרחפים, שבילי אור, כוכבים) מוסתרות.
+   במקומן: קו אנכי בתחילת כל עמודה של 12.5vw, וקו אופקי ב-12vh וב-88vh. */
+html[data-skin="editorial"] .bg-layers {
+  background-color: #f4f6fb;
+  background-image:
+    linear-gradient(to right, var(--ed-skin-line) 1px, transparent 1px),
+    linear-gradient(to bottom, transparent calc(12vh - 1px), var(--ed-skin-line) calc(12vh - 1px), var(--ed-skin-line) 12vh, transparent 12vh),
+    linear-gradient(to bottom, transparent calc(88vh - 1px), var(--ed-skin-line) calc(88vh - 1px), var(--ed-skin-line) 88vh, transparent 88vh);
+  background-size: 12.5vw 100%, 100% 100%, 100% 100%;
+}
+html[data-skin="editorial"] .bg-layers > * {
+  display: none;
+}
+
+/* --- כותרת השלב (StageShell): "03" דק וגדול + ריבוע אדום --------------- */
+.sh-index {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  color: #0b1b3f;
+}
+.sh-index__num {
+  font-family: "Heebo", var(--font-sans);
+  font-weight: 200;
+  font-size: clamp(2.6rem, 7vh, 5rem);
+  line-height: 0.85;
+  letter-spacing: -0.02em;
+}
+.sh-index__square {
+  width: clamp(0.7rem, 1.4vh, 1rem);
+  height: clamp(0.7rem, 1.4vh, 1rem);
+  margin-top: 0.3rem;
+  background: #f25740;
+}
+
+/* --- 3. משטחים: לבן, קו דק, בלי ברק ובלי צל ---------------------------- */
+html[data-skin="editorial"] .glass {
+  background-color: #ffffff;
+  background-image: none;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 1px var(--ed-skin-line-strong);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: #0b1b3f;
+}
+html[data-skin="editorial"] .glass::before,
+html[data-skin="editorial"] .glass::after {
+  display: none;
+}
+html[data-skin="editorial"] .glass-dim {
+  background-color: transparent;
+}
+html[data-skin="editorial"] .glass-brick {
+  background-image: none;
+  box-shadow: inset 0 0 0 1px var(--ed-skin-line-strong);
+}
+/* מצב "דלוק": בלוק כחול מלא, כתב לבן */
+html[data-skin="editorial"] .glass-active,
+html[data-skin="editorial"] .glass-interactive.glass-active:hover {
+  background-color: #2a4286;
+  background-image: none;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+/* --- 4. כפתורים: מלבן שטוח. הראשי - אדום-כתום מלא, כמו "התחילו" -------- */
+html[data-skin="editorial"] .glass-btn {
+  border-radius: 0;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+html[data-skin="editorial"] .glass-btn-primary,
+html[data-skin="editorial"] .glass-btn-primary.glass-3d,
+html[data-skin="editorial"] .glass-btn-primary.glass-3d:hover:not(:disabled),
+html[data-skin="editorial"] .glass-btn-primary.glass-btn-brand {
+  background-color: #f25740;
+  background-image: none;
+  color: #ffffff;
+  text-shadow: none;
+  box-shadow: none;
+  filter: none;
+  animation: none;
+}
+/* כפתור משני: מסגרת דקה בנייבי, מתמלא בכחול בנגיעה. רק כפתורים (glass-btn) -
+   אריחים לחיצים (שלב 5) נשארים כרטיסים לבנים */
+html[data-skin="editorial"] .glass.glass-3d.glass-btn:not(.glass-btn-primary):not(.glass-active) {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px #0b1b3f;
+}
+html[data-skin="editorial"] .glass.glass-3d,
+html[data-skin="editorial"] .glass.glass-3d:hover:not(:disabled) {
+  transform: none;
+}
+html[data-skin="editorial"] .glass.glass-3d:active:not(:disabled),
+html[data-skin="editorial"] .glass.glass-3d.is-pressed:not(:disabled) {
+  transform: scale(0.96);
+  box-shadow: none;
+}
+/* (2026-11-15, בקשת המפתחת: "לבטל את הלחיצה הכחולה, שלא יראו כלל את הצבע
+   הכחול") - הכפתור לא מתמלא בכחול בלחיצה; נשארת רק ההקטנה הקלה למעלה */
+html[data-skin="editorial"] .glass-icon-btn {
+  border-radius: 0;
+}
+/* האדווה הישנה של כפתורי הזכוכית - במקומה העיגול שממלא את הכפתור מנקודת
+   הנגיעה (TouchGlow, 2026-11-15). שני עיגולים יחד נראו כפולים */
+html[data-skin="editorial"] .tap-ripples {
+  display: none;
+}
+
+/* --- 5. כותרות: נייבי עבה, בלי גרדיאנט ובלי תנועת צבע ----------------- */
+html[data-skin="editorial"] .glass-title {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+  color: #0b1b3f;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  animation: none;
+  filter: none;
+  text-shadow: none;
+}
+html[data-skin="editorial"] .chat-surface .glass-title {
+  -webkit-text-fill-color: currentColor;
+  color: #0b1b3f;
+}
+
+/* --- 6. "בועות" (מעוינים, תגי מספר): ריבוע שטוח בצבע מלא -------------- */
+html[data-skin="editorial"] .bubble,
+html[data-skin="editorial"] .bubble.bubble--brand {
+  -webkit-clip-path: none;
+  clip-path: none;
+  border-radius: 0;
+  background-image: none;
+  background-color: var(--sk-bubble, #2a4286);
+  box-shadow: none;
+  color: #ffffff;
+  text-shadow: none;
+}
+html[data-skin="editorial"] .bubble::after {
+  display: none;
+}
+html[data-skin="editorial"] .bubble--brand {
+  --sk-bubble: #f25740;
+}
+html[data-skin="editorial"] .bubble--1 {
+  --sk-bubble: var(--ds-bubble-1);
+}
+html[data-skin="editorial"] .bubble--2 {
+  --sk-bubble: var(--ds-bubble-2);
+}
+html[data-skin="editorial"] .bubble--3 {
+  --sk-bubble: var(--ds-bubble-3);
+}
+html[data-skin="editorial"] .bubble--4 {
+  --sk-bubble: var(--ds-bubble-4);
+}
+html[data-skin="editorial"] .bubble--5 {
+  --sk-bubble: var(--ds-bubble-5);
+}
+html[data-skin="editorial"] .bubble-hollow {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 0 0 1px var(--ed-skin-line-strong);
+  color: rgb(11 27 63 / 0.52);
+}
+html[data-skin="editorial"] .diamond {
+  -webkit-clip-path: none;
+  clip-path: none;
+}
+
+/* --- 7. תגיות וגלולות: מלבן דק ------------------------------------------ */
+html[data-skin="editorial"] .glass-chip {
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--ed-skin-line-strong);
+  color: #2a4286;
+  letter-spacing: 0.04em;
+}
+html[data-skin="editorial"] .glass-pill {
+  border-radius: 0;
+}
+
+/* --- 8. שדות: לבן, קו נייבי, פוקוס בכחול - כמו שדות ההזדהות ----------- */
+html[data-skin="editorial"] .glass-input,
+html[data-skin="editorial"] .slot-input {
+  border-radius: 0;
+  background-color: #ffffff;
+  box-shadow: inset 0 0 0 1px #0b1b3f;
+  color: #0b1b3f;
+}
+html[data-skin="editorial"] .glass-input:focus,
+html[data-skin="editorial"] .slot-input:focus {
+  box-shadow: inset 0 0 0 2px #2a4286;
+  outline: none;
+}
+
+/* --- 9. פסי התקדמות פנימיים: מסלול שקט, מילוי אדום-כתום מלא ------------ */
+html[data-skin="editorial"] .glass-slider {
+  border-radius: 0;
+  background-color: rgb(11 27 63 / 0.08);
+  box-shadow: none;
+}
+html[data-skin="editorial"] .glass-slider__fill,
+html[data-skin="editorial"] .glass-slider--x .glass-slider__fill {
+  border-radius: 0;
+  background-image: none;
+  background-color: #f25740;
+  box-shadow: none;
+}
+
+html[data-skin="editorial"] .glass-slider {
+  background-image: none;
+}
+html[data-skin="editorial"] .glass-slider__fill::after {
+  display: none;
+}
+
+/* הילות וקרני אור (תגים, גביע המנצחת) - אין בשפה הזו */
+html[data-skin="editorial"] .bg-glow,
+html[data-skin="editorial"] .winner-rays {
+  display: none !important;
+}
+
+/* --- 9b. הטיימר: חוגה לבנה שטוחה בתוך הטבעת, בלי ברק ובלי צל ---------- */
+html[data-skin="editorial"] .timer-dial {
+  background-image: none;
+  background-color: #ffffff;
+  box-shadow: inset 0 0 0 1px var(--ed-skin-line);
+}
+
+/* --- 9c. תג מספר (LevelBadge): ריבוע שטוח בלבד - בלי הילה ומעוין ------ */
+html[data-skin="editorial"] .level-badge__glow,
+html[data-skin="editorial"] .level-badge__frame {
+  display: none;
+}
+html[data-skin="editorial"] .level-badge > .bubble {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* --- 10. כל עיגול/גלולה שנשאר מעוגל בתבנית: מרובע ------------------------
+   rounded-full / rounded-2xl של Tailwind על משטחים (לא על אלמנטים עגולים
+   באמת כמו הטיימר, שמצויר ב-SVG). */
+html[data-skin="editorial"] .glass.rounded-2xl,
+html[data-skin="editorial"] .glass.rounded-xl,
+html[data-skin="editorial"] .glass.rounded-full {
+  border-radius: 0;
+}

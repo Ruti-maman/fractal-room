@@ -609,16 +609,45 @@
    ========================================================================== */
 
 /* אדווה שיוצאת מנקודת הנגיעה עצמה. */
-@keyframes tap-ripple {
+/* העיגול מתחת לאצבע, כמו מקלדת הנעילה של האייפון: נדלק כמעט מיד (קופץ
+   מעט לגודלו), נשאר כל עוד מחזיקים, ובשחרור מתרחב ונמוג */
+@keyframes tap-press {
   from {
-    width: 0;
-    height: 0;
-    opacity: 0.5;
+    transform: scale(0.78);
+    opacity: 0.55;
   }
   to {
-    width: 360px;
-    height: 360px;
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes tap-release {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.22);
     opacity: 0;
+  }
+}
+
+/* "התחילו" בשלב 1: תנודה קלה שמזמינה לגעת. רק על העוטף ולא על הכפתור,
+   כדי שלא תדרוס את שקיעת הכפתור בלחיצה (שגם היא transform) */
+@keyframes start-sway {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translateY(-3px) rotate(-1.2deg) scale(1.015);
+  }
+  50% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  75% {
+    transform: translateY(-3px) rotate(1.2deg) scale(1.015);
   }
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import Icon, { type IconName } from "./ui/Icon";
 import { cx } from "../lib/cx";
+import PosterizeOverlay from "./PosterizeOverlay";
 
 /** 0:07 - פורמט הזמן המוכר מנגני וידאו. */
 export function fmtTime(totalSeconds: number) {
@@ -185,6 +186,9 @@ function ClipPlayer({ src, caption, title }: { src: string; caption?: string; ti
         onClick={togglePlay}
         className={expanded ? "h-full w-full object-contain" : "h-48 w-full object-cover"}
       />
+      {/* סטופ-מושן: 6 תמונות בשנייה בזמן ניגון (PosterizeOverlay). מתחת לפקדים
+          ולכתוביות של הנגן הזה, שמצוירים אחריו */}
+      <PosterizeOverlay videoRef={videoRef} active={playing} fit={expanded ? "contain" : "cover"} />
 
       {/* כפתור הפעלה גדול במרכז כל עוד לא מנגן - הזמנה ברורה ללחוץ */}
       {!playing && (

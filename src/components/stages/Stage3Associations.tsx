@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import type { Group } from "../../types/group";
 import type { Stage3Content, InspirationItem, Stage3IntroTexts } from "../../types/stage3Content";
 import { useInspirations } from "../../hooks/useInspirations";
 import { useInspirationSelection } from "../../hooks/useInspirationSelection";
 import StageShell from "../StageShell";
 import Icon from "../ui/Icon";
-import { SwipeToAdvanceLayer, useSwipeToAdvance } from "../SwipeToAdvance";
 import StageIntro from "../StageIntro";
 import { Spinner } from "../ui/Glass";
 import { cx } from "../../lib/cx";
@@ -125,6 +125,74 @@ function FitText({ text, maxPx }: { text: string; maxPx: number }) {
   );
 }
 
+/** כמה זמן מסך המעבר הכחול מחזיק (מהפיצוץ ועד המעבר לשלב הבא). */
+const ZOOM_HOLD_MS = 3400;
+
+interface ZoomFrom {
+  /** מרכז המעוין על המסך, וצלע הריבוע המסובב - בפיקסלים של החלון. */
+  x: number;
+  y: number;
+  side: number;
+}
+
+/**
+ * הפיצוץ של המעוין (2026-11-15): עותק של המעוין יושב בדיוק מעל המקורי,
+ * ובפריים הבא גדל עד שהוא מכסה את כל המסך ומתמלא בכחול. עליו - משפט המעבר
+ * בלבן עם קו כתום, וארבע הבחירות של הקבוצה שנכנסות בזו אחר זו, עם קווי
+ * רשת לבנים (כחול מלא = קווים לבנים, כלל הלקוחה).
+ * ב-portal ל-body: הורה עם transform היה הופך את fixed ליחסי אליו.
+ */
+function CoreZoom({ from, title, picks }: { from: ZoomFrom; title: string; picks: string[] }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    // שני פריימים: הראשון מצייר את המעוין בגודלו המקורי, השני מפעיל את המעבר
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setOpen(true));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, []);
+
+  // ריבוע מסובב מכסה עיגול ברדיוס חצי-צלע - צריך שהעיגול יגיע לפינה הרחוקה
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const far = Math.max(Math.hypot(from.x, from.y), Math.hypot(w - from.x, from.y), Math.hypot(from.x, h - from.y), Math.hypot(w - from.x, h - from.y));
+  const scale = ((far * 2) / from.side) * 1.04;
+
+  return createPortal(
+    <div className={cx("core-zoom", open && "is-open")} role="status" aria-live="polite">
+      <span
+        className="core-zoom__diamond"
+        style={{
+          left: from.x,
+          top: from.y,
+          width: from.side,
+          height: from.side,
+          transform: `translate(-50%, -50%) rotate(45deg) scale(${open ? scale : 1})`,
+        }}
+      />
+      <span className="core-zoom__grid" aria-hidden="true" />
+      <div className="core-zoom__copy">
+        <p className="core-zoom__title">
+          <span className="core-zoom__line">{title}</span>
+        </p>
+        <ol className="core-zoom__picks">
+          {picks.map((text, i) => (
+            <li key={i} style={{ animationDelay: `${1.25 + i * 0.18}s` }}>
+              <span className="core-zoom__n">{i + 1}</span>
+              <span className="core-zoom__t">{text}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 function FlyingChipEl({ chip }: { chip: FlyingChip }) {
   const [atTarget, setAtTarget] = useState(false);
 
@@ -191,7 +259,16 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
     const area = sunArea;
     if (!area) return;
     const fit = () => {
-      const scale = Math.min(area.clientWidth / SUN_W, area.clientHeight / SUN_VISIBLE_H, SUN_MAX_SCALE);
+      // השמש ממלאת את המקום הפנוי, ולכן "בולעת" את הקטנת הממשק (--ui-scale
+      // ב-index.css: מתחת ל-zoom יש יותר פיקסלים פנויים). המקום הפנוי נמדד
+      // בפיקסלים אמיתיים (כפול היחס), כך שהשמש יוצאת בדיוק 15% קטנה מקודם
+      // כמו כל השאר (בקשת המפתחת 2026-11-17)
+      const ui = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1;
+      // ועוד 15% (בקשת המפתחת 2026-11-17: "תקטין אותה עוד")
+      const SUN_EXTRA = 0.85;
+      const scale =
+        Math.min((area.clientWidth * ui) / SUN_W, (area.clientHeight * ui) / SUN_VISIBLE_H, SUN_MAX_SCALE) *
+        SUN_EXTRA;
       setSunScale(Math.max(0.3, scale));
     };
     fit();
@@ -257,14 +334,49 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
     });
   }
 
-  // ברגע שהקבוצה שלנו בחרה את ההשראה הרביעית - מופיע משפט חזק, והקבוצה
-  // גוררת את המסך ימינה או שמאלה כדי לעבור הלאה (במקום פופ-אפ עם כפתור -
-  // בקשת הלקוחה, שקף 6 במצגת האפליקציה). לפני ההחזרות המוקדמות, כי זה hook.
-  const swipe = useSwipeToAdvance(selectedCount === MAX_SELECTED, onAdvance);
+  /*
+    ברגע שהקבוצה בחרה את ההשראה הרביעית, המעוין שבמרכז מתפוצץ למסך מלא
+    כחול, משפט המעבר וארבע הבחירות מופיעים עליו, ועוברים לשלב הבא (בקשת
+    המפתחת 2026-11-15, במקום גרירת המסך). השהיה קצרה לפני הפיצוץ, כדי
+    שהבחירה הרביעית תיראה נדלקת. לפני ההחזרות המוקדמות, כי אלה hooks.
+  */
+  const coreRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState<ZoomFrom | null>(null);
+  const advancedRef = useRef(false);
+  // onAdvance ב-ref: פונקציה חדשה בכל רינדור (הסנכרון מרנדר כל שנייה-שתיים)
+  // הייתה מאפסת את הטיימרים למטה שוב ושוב, והמעבר לא היה קורה לעולם
+  const advanceRef = useRef(onAdvance);
+  advanceRef.current = onAdvance;
+  const advanceOnce = () => {
+    if (advancedRef.current) return;
+    advancedRef.current = true;
+    advanceRef.current();
+  };
+  const ready = selectedCount === MAX_SELECTED;
+  useEffect(() => {
+    if (!ready || zoom) return;
+    const t = window.setTimeout(() => {
+      const r = coreRef.current?.getBoundingClientRect();
+      if (!r) {
+        advanceOnce();
+        return;
+      }
+      // הריבוע המסובב תופס 70.7% מהקופסה (ראו .sun-core)
+      setZoom({ x: r.left + r.width / 2, y: r.top + r.height / 2, side: r.width * 0.707 });
+    }, 750);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, zoom]);
+  useEffect(() => {
+    if (!zoom) return;
+    const t = window.setTimeout(advanceOnce, ZOOM_HOLD_MS);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom]);
 
   if (loading) {
     return (
-      <StageShell stage={3} kicker="שמש אסוציאציות" icon="sun" title="טוען...">
+      <StageShell stage={3} icon="sun" title="טוען...">
         <Spinner size={56} />
       </StageShell>
     );
@@ -300,11 +412,10 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
 
   return (
     <StageShell
-      style={swipe.shellStyle}
       compactHeader
       clipContent={false}
       stage={3}
-      kicker="שמש אסוציאציות"
+      // התגית "שמש אסוציאציות" הוסרה - בקשת המפתחת 2026-11-15
       icon="sun"
       title="מה עולה לכן מהדילמה?"
       // שני הצעדים מהאפיון; הצעד הנוכחי מודגש
@@ -355,7 +466,9 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
             // bottom משתנה לפי רוחב: על מסך רחב הרצועה יושבת בשורה התחתונה,
             // בין מד ההתקדמות לטיימר שבקצוות - שם היא לא לוקחת גובה מהשמש.
             // על מסך צר אין ביניהם מקום, ולכן היא עולה מעליהם.
-            className="glass glass-brick glass-raised fixed bottom-[12rem] left-1/2 z-30 flex min-h-[4.25rem] w-[min(92vw,44rem)] -translate-x-1/2 items-center gap-3 rounded-xl px-5 py-3 lg:bottom-6 lg:w-[min(44rem,calc(100vw-40rem))]"
+            // sun-strip: במסך רחב ממורכז מתחת לשמש ולא למסך כולו (העמודה הכחולה
+            // תופסת 25vw משמאל) - stage-scenes.css
+            className="sun-strip glass glass-brick glass-raised fixed bottom-[12rem] left-1/2 z-30 flex min-h-[4.25rem] w-[min(92vw,44rem)] -translate-x-1/2 items-center gap-3 rounded-xl px-5 py-3 lg:bottom-6 lg:w-[min(44rem,calc(100vw-40rem))] justify-center"
           >
             <span className="text-ink-3 flex flex-none items-center gap-1.5 text-[11px] font-bold">
               <Icon name="star" size={14} className="text-accent-soft" />
@@ -365,7 +478,8 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
               </span>
             </span>
 
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            {/* ממורכז ברצועה (בקשת המפתחת 2026-11-15) */}
+            <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
               {selected.length === 0 ? (
                 <span className="text-ink-2 text-sm font-bold">{intro.strip_hint}</span>
               ) : (
@@ -392,11 +506,13 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
             <FlyingChipEl key={chip.key} chip={chip} />
           ))}
 
-          <SwipeToAdvanceLayer
-            swipe={swipe}
-            title={content.transition_text ?? "בחרתן את ההשראות שלכן"}
-            hint={intro.swipe_hint}
-          />
+          {zoom && (
+            <CoreZoom
+              from={zoom}
+              title={content.transition_text ?? "בחרתן את ההשראות שלכן"}
+              picks={selected.map((index) => slots[index].text)}
+            />
+          )}
         </>
       }
     >
@@ -421,18 +537,7 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
               transform: `scale(${sunScale}) translateY(-${SUN_TOP_CROP}px)`,
             }}
           >
-            {/* ההילה גדלה ומתחזקת ככל שהליבה נטענת */}
-            <div
-              aria-hidden="true"
-              className="bg-glow-soft absolute top-1/2 left-1/2 rounded-full blur-[90px] transition-all duration-700"
-              style={{
-                width: 460 + charge * 160,
-                height: 460 + charge * 160,
-                transform: "translate(-50%, -50%)",
-                opacity: 0.45 + charge * 0.45,
-                animation: "soft-pulse 6s ease-in-out infinite",
-              }}
-            />
+            {/* (ההילה המטושטשת הוסרה - שפת "עיתונאי": בלי זוהר ובלי טשטוש) */}
 
             {/* קווי הקרניים. קרן שנבחרה **נדלקת** ופולסת פנימה אל הליבה -
                 זה מה שהופך את הבחירה לפעולה שמזינה את השמש, ולא רק
@@ -453,33 +558,19 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                 <div
                   key={`line-${i}`}
                   aria-hidden="true"
-                  className="absolute overflow-hidden rounded-full transition-all duration-500"
+                  // sun-ray: קו נייבי דק; נבחרה - קו אדום-כתום עבה, וריבוע קטן
+                  // רץ לאורכו פנימה אל המעוין (editorial.css)
+                  className={cx("sun-ray absolute overflow-hidden", lit && "is-lit")}
                   style={{
                     left: "50%",
                     top: "50%",
                     width: length,
-                    height: lit ? 6 : 2,
-                    background: lit
-                      ? "linear-gradient(90deg, var(--ds-accent-pale), var(--ds-accent))"
-                      : "var(--ds-edge)",
-                    boxShadow: lit ? "0 0 18px 1px var(--ds-glow)" : "none",
-                    opacity: lit ? 1 : 0.45,
-                    transform: `translate(${x1}px, ${y1}px) rotate(${lineAngle}deg) translateY(${lit ? -3 : -1}px)`,
+                    height: lit ? 4 : 1.5,
+                    transform: `translate(${x1}px, ${y1}px) rotate(${lineAngle}deg) translateY(${lit ? -2 : -0.75}px)`,
                     transformOrigin: "0 0",
                   }}
                 >
-                  {/* פולס האנרגיה שרץ לאורך הקרן פנימה */}
-                  {lit && (
-                    <span
-                      className="absolute inset-y-0 w-1/3"
-                      style={{
-                        background:
-                          "linear-gradient(90deg, transparent, #ffffff, transparent)",
-                        opacity: 0.85,
-                        animation: `ray-pulse 2.4s ${i * 0.3}s linear infinite`,
-                      }}
-                    />
-                  )}
+                  {lit && <span className="sun-ray__run" style={{ animationDelay: `${i * 0.3}s` }} />}
                 </div>
               );
             })}
@@ -487,12 +578,16 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
             {/* --- הליבה --- */}
             {/* ה-scale של הטעינה יושב על העוטף ולא על העיגול: כשרק העיגול
                 גדל, הוא כיסה חלקים מהטבעת והיא נראתה עקומה. */}
+            {/* המעוין גדל עם כל בחירה (בקשת המפתחת 2026-11-15: "יותר גדול
+                ככה עד שיעברו לשלב הבא"), ובבחירה הרביעית הוא מתפוצץ למסך
+                מלא - ראו CoreZoom למטה */}
             <div
-              className="absolute transition-transform duration-500"
+              ref={coreRef}
+              className="sun-core-wrap absolute"
               style={{
                 left: "50%",
                 top: "50%",
-                transform: `translate(-50%, -50%) scale(${1 + charge * 0.06})`,
+                transform: `translate(-50%, -50%) scale(${1 + charge * 0.14})`,
               }}
             >
               {/* טבעת הטעינה סביב הליבה - מד ההתקדמות של השלב. מעל העיגול
@@ -508,38 +603,28 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                 aria-hidden="true"
               >
                 {/* מעוין ולא טבעת (2026-11-08). מתחיל בקודקוד העליון ונע עם כיוון השעון */}
-                <path d={CORE_DIAMOND} fill="none" stroke="var(--ds-glass-strong)" strokeWidth="5" strokeLinejoin="round" />
+                <path className="sun-ring-track" d={CORE_DIAMOND} fill="none" strokeWidth="3" strokeLinejoin="miter" />
                 <path
+                  className="sun-ring-fill"
                   d={CORE_DIAMOND}
                   pathLength={100}
                   fill="none"
-                  stroke="var(--ds-accent)"
                   strokeWidth="5"
-                  strokeLinejoin="round"
+                  strokeLinejoin="miter"
                   strokeDasharray="100"
                   strokeDashoffset={100 * (1 - charge)}
-                  style={{
-                    transition: "stroke-dashoffset 600ms var(--ds-ease-spring)",
-                    filter: "drop-shadow(0 0 8px var(--ds-glow))",
-                  }}
                 />
               </svg>
 
-              {/* הליבה - מעוין (2026-11-08). המעוין עצמו הוא ריבוע זכוכית מסובב
-                  ב-45 מעלות, והטקסט יושב מעליו בשכבה נפרדת שלא מסתובבת. אזור
-                  הטקסט (12.5rem x 7rem) הוא המלבן הגדול שנכנס בתוך המעוין. */}
+              {/* הליבה - מעוין מלא ואטום (2026-11-15: הזכוכית השקופה לא נראתה
+                  על הנייר): לבן עם מסגרת נייבי, מסגרת פנימית דקה וריבוע אדום
+                  בקודקוד העליון. הטקסט בשכבה נפרדת שלא מסתובבת. */}
               <div className="relative flex h-80 w-80 items-center justify-center text-center">
-                <div
-                  aria-hidden="true"
-                  className="glass glass-brick absolute rounded-none transition-all duration-500"
-                  style={{
-                    width: "70.7%",
-                    height: "70.7%",
-                    transform: "rotate(45deg)",
-                    boxShadow: `var(--ds-shadow-lg), 0 0 ${40 + charge * 70}px -6px var(--ds-glow), var(--ds-inset-top)`,
-                  }}
-                />
-                <div className="relative flex h-28 w-[12.5rem] items-center justify-center">
+                <div aria-hidden="true" className="sun-core absolute">
+                  <span className="sun-core__inner" />
+                  <span className="sun-core__dot" />
+                </div>
+                <div className="sun-core__text relative flex h-28 w-[12.5rem] items-center justify-center">
                   <FitText
                     text={content.dilemma_text || "הדילמה שלנו"}
                     maxPx={content.dilemma_text ? 24 : 30}
@@ -605,7 +690,8 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                   type="button"
                   aria-pressed={isSelected}
                   className={cx(
-                    "glass glass-interactive glass-3d btn-rect w-full px-4 py-4 text-center leading-snug font-bold",
+                    // sun-slot: בלחיצה ישר כתום, בלי שלב ביניים כחול (editorial.css)
+                    "sun-slot glass glass-interactive glass-3d btn-rect w-full px-4 py-4 text-center leading-snug font-bold",
                     // **ההשראה מוצגת בשלמותה, בכל אורך** (דרישת הלקוחה) - בלי
                     // line-clamp ובלי "...". טקסט ארוך קטן בהדרגה, כדי שהמשבצת
                     // לא תתארך לגובה ותעלה על השכנות.
@@ -624,6 +710,12 @@ function Stage3Associations({ workshopId, myGroup, content, onAdvance }: Props) 
                 >
                   {item.text}
                 </button>
+                {/* סדר הבחירה - מספר דק בריבוע נייבי בפינה (1 עד 4) */}
+                {isSelected && (
+                  <span className="sun-order" aria-hidden="true">
+                    {selected.indexOf(i) + 1}
+                  </span>
+                )}
                 {canEdit(item) && (
                   <button
                     type="button"

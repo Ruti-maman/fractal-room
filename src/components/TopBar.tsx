@@ -19,7 +19,6 @@ import { createPortal } from "react-dom";
 import type { Group } from "../types/group";
 import { supabase } from "../lib/supabase";
 import Icon from "./ui/Icon";
-import { ThemeToggle } from "./ui/SystemControls";
 
 interface Props {
   myGroup: Group;
@@ -68,7 +67,8 @@ function SystemButtons({ onGoBack }: { onGoBack?: () => void }) {
       {onGoBack && <BackButton onClick={onGoBack} />}
       {/* חיווי הוויי-פיי הוסר לבקשת הלקוחה ("להוריד את כל הסימונים של
           הוויי-פיי"). ConnectionBadge נשאר ב-SystemControls אם יידרש שוב. */}
-      <ThemeToggle />
+      {/* מתג כהה/בהיר הוסר ממסכי הסדנה לבקשת המפתחת (2026-11-12). נשאר
+          רק במסך הניהול (/admin). להחזרה: <ThemeToggle /> מ-./ui/SystemControls */}
     </>
   );
 }
@@ -202,11 +202,13 @@ export function BackButton({ onClick }: { onClick: () => void }) {
       type="button"
       title="חזרה לשלב הקודם"
       onClick={onClick}
-      className="glass glass-interactive glass-3d glass-pill btn-rect text-ink-2 hover:text-ink gap-2 px-4 py-2 text-sm font-bold"
+      // back-btn: במסכי שפת "עיתונאי" הכפתור מקבל מראה משלו (editorial.css)
+      className="back-btn glass glass-interactive glass-3d glass-pill btn-rect text-ink-2 hover:text-ink gap-2 px-4 py-2 text-sm font-bold"
     >
       <Icon name="arrowBack" size={16} />
-      <span className="hidden sm:inline">חזרה לשלב הקודם</span>
-      <span className="sm:hidden">חזרה</span>
+      {/* כיתוב אחד בלבד (2026-11-17): קודם היו שני כיתובים, ארוך וקצר, שהתחלפו
+          לפי רוחב המסך - ובזמן ההקלטה במסך מלא שניהם הופיעו יחד ונדרסו זה על זה */}
+      <span className="whitespace-nowrap">חזרה לשלב הקודם</span>
     </button>
   );
 }

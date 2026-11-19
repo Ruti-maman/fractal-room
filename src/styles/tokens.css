@@ -409,8 +409,10 @@
   --ds-pal-6: #f4c7bc;
   --ds-pal-7: #f2e8e5;
   --ds-navy: #283d5b;
-  /* הקורל של "פרקטל" בלוגו (נדגם מהקובץ) - לכפתור "התחילו" */
-  --ds-brand-coral-vivid: #f26a50;
+  /* האדום של "פרקטל" בלוגו - נדגם מחדש מהקובץ (public/brand/fractal-logo.png)
+     ב-2026-11-11: הצבע השכיח ביותר אחרי הנייבי והלבן הוא #f2674a. לכפתור
+     "התחילו", לכל כפתור ראשי, ולתג השלב ("אדום בול בול של הלוגו"). */
+  --ds-brand-coral-vivid: #f2674a;
   --ds-brand-coral-vivid-deep: #e8502f;
   --ds-wood: #c8955f;
   --ds-wood-deep: #a46f3d;
@@ -550,8 +552,12 @@
    * (סעיף 2 ב-CLAUDE.md), ולכן כל פונט חייב להיארז מקומית.
    * כשיגיע קובץ פונט עברי (Assistant / Rubik / Heebo וכו'): מוסיפים
    * @font-face ב-fonts.css ומחליפים את השורה הבאה בלבד.
+   *
+   * 2026-11-12: Heebo הוא הפונט של כל הסדנה (בקשת המפתחת), במקום Assistant.
+   * הלוגו לא: הטקסט בו נשאר בפונט המקורי (בקשת הלקוחה), ובמסך הפתיחה
+   * מוצג קובץ הלוגו שלה עצמו.
    */
-  --font-sans: "Assistant", "Rubik", "Heebo", "Segoe UI", system-ui, -apple-system,
+  --font-sans: "Heebo", "Assistant", "Rubik", "Segoe UI", system-ui, -apple-system,
     "Noto Sans Hebrew", Arial, sans-serif;
   --font-display: var(--font-sans);
 }

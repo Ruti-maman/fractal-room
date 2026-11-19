@@ -8,8 +8,13 @@ let wakeLockSentinel: WakeLockSentinel | null = null;
  * כרגע מחוברת לכפתור "הבא" הראשון, עד שייבנה כפתור "התחילו" האמיתי (משימה 5).
  */
 export async function requestKioskPermissions() {
+  /*
+    מסך מלא - רק באתר האמיתי, לא בשרת הפיתוח (בקשת המפתחת, 2026-11-12:
+    "שלא יהיה מסך מלא"). בפיתוח לוחצים "התחילו" שוב ושוב, והמסך המלא
+    מפריע לעבודה. בפלזמות בחדר הוא נשאר - חלק ממצב הקיוסק (סעיף 2 ב-CLAUDE.md).
+  */
   try {
-    if (!document.fullscreenElement) {
+    if (!import.meta.env.DEV && !document.fullscreenElement) {
       await document.documentElement.requestFullscreen();
     }
   } catch {

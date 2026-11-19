@@ -182,7 +182,10 @@
    * (0.94 ולא 0.97) בכוונה: על מסך מגע האצבע מכסה את מה שנוגעים בו,
    * ומשוב עדין פשוט לא נראה מתחתיה.
    */
-  .glass-interactive:active:not(:disabled) {
+  /* is-pressed: נדלק מיד בנגיעה מתוך הקוד (useTapRipple) - :active לבדו
+     מגיע באיחור בחלק מדפדפני המגע */
+  .glass-interactive:active:not(:disabled),
+  .glass-interactive.is-pressed:not(:disabled) {
     transform: scale(0.94);
     box-shadow: var(--ds-shadow-sm), inset 0 3px 12px -2px rgba(5, 32, 33, 0.5),
       var(--ds-inset-top);
@@ -204,14 +207,42 @@
     pointer-events: none;
   }
 
+  /*
+    העיגול מתחת לאצבע, כמו ספרה במקלדת הנעילה של האייפון (2026-11-11):
+    עיגול שלם ונקי שנדלק מיד במגע, נשאר כל עוד מחזיקים, ובשחרור מתרחב
+    מעט ונמוג ברכות. שתי שכבות:
+      .tap-ripple        - המיקום והגודל (בגובה הכפתור, ב-useTapRipple).
+      .tap-ripple__wave  - העיגול עצמו והאנימציות. --out = שחרור.
+    הצבע: currentColor - לבן על הכפתור האדום, נייבי על כפתור זכוכית.
+  */
   .tap-ripple {
     position: absolute;
-    width: 0;
-    height: 0;
-    border-radius: 9999px;
     transform: translate(-50%, -50%);
-    background: radial-gradient(circle, var(--ds-accent-pale) 0%, transparent 70%);
-    animation: tap-ripple 550ms var(--ds-ease) forwards;
+    border-radius: 9999px;
+    pointer-events: none;
+  }
+
+  .tap-ripple__wave {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: color-mix(in srgb, currentColor 30%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, currentColor 22%, transparent),
+      0 0 18px 2px color-mix(in srgb, currentColor 16%, transparent);
+    animation: tap-press 130ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+
+  .tap-ripple--out .tap-ripple__wave {
+    animation: tap-release 480ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  }
+
+  /* דפדפן ישן בלי color-mix: לבן שקוף, נראה על הכפתור האדום ועל הזכוכית */
+  @supports not (color: color-mix(in srgb, red 50%, transparent)) {
+    .tap-ripple__wave {
+      background: rgba(255, 255, 255, 0.32);
+      box-shadow: none;
+    }
   }
 
   /* ----------------------------------------------------------------------
@@ -322,25 +353,25 @@
   }
 
   /*
-   * בועת המותג - תג השלב ותגי האפשרויות (LevelBadge): הגוף עובר באלכסון
-   * מהקורל של הלוגו אל הנייבי שלו (בקשת הלקוחה: "מעבר של צבעים בעגול בין
-   * אדום לכחול"). נקודת האמצע כתובה במפורש (#8d5355, ממוצע השניים) ולא
-   * בעזרת "in oklab" - דפדפן ישן בפלזמה לא היה מבין את התחביר.
+   * בועת המותג - תג השלב ותגי האפשרויות (LevelBadge): האדום המלא של הלוגו
+   * (--ds-brand-coral-vivid), כמו הכפתור הראשי. 2026-11-11, בקשת הלקוחה:
+   * "המעוין של השלב בצבע בהיר - האדום בול בול של הלוגו". החליף מעבר
+   * קורל->נייבי שנקרא ככהה (בקשה קודמת, 2026-11-08). נשאר רק ברק עדין
+   * למעלה וצל קל למטה, כדי שהתג עדיין ייראה כבועה ולא כמדבקה שטוחה.
    */
   .bubble.bubble--brand {
-    --bubble-light: var(--ds-pal-4);
-    --bubble-glow: rgba(242, 106, 80, 0.35);
+    --bubble-light: var(--ds-pal-5);
+    --bubble-glow: rgba(242, 103, 74, 0.35);
     background-image:
       radial-gradient(
         circle at 31% 26%,
-        rgba(255, 255, 255, 0.9) 0%,
-        rgba(255, 255, 255, 0.4) 7%,
+        rgba(255, 255, 255, 0.85) 0%,
+        rgba(255, 255, 255, 0.35) 7%,
         transparent 20%
       ),
-      radial-gradient(circle at 50% 120%, rgba(255, 255, 255, 0.18) 0%, transparent 45%),
-      linear-gradient(145deg, var(--ds-pal-3) 0%, #c45a4c 26%, #8d5355 50%, #4f4a63 72%, var(--ds-navy) 100%);
+      linear-gradient(180deg, var(--ds-brand-coral-vivid) 0%, var(--ds-brand-coral-vivid) 62%, var(--ds-brand-coral-vivid-deep) 100%);
     color: #ffffff;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 1px 3px rgba(120, 30, 10, 0.4);
   }
 
   /* טבעת האור הדקה סביב הבועה - מה שמפריד אותה מהרקע השחור */
@@ -673,6 +704,31 @@
     min-height: 4rem;
     padding-inline: 5rem;
     font-size: 1.5rem;
+  }
+
+  /* ----------------------------------------------------------------------
+     HOLD: "הבא" בהחזקה (ניסוי 2026-11-11, ראו useHoldPress.ts)
+     המילוי נוסע מצד ההתחלה (ימין ב-RTL) לאורך הכפתור. התגית שהופיעה
+     מתחת לכפתור ("החזיקו כדי להמשיך" / "N אצבעות יחד") הוסרה לבקשת הלקוחה.
+     ---------------------------------------------------------------------- */
+  .hold-btn {
+    touch-action: none;
+    -webkit-touch-callout: none;
+  }
+
+  .hold-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    inset-inline-start: 0;
+    width: calc(var(--hold, 0) * 100%);
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.34),
+      rgba(255, 255, 255, 0.16)
+    );
+    pointer-events: none;
   }
 
   /*
@@ -1093,7 +1149,8 @@
   }
 
   /* בלחיצה החפץ נלחץ פנימה: הברק נחלש וההצללה מתהפכת - כהה למעלה */
-  :root .glass.glass-3d:active:not(:disabled) {
+  :root .glass.glass-3d:active:not(:disabled),
+  :root .glass.glass-3d.is-pressed:not(:disabled) {
     transform: translateY(1px) scale(0.975);
     box-shadow:
       inset 0 8px 16px -8px var(--ds-3d-shade),
@@ -1101,7 +1158,8 @@
       0 1px 2px 0 var(--ds-3d-shadow-near);
   }
 
-  :root .glass.glass-3d:active:not(:disabled)::before {
+  :root .glass.glass-3d:active:not(:disabled)::before,
+  :root .glass.glass-3d.is-pressed:not(:disabled)::before {
     opacity: 0.4;
   }
 
@@ -1188,11 +1246,10 @@
       -6px -6px 16px -6px var(--ds-3d-halo);
   }
 
-  /* החוגה של הטיימר: מעוין מורם, מואר למעלה-שמאל */
+  /* החוגה של הטיימר: דיסק עגול מורם, מואר למעלה-שמאל (הטבעת העגולה
+     חזרה 2026-11-11 - הלקוחה: "העגול שהיה קודם יפה"; לא לחתוך למעוין) */
   .timer-dial {
     z-index: 0;
-    -webkit-clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
     background-image:
       radial-gradient(circle at 32% 26%, var(--ds-3d-gloss) 0%, transparent 38%),
       radial-gradient(circle at 40% 35%, transparent 45%, var(--ds-3d-shade) 100%);
@@ -1264,9 +1321,13 @@
     opacity: 0.85;
   }
 
-  .slot-input:not(:placeholder-shown) {
+  /* ברגע שהסמן נכנס למשבצת היא כבר לבנה - לא רק אחרי התו הראשון (בקשת
+     הלקוחה, 2026-11-11: "שיהיה כבר לבן ולא רק ברגע שמתחילים לכתוב") */
+  .slot-input:not(:placeholder-shown),
+  .slot-input:placeholder-shown:focus {
     background: color-mix(in srgb, white 92%, transparent);
     color: var(--ds-navy);
+    caret-color: var(--ds-navy);
   }
 
   /* משבצת שנבחרה: אותו .glass-active, רק שהטוקנים שלו מוחלפים בקורל -
@@ -1302,8 +1363,11 @@
   }
 
   /* מגש כלים אדום (שלב 4) */
+  /* 2026-11-14 (שפת "עיתונאי" לכל הסדנה): אדום-כתום שטוח, בלי מעבר צבע.
+     כאן ולא ב-editorial-skin.css: !important בתוך @layer גובר על כל כלל
+     שמחוץ לשכבה, ולכן אי אפשר לדרוס אותו משם. */
   .tray-red {
-    background-image: linear-gradient(160deg, var(--ds-pal-3), var(--ds-pal-2) 60%, var(--ds-pal-1)) !important;
+    background-image: linear-gradient(var(--ds-pal-3), var(--ds-pal-3)) !important;
   }
 
   .tray-red::after {
@@ -1323,7 +1387,20 @@
     --chat-ink: var(--ds-navy);
     --chat-shadow: color-mix(in srgb, var(--ds-navy) 40%, transparent);
     background-color: var(--ds-bg-solid) !important;
-    background-image: linear-gradient(160deg, var(--ds-bg-from), var(--ds-bg-via), var(--ds-bg-to)) !important;
+    /*
+      אותו צבע **ועומק** כמו האתר (בקשת הלקוחה 2026-11-11: "באותו צבע ועומק,
+      ולא תכלת"). הגרדיאנט לבדו נקרא בהיר וכחלחל מדי, כי באתר עצמו יושבות
+      מעליו עוד שתי שכבות - ולכן הן כאן, באותו סדר ומאותם טוקנים:
+        1. ויניה - הכהיית הקצוות (כמו .bg-vignette)
+        2. כתמי האור של האורורה - קורל למעלה, קאמל למטה (כמו .bg-aurora)
+        3. גרדיאנט הבסיס
+    */
+    background-image:
+      radial-gradient(ellipse 85% 75% at 50% 42%, transparent 40%, var(--ds-vignette) 100%),
+      radial-gradient(42rem 34rem at 12% 8%, var(--ds-blob-a), transparent 70%),
+      radial-gradient(38rem 30rem at 88% 82%, var(--ds-blob-b), transparent 72%),
+      radial-gradient(30rem 26rem at 70% 12%, var(--ds-blob-c), transparent 74%),
+      linear-gradient(160deg, var(--ds-bg-from), var(--ds-bg-via), var(--ds-bg-to)) !important;
     background-size: auto !important;
   }
 

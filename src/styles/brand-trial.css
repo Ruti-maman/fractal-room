@@ -1,0 +1,243 @@
+/* ==========================================================================
+   ניסוי "שפת הלוגו" (2026-11-11) - רק בשלב 1, מאחורי BRAND_TRIAL
+   ב-Stage1Opening.tsx. הכל ממוקד ב-.brand-trial ולא נוגע בשאר המערכת.
+   להסרה: BRAND_TRIAL=false, או למחוק את הקובץ הזה, את
+   Stage1OpeningBrand.tsx ואת השורה ב-index.css.
+
+   הדקדוק: כל דבר נכנס כמו ריבוע בלוגו - קטן, גדל מעט מעבר לגודלו,
+   ומתיישב (bt-grow). רק שלושה צבעים: נייבי, לבן, אדום.
+   ========================================================================== */
+
+.brand-trial {
+  --bt-navy: #273f5b;
+  --bt-white: #ffffff;
+  --bt-coral: #f2674a;
+  --bt-ease-grow: cubic-bezier(0.34, 1.45, 0.64, 1);
+
+  /* הלוגו הווקטורי קורא את שני אלה */
+  --ds-brand-ink: var(--bt-white);
+  --ds-brand-coral: var(--bt-coral);
+
+  background: var(--bt-navy);
+  color: var(--bt-white);
+  /* Heebo רק במסך הזה (בקשת המפתחת 2026-11-12); הקבצים ב-fonts.css */
+  font-family: "Heebo", var(--font-sans);
+}
+/* הכפתור לא יורש פונט מעצמו בכל דפדפן - מפורש */
+.brand-trial button {
+  font-family: inherit;
+}
+/* "פרקטל" ו"עומק. מימד. חדשנות." בלוגו: ה-SVG כותב Assistant ישירות על
+   הטקסט (style מוטבע ב-FractalLogo.tsx), וסגנון מוטבע גובר על כל כלל כאן
+   חוץ מ-!important. מחליפים רק את המשפחה - העובי והגודל נשארים */
+.brand-trial svg text {
+  font-family: "Heebo", var(--font-sans) !important;
+}
+
+/* --- כניסה: ריבוע שצומח ------------------------------------------------- */
+
+@keyframes bt-grow {
+  0% { opacity: 0; transform: scale(0.6); }
+  60% { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes bt-letter {
+  0% { opacity: 0; transform: translateY(0.6em); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.bt-grow {
+  animation: bt-grow 0.9s var(--bt-ease-grow) both;
+}
+
+/* אותיות שעולות אחת אחרי השנייה */
+.bt-letters {
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+.bt-letters > span {
+  display: inline-block;
+  animation: bt-letter 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ריבועי הלוגו נכנסים אחד-אחד (FractalLogo grow) */
+.bt-logo polygon {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bt-grow 0.7s var(--bt-ease-grow) both;
+}
+
+/* --- הרקע: סמלי הלוגו המרחפים, כמו ברקע הבהיר (2026-11-12) --------------
+   אותו רכיב (FloatingEmblems) ואותה תנועה (.bg-emblem ב-background.css).
+   כאן הם בלבן ובקורל, כי .brand-trial קובע את צבעי הלוגו. במצב הכהה
+   background.css מסתיר אותם - המסך הזה נייבי תמיד, אז מחזירים אותם כאן
+   (הספציפיות גבוהה מכלל ההסתרה, 0,4,0 מול 0,3,0).
+   קודם נוסו ונפסלו באותו יום: קווים אלכסוניים, רשת מעוינים שמגיבה למגע,
+   אורורה + זרקור מגע ("האור המוזר"), ושדה זרימה של פסים. */
+.bt-emblems {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+:root .brand-trial .bt-emblems .bg-emblem {
+  display: block;
+}
+
+/* --- מסגרת עם עומק: ריבוע אדום מוזח מאחור, קו לבן דק מקדימה -------------- */
+
+.bt-frame {
+  position: relative;
+  width: 100%;
+}
+.bt-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translate(-18px, 18px);
+  background: var(--bt-coral);
+  border-radius: 4px;
+}
+.bt-frame__inner {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--bt-white);
+  border-radius: 4px;
+  background: var(--bt-navy);
+}
+
+/* --- כפתור "התחילו" ------------------------------------------------------ */
+
+.bt-btn {
+  position: relative;
+  min-height: 64px;
+  padding: 0 5rem;
+  border-radius: 4px;
+  background: var(--bt-coral);
+  color: var(--bt-white);
+  font-size: 1.75rem;
+  font-weight: 800;
+  box-shadow: -8px 8px 0 0 var(--bt-white);
+  /* רק הצל ב-transition. הגודל (התכווצות, ובשחרור גדילה מעבר לרגיל
+     והתיישבות) מונפש מהקוד - transition על transform היה גובר עליו */
+  transition: box-shadow 420ms cubic-bezier(0.34, 1.9, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+/* גיבוי לדפדפן בלי element.animate: התכווצות פשוטה בזמן הלחיצה */
+.bt-btn:active {
+  transform: scale(0.88);
+}
+/* הלחיצה: הצל נאסף פנימה. is-pressed נדלק בנגיעה עצמה - :active לבדו
+   מגיע באיחור בחלק מדפדפני המגע */
+.bt-btn:active,
+.bt-btn.is-pressed {
+  box-shadow: -3px 3px 0 0 var(--bt-white);
+  transition-duration: 90ms;
+  transition-timing-function: ease-out;
+}
+
+/* העיגול השקוף של האייפון (2026-11-11): נדלק מתחת לאצבע וגדל מהר בזמן
+   הנגיעה, ובשחרור מתרחב עוד מעט ונמוג. גדול (פי 2.6 מגובה הכפתור),
+   בהיר במרכז ומתרכך החוצה - בלי קו חד, כדי שלא ייראה כמו "עיגול לבן".
+   הכפתור חותך אותו (overflow: hidden), והמילה יושבת מעליו.
+   מחליף את הלבן השקוף שמילא את כל המקש (נוסה ונפסל באותו יום). */
+.bt-btn {
+  overflow: hidden;
+}
+@keyframes bt-glow-in {
+  from {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.6;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes bt-glow-out {
+  from {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1.18);
+    opacity: 0;
+  }
+}
+.bt-glow {
+  position: absolute;
+  z-index: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--bt-white) 52%, transparent) 0%,
+    color-mix(in srgb, var(--bt-white) 36%, transparent) 38%,
+    color-mix(in srgb, var(--bt-white) 14%, transparent) 62%,
+    transparent 72%
+  );
+  animation: bt-glow-in 300ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.bt-glow--out {
+  animation: bt-glow-out 450ms ease-out forwards;
+}
+@supports not (color: color-mix(in srgb, red 50%, transparent)) {
+  .bt-glow {
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.14) 62%,
+      transparent 72%
+    );
+  }
+}
+.bt-btn__label {
+  position: relative;
+  z-index: 1;
+}
+.bt-btn:focus-visible {
+  outline: 3px solid var(--bt-white);
+  outline-offset: 6px;
+}
+
+/* "נשימה": גדל וקטן לאט, כהזמנה לגעת (2026-11-11, במקום תנודה). מתחיל
+   אחרי שהכפתור צמח למקומו, ונעצר בזמן הלחיצה */
+@keyframes bt-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
+}
+.bt-breathe {
+  animation: bt-breathe 2.2s 2.4s ease-in-out infinite;
+}
+.bt-breathe.is-paused {
+  animation-play-state: paused;
+}
+
+/* סימן המגע המצויר ("כאן נוגעים") שהיה מתחת לכפתור הוסר לבקשת הלקוחה
+   (2026-11-11), וגם העיגול הלבן מתחת לאצבע ("עגול לבן מוזנח"). */
+
+/* --- טקסט (מסך 3) ------------------------------------------------------- */
+
+.bt-text-title {
+  color: var(--bt-coral);
+  font-weight: 800;
+}
+.bt-text-body {
+  color: var(--bt-white);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-trial *,
+  .brand-trial *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}

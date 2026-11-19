@@ -1,0 +1,1272 @@
+/* ==========================================================================
+   סצנות לפי שלב (2026-11-15)
+   --------------------------------------------------------------------------
+   בקשת המפתחת: "אל תעשה את כל הפרויקט כחתיכה אחת... שלא ייראה תבניתי".
+   השפה אחת (רשת, כחול-לבן, נגיעות אדום-כתום, מספרים ענקיים דקים, חיצים),
+   אבל **לכל שלב קומפוזיציה אחרת** - כמו עמודים שונים באותו מגזין, ובדיוק
+   מה שהלקוחה הצביעה עליו בהשראה: "הרקע של הקווים, החלוקה בין השחור ללבן,
+   החיצים, המיקומים המעניינים של הטקסטים והתמונות".
+
+     2  מי בחדר      - עמוד כחול מלא עם קווים לבנים: כל החדר יחד.
+     3  שמש          - נייר; עמודת כחול בקצה, ומספר ענק שקוף.
+     4  ניתוח         - רצועת כחול לרוחב הראש, כמו כותרת עיתון.
+     5  פתרונות       - חלוקה אופקית: חצי עליון לבן, חצי תחתון כחול.
+     6  דיון          - עמודת כחול רחבה בצד, עם מספר ענק לבן בתוכה.
+     7  סימולציה      - "אולפן": נייבי עמוק עם קווים, כמו חדר הקלטה.
+     8  מסר           - עמוד כחול מלא, טיפוגרפי.
+     9  מנצחת         - נייר עם ריבועי צבע מפוזרים, כמו קונפטי של הרשת.
+     10 עיקרון        - מסגרת: עמודות כחולות משני הצדדים, הלבן באמצע.
+
+   בעמוד כחול מלא שמים קווי רשת לבנים; בבלוק כחול לצד לבן - בלי קווים
+   (knowledge/grid-lines-on-color-blocks.md).
+
+   האלמנטים עצמם (.sc-*) יושבים ב-StageShell, מוסתרים כברירת מחדל, וכל
+   סצנה מדליקה וממקמת את מה שהיא צריכה. data-stage על <html> - מ-StageRouter.
+   ========================================================================== */
+
+/* --- מספר השלב בפינה השמאלית העליונה (2026-11-15) ----------------------
+   ריבוע אדום משמאל ו"02" דק מימינו (ltr - כמו בצילום שהמפתחת שלחה), מתחת
+   לכפתור "חזרה" ולקו העליון של הרשת. בכל העמודים, במקום באמצע הכותרת. */
+/* בשורה אחת עם כפתור "חזרה לשלב הקודם" (משמאל-למעלה, 1.25rem מהקצה, ברוחב
+   ~11rem), מימינו. מרכז המספר בגובה מרכז הכפתור (בקשת המפתחת 2026-11-15) */
+.sh-index--side {
+  position: absolute;
+  z-index: 2;
+  left: calc(1.25rem + 11rem + 1.75rem);
+  /* הספרות בולטות מעל תיבת השורה (line-height 0.85) - בלי המרווח הן נחתכו
+     בקצה העליון של המסך */
+  top: 0.85rem;
+  direction: ltr;
+  pointer-events: none;
+}
+/* על בלוק כחול / עמוד כהה - לבן */
+html:is([data-stage="3"], [data-stage="6"], [data-stage="10"]) .sh-index--side {
+  color: #ffffff;
+}
+/* סולם ההשראות (שלב 4 ואילך) - מתחת לשורה של כפתור החזרה ומספר השלב,
+   מיושר לכפתור */
+@media (min-width: 1024px) {
+  .insp-ladder {
+    top: 6rem;
+    left: 1.25rem;
+  }
+}
+
+/* בזמן שעון החול של הדיון (שלב 6) - בלי סולם ההשראות */
+/* --- שלב 7, "מרעיון למנגנון": מסך מפוצל (2026-11-16) ----------------------
+   בלוק כחול בצד ימין ברוחב 3 עמודות רשת, מלמעלה עד למטה */
+html[data-stage="7"][data-scene="s7-split"] .sc-block--a {
+  display: block;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  /* 2 עמודות רשת - בדיוק כמו בלוק הפתיחה (ed-panel) */
+  width: 25vw;
+  /* לבן, בצד שמאל כמו ברוב האתר (בקשת המפתחת 2026-11-16) */
+  /* תכלת בהיר (בקשת המפתחת 2026-11-16) - לא לבן חלק */
+  background: #d3e0f6;
+}
+/* על הלבן: כפתור החזרה ומספר השלב בנייבי (בשלב 7 הם לבנים, על הנייבי) */
+html[data-stage="7"][data-scene="s7-split"] .back-btn {
+  color: #0b1b3f;
+  box-shadow: inset 0 0 0 1px #0b1b3f;
+}
+html[data-stage="7"][data-scene="s7-split"] .sh-index,
+html[data-stage="7"][data-scene="s7-split"] .sh-index__num {
+  color: #0b1b3f !important;
+}
+/* "07" מתחת לכפתור החזרה, מיושר אליו (בקשת המפתחת 2026-11-16) */
+html[data-stage="7"][data-scene="s7-split"] .sh-index--side {
+  left: 1.25rem;
+  top: 5rem;
+}
+/* הכותרת של StageShell מוסתרת - היא בתוך הבלוק (Stage7Mechanism) */
+.s7-split-main .sh-head {
+  display: none;
+}
+
+/* מסך שעון החול בשלב 6 - הכול יורד מעט למטה (בקשת המפתחת 2026-11-16):
+   ריווח עליון גדול יותר, ושעון החול קטן מעט כדי שריבועי הדקות לא ייגעו
+   בכפתורים שבתחתית */
+@media (min-width: 1024px) {
+  main.sh-main.s6-discuss {
+    padding-top: calc(1.5rem + 8vh);
+  }
+}
+.s6-discuss .hg__glass {
+  width: min(20vh, 11rem);
+}
+.s6-discuss .hg {
+  margin-bottom: 2vh;
+}
+/* (2026-11-16) הכפתורים מעט למטה - עד קצת מעל גובה הטיימר שבפינה, כדי
+   שהכפתור הימני לא ייבלע מתחתיו; והמסקנה מעט למעלה */
+@media (min-width: 1024px) {
+  html[data-stage="6"] .s6-discuss .sh-actions {
+    margin-bottom: 6.5rem;
+  }
+  .s6-discuss .pc-tag {
+    translate: 0 -5vh;
+  }
+}
+html[data-hourglass] .insp-ladder {
+  display: none !important;
+}
+
+/* התגים הישנים של מספר השלב (שלבים 7-9) ו"המספרים הענקיים" של הסצנות -
+   מיותרים עכשיו, כשהמספר קבוע בפינה */
+.stage-badge,
+.sc-set > .sc-num {
+  display: none !important;
+}
+
+.sc-set {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.sc-set > * {
+  display: none;
+  position: absolute;
+}
+
+/* --- מסך ההמתנה: עמודות הרשת מתמלאות ומתרוקנות (2026-11-16) ------------
+   כל עמודה בדיוק ברוחב עמודת רשת (12.5vw), מילוי לבן שקוף מאוד שעולה
+   מלמטה ויורד, בקצב ובהשהיה שונים - כמו חדר שמתמלא. לראש כל מילוי קו
+   דק; בשתי עמודות הוא כתום. רק height ו-opacity, בלי צל ובלי גרדיאנט */
+html[data-waiting] .sc-set > .sc-wait {
+  display: block;
+  inset: 0;
+}
+.sc-wait__col {
+  position: absolute;
+  bottom: 0;
+  left: calc(var(--i) * 12.5vw);
+  width: 12.5vw;
+  height: 0;
+  background: rgb(255 255 255 / 0.045);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+  animation: sc-wait-fill calc(7s + var(--i) * 0.9s) ease-in-out calc(var(--i) * -1.7s) infinite;
+}
+/* "עוד קצת פסים כתומים" (בקשת המפתחת 2026-11-16) - ארבע מתוך שמונה */
+.sc-wait__col:nth-child(1),
+.sc-wait__col:nth-child(3),
+.sc-wait__col:nth-child(6),
+.sc-wait__col:nth-child(8) {
+  box-shadow: inset 0 3px 0 #f25740;
+}
+@keyframes sc-wait-fill {
+  0%,
+  100% {
+    height: 8vh;
+  }
+  50% {
+    height: 62vh;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-wait__col {
+    animation: none;
+    height: 20vh;
+  }
+}
+.sc-block {
+  background: #2a4286;
+  animation: sc-wipe 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.05s both;
+}
+.sc-block--b {
+  animation-delay: 0.2s;
+}
+.sc-dot {
+  width: 1.6vw;
+  height: 1.6vw;
+  background: #f25740;
+  animation: sc-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s both;
+}
+.sc-num {
+  font-family: "Heebo", var(--font-sans);
+  font-weight: 100;
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  color: rgb(42 66 134 / 0.1);
+  animation: sc-fade 1.2s ease-out 0.3s both;
+}
+.sc-arrow {
+  width: 13vw;
+  height: 13vw;
+  color: #2a4286;
+  animation: sc-draw 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.5s both;
+}
+@keyframes sc-wipe {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes sc-pop {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes sc-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes sc-draw {
+  from {
+    clip-path: inset(0 0 100% 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   עמודים כהים (2, 7, 8): הטקסט על הרקע עצמו לבן, ובתוך כרטיס לבן חוזר
+   לנייבי. דרך הטוקנים ולא דרך כל אלמנט: text-ink / text-ink-2 נקראים מהם,
+   והסרגל העליון, הטיימר ומד הקבוצות יושבים מחוץ ל-<main> ולא מושפעים.
+   -------------------------------------------------------------------------- */
+/* :not(.ed-frame): טופס ההזדהות של שלב 2 בנוי על <main className="ed-frame">
+   על רקע בהיר - בלי ההחרגה הכתב שלו נהיה לבן על לבן (באג שנתפס 2026-11-15) */
+html:is([data-stage="2"], [data-stage="5"], [data-stage="7"], [data-stage="8"]) main:not(.ed-frame) {
+  --ds-text: #ffffff;
+  --ds-text-2: rgb(255 255 255 / 0.82);
+  --ds-text-3: rgb(255 255 255 / 0.62);
+  --ed-skin-line: rgb(255 255 255 / 0.15);
+  color: #ffffff;
+}
+html:is([data-stage="2"], [data-stage="5"], [data-stage="7"], [data-stage="8"]) main:not(.ed-frame) :is(.glass, .sc-light) {
+  --ds-text: #0b1b3f;
+  --ds-text-2: rgb(11 27 63 / 0.72);
+  --ds-text-3: rgb(11 27 63 / 0.52);
+  color: #0b1b3f;
+}
+/* תגיות על הרקע הכהה: שקופות, כתב ומסגרת לבנים */
+html:is([data-stage="2"], [data-stage="5"], [data-stage="7"], [data-stage="8"]) main:not(.ed-frame) .glass-chip {
+  background: transparent;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.5);
+}
+/* בשלב 7 הנייבי של הבועות נבלע ברקע הנייבי - מחליפים לכחול בהיר יותר */
+html[data-stage="7"] main {
+  --ds-bubble-3: #6f86c6;
+}
+
+/* כפתור "חזרה לשלב הקודם" כשהוא יושב על כחול (עמוד כחול מלא, רצועת הראש
+   של שלב 4, העמודה השמאלית של שלבים 6 ו-10): מסגרת וכתב לבנים */
+html:is([data-stage="2"], [data-stage="3"], [data-stage="4"], [data-stage="5"], [data-stage="6"], [data-stage="7"], [data-stage="8"], [data-stage="10"]) .back-btn {
+  background: transparent;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.6);
+}
+html:is([data-stage="2"], [data-stage="5"], [data-stage="7"], [data-stage="8"]) main:not(.ed-frame) :is(.sh-title, .sh-index, .glass-title):not(.glass *) {
+  color: #ffffff;
+}
+html:is([data-stage="2"], [data-stage="5"], [data-stage="7"], [data-stage="8"]) main:not(.ed-frame) .sh-kicker,
+html:is([data-stage="2"], [data-stage="5"], [data-stage="7"], [data-stage="8"]) main:not(.ed-frame) > * > .glass-chip {
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.5);
+}
+/* כפתור משני על כחול: מסגרת לבנה */
+html:is([data-stage="2"], [data-stage="5"], [data-stage="7"], [data-stage="8"]) main:not(.ed-frame) .glass.glass-3d:not(.glass-btn-primary):not(.glass-active):not(.glass *) {
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px #ffffff;
+}
+
+/* --- 2: מי בחדר - כחול מלא עם קווים לבנים ------------------------------- */
+html[data-stage="2"] main .bg-layers,
+html[data-stage="5"] main .bg-layers,
+html[data-stage="8"] main .bg-layers {
+  background-color: #2a4286;
+}
+/* (החץ הדקורטיבי הוסר מהסצנות - בשלבים 2, 4 ו-8 הוא נראה מיותר, לבקשת
+   המפתחת 2026-11-15. חצים נשארים רק איפה שהם מצביעים על פעולה.) */
+html[data-stage="2"] .sc-dot {
+  display: block;
+  left: calc(12.5vw - 0.8vw);
+  top: calc(12vh - 0.8vw);
+}
+
+/* --- 3: שמש - בלוק כחול משמאל, בדיוק כמו במסך הפתיחה: שתי עמודות (25vw)
+       לכל הגובה (בקשת המפתחת 2026-11-15). התוכן זז ימינה כדי לא לעלות עליו,
+       והמספר הענק לבן בתוך הבלוק ---------------------------------------- */
+html[data-stage="3"] .sc-block--a {
+  display: block;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 25vw;
+}
+html[data-stage="3"] .sh-main {
+  padding-left: calc(25 * var(--sw, 1vw) + 2rem);
+}
+/* רצועת "נבחרו" - באמצע אזור התוכן (מרכז = 25vw + 75vw/2 = 62.5vw), מתחת
+   למעוין, ולא באמצע המסך כולו */
+@media (min-width: 1024px) {
+  html[data-stage="3"] .sun-strip {
+    left: calc(62.5 * var(--sw, 1vw));
+    width: min(44rem, 46vw);
+  }
+}
+html[data-stage="3"] .sc-num {
+  display: block;
+  left: 2vw;
+  top: 14vh;
+  font-size: 26vh;
+  color: rgb(255 255 255 / 0.9);
+  z-index: 1;
+}
+html[data-stage="3"] .sc-dot {
+  display: block;
+  left: calc(25vw - 0.8vw);
+  top: calc(12vh - 0.8vw);
+}
+
+/* --- 4: ניתוח - עמודה כחולה משמאל (2026-11-15, בקשת המפתחת: "לא למעלה
+       אלא בצד שמאל, עם מספר השלב"). קודם הייתה רצועה לרוחב הראש, והכותרת
+       נחתכה בקצה שלה. העמודה נכנסת מלמטה (ולא מהצד כמו בשלב 3), והמספר
+       וסולם ההשראות לבנים/יושבים בתוכה ----------------------------------- */
+html[data-stage="4"] .sc-block--a {
+  display: block;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 25vw;
+  animation-name: sc-wipe-up;
+}
+html[data-stage="4"] .sh-main {
+  padding-left: calc(25 * var(--sw, 1vw) + 2rem);
+}
+html[data-stage="4"] .sh-index--side {
+  color: #ffffff;
+}
+@keyframes sc-wipe-up {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes sc-wipe-side {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* שלב 5 (2026-11-16, בקשת המפתחת: "להפוך - למעלה כחול, למטה לבן"): הרקע
+   כחול מלא בלי קווים, ומלמטה עולה רצועה לבנה משופעת. הכותרת על הכחול -
+   לבנה (כללי "העמוד הכחול" למעלה כבר דואגים לזה) */
+html[data-stage="5"] main .bg-layers {
+  background-color: #2a4286 !important;
+  background-image: none !important;
+}
+html[data-stage="5"] main .bg-layers * {
+  display: none;
+}
+html[data-stage="5"] main:not(.ed-frame) {
+  --ed-skin-line: transparent;
+}
+/* (2026-11-16, "משהו יפה יותר"): על התכלת - רצועה כחולה רחבה ומשופעת
+   שעולה מלמטה, עם קו אדום-כתום דק לאורך הקצה שלה. הכרטיסים יושבים על
+   התפר - חצי על התכלת וחצי על הכחול */
+html[data-stage="5"] .sc-block--a,
+html[data-stage="5"] .sc-block--b {
+  display: block;
+  left: -5vw;
+  right: -5vw;
+  transform: skewY(-5deg);
+  transform-origin: 100% 0;
+  animation-name: sc-rise;
+}
+html[data-stage="5"] .sc-block--a {
+  top: 62vh;
+  bottom: -25vh;
+  background: #f4f6fb;
+}
+html[data-stage="5"] .sc-block--b {
+  top: calc(62vh - 14px);
+  height: 5px;
+  background: #f25740;
+  animation-delay: 0.45s;
+}
+
+/* הכרטיסים הלבנים - מסגרת נייבי דקה (נראית גם על הכחול וגם על הלבן) */
+html[data-stage="5"] .s5-cell {
+  box-shadow: 0 0 0 1px rgb(11 27 63 / 0.35) !important;
+}
+html[data-stage="5"] .s5-board {
+  background: none !important;
+}
+/* השורה לא נכנסת מתחת לסולם ההשראות שבצד שמאל */
+@media (min-width: 1024px) {
+  /* שוליים לא סימטריים: משמאל תמיד מקום לסולם (17rem), מימין רק כמה
+     שצריך - כך במסך צר הכרטיסים לא מתכווצים לאורך */
+  html[data-stage="5"] .s5-board {
+    width: auto;
+    margin-left: max(17rem, calc((100% - 92rem) / 2));
+    margin-right: max(1rem, calc((100% - 92rem) / 2));
+  }
+}
+
+/* שלב 5 - כל התוכן (כותרת, הסבר וכרטיסים) נמוך יותר במסך (בקשת המפתחת
+   2026-11-16). במסך נמוך כמעט לא זז - שם אין מקום מעל מד ההתקדמות */
+@media (min-width: 1024px) {
+  html[data-stage="5"] .sh-main {
+    padding-top: max(1.5rem, calc((var(--full-h, 100vh) - 690px) * 0.35));
+  }
+}
+
+/* --- 5: פתרונות - כחול מלא עם קווים לבנים (בקשת המפתחת 2026-11-15; קודם
+       חצי תחתון כחול). נכנס לרשימות של העמודים הכהים למעלה ----------- */
+html[data-stage="5"] .sc-num {
+  display: block;
+  left: 2vw;
+  top: 13vh;
+  font-size: 34vh;
+}
+@keyframes sc-rise {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* --- 6: דיון - עמודת כחול רחבה משמאל, מספר ענק לבן בתוכה ---------------- */
+/* ברוחב של מסך הפתיחה, 25vw (בקשת המפתחת 2026-11-15) - ב-12.5vw מספר השלב
+   הלבן חרג מהכחול ונעלם על הנייר. התוכן זז ימינה כמו בשלבים 3-4 */
+html[data-stage="6"] .sc-block--a {
+  display: block;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 25vw;
+}
+html[data-stage="6"] .sh-main {
+  padding-left: calc(25 * var(--sw, 1vw) + 2rem);
+}
+/* שני הכפתורים רחבים יחד, והימני נבלע מתחת לטיימר שבפינה - מעלים את שורת
+   הפעולות מעל גובה הטיימר (בקשת המפתחת 2026-11-15) */
+@media (min-width: 1024px) {
+  html[data-stage="6"] .sh-actions {
+    margin-bottom: 8.5rem;
+  }
+}
+html[data-stage="6"] .sc-num {
+  display: block;
+  left: 1vw;
+  bottom: 14vh;
+  font-size: 22vh;
+  color: rgb(255 255 255 / 0.9);
+  z-index: 1;
+}
+html[data-stage="6"] .sc-dot {
+  display: block;
+  left: calc(25vw - 0.8vw);
+  top: calc(88vh - 0.8vw);
+}
+
+/* --- 7: סימולציה - הכחול של הלקוחה עם קווים לבנים (2026-11-15: הנייבי
+       העמוק לא עמד בפלטה שלה - הכחול #2a4286 הוא הצבע המוביל) ---------- */
+html[data-stage="7"] main .bg-layers {
+  /* חזרה לנייבי העמוק המקורי (2026-11-16, הלקוחה אישרה) */
+  background-color: #0b1b3f;
+}
+/* "מרעיון למנגנון" - הרקע חוזר לכחול של האתר במקום הנייבי (בקשת המפתחת
+   2026-11-16). שאר מסכי שלב 7 נשארים נייבי */
+html[data-stage="7"][data-scene="s7-split"] main .bg-layers {
+  background-color: #2a4286;
+}
+html[data-stage="7"] .sc-dot {
+  /* נורית ה"מקליט" הוסרה - בלי הקשר לסצנה היא נראתה כמו כתם */
+  display: none;
+  right: 3vw;
+  top: 15vh;
+  width: 1.2vw;
+  height: 1.2vw;
+  /* נורית "מקליט" - מהבהבת לאט */
+  animation: sc-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s both, sc-rec 1.6s ease-in-out 1.2s infinite;
+}
+/* "מרעיון למנגנון" (2026-11-15, בקשת המפתחת לשנות את הרקע): נייר בהיר עם
+   רשת, ובמה כחולה לרוחב המסך מאחורי חפיסת השאלות. מסך הוראות הסימולציה
+   נשאר כחול. data-scene נקבע ב-Stage7Mechanism */
+html[data-stage="7"][data-scene="s7-mech"] main .bg-layers {
+  /* רקע חלק בתכלת, בלי קווי רשת (בקשת המפתחת 2026-11-15) */
+  background-color: #e6eefa;
+  background-image: none !important;
+}
+html[data-stage="7"][data-scene="s7-mech"] main .bg-layers * {
+  display: none;
+}
+html[data-stage="7"][data-scene="s7-mech"] main:not(.ed-frame) {
+  --ds-text: #0b1b3f;
+  --ds-text-2: rgb(11 27 63 / 0.72);
+  --ds-text-3: rgb(11 27 63 / 0.55);
+  --ed-skin-line: rgb(11 27 63 / 0.08);
+  color: #0b1b3f;
+}
+html[data-stage="7"][data-scene="s7-mech"] main:not(.ed-frame) :is(.sh-title, .sh-index, .glass-title):not(.glass *) {
+  color: #0b1b3f;
+}
+html[data-stage="7"][data-scene="s7-mech"] .back-btn {
+  color: #0b1b3f;
+  box-shadow: inset 0 0 0 1px #0b1b3f;
+}
+/* כניסה בניגוב ולא ב"איריס": העיגול של האיריס חתך את קצוות הבמה הכחולה
+   לקשת */
+html[data-stage="7"][data-scene="s7-mech"] .sh-content {
+  --sh-enter: sh-wipe-in;
+}
+html[data-stage="7"][data-scene="s7-mech"] .sh-index--side {
+  color: #0b1b3f;
+}
+@keyframes sc-rec {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* --- 8: מסר - כחול מלא (ראו למעלה, יחד עם שלב 2) ------------------------ */
+
+/* --- 9: מנצחת - ריבועי צבע מפוזרים על הרשת, כמו קונפטי -------------------- */
+/* 2026-11-16 (הלקוחה אהבה): עוד ריבועים, כל אחד קטן יותר - חצי עמודת רשת
+   או רבע, צמודים לקווי הרשת. נכנסים בזה אחר זה, וחלקם "קופצים" משבצת
+   הצידה וחוזרים מדי כמה שניות, כמו לוח משחק חי. בלי צל ובלי גרדיאנט */
+html[data-stage="9"] .sc-block--a,
+html[data-stage="9"] .sc-block--b {
+  display: block;
+  width: 6.25vw;
+  height: 6.25vw;
+}
+html[data-stage="9"] .sc-block--a {
+  left: 18.75vw;
+  top: 24vh;
+}
+html[data-stage="9"] .sc-block--b {
+  right: 18.75vw;
+  bottom: 22vh;
+  background: #f25740;
+}
+html[data-stage="9"] .sc-cube {
+  display: block;
+  width: 3.125vw;
+  height: 3.125vw;
+  background: #2a4286;
+  --hop-x: 0;
+  --hop-y: 0;
+  animation:
+    sc-cube-in 0.55s cubic-bezier(0.65, 0, 0.35, 1) var(--in, 0.3s) both,
+    sc-cube-hop var(--hop-dur, 7s) cubic-bezier(0.7, 0, 0.3, 1) calc(var(--in, 0.3s) + 1.5s) infinite;
+}
+@keyframes sc-cube-in {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes sc-cube-hop {
+  0%,
+  42%,
+  100% {
+    translate: 0 0;
+  }
+  50%,
+  92% {
+    translate: var(--hop-x) var(--hop-y);
+  }
+}
+/* "שלא יהיה מדי הרבה" (2026-11-16) - חצי מהריבועים מוסתרים */
+html[data-stage="9"] :is(.sc-cube--2, .sc-cube--5, .sc-cube--7, .sc-cube--8, .sc-cube--10) {
+  display: none;
+}
+/* מיקומים, צבעים וקפיצות - מחוץ לאזור התוכן ולפינות הפאנלים */
+html[data-stage="9"] .sc-cube--1 {
+  left: 25vw;
+  top: 62vh;
+  background: #f25740;
+  --in: 0.35s;
+  --hop-x: 3.125vw;
+}
+html[data-stage="9"] .sc-cube--2 {
+  left: 31.25vw;
+  top: 18vh;
+  background: transparent;
+  box-shadow: inset 0 0 0 2px #2a4286;
+  --in: 0.45s;
+}
+html[data-stage="9"] .sc-cube--3 {
+  left: 75vw;
+  top: 18vh;
+  width: 6.25vw;
+  height: 6.25vw;
+  --in: 0.55s;
+}
+html[data-stage="9"] .sc-cube--4 {
+  left: 87.5vw;
+  top: 42vh;
+  background: #f25740;
+  --in: 0.65s;
+  --hop-y: 3.125vw;
+  --hop-dur: 8s;
+}
+html[data-stage="9"] .sc-cube--5 {
+  left: 68.75vw;
+  top: 72vh;
+  background: transparent;
+  box-shadow: inset 0 0 0 2px #2a4286;
+  --in: 0.75s;
+}
+html[data-stage="9"] .sc-cube--6 {
+  left: 81.25vw;
+  top: 58vh;
+  background: #0b1b3f;
+  --in: 0.85s;
+  --hop-x: -3.125vw;
+  --hop-dur: 9s;
+}
+html[data-stage="9"] .sc-cube--7 {
+  left: 12.5vw;
+  top: 62vh;
+  --in: 0.95s;
+}
+html[data-stage="9"] .sc-cube--8 {
+  left: 37.5vw;
+  top: 86vh;
+  background: transparent;
+  box-shadow: inset 0 0 0 2px #f25740;
+  --in: 1.05s;
+}
+html[data-stage="9"] .sc-cube--9 {
+  left: 62.5vw;
+  top: 12vh;
+  background: #f25740;
+  --in: 1.15s;
+  --hop-y: 3.125vw;
+  --hop-dur: 6.5s;
+}
+html[data-stage="9"] .sc-cube--10 {
+  left: 56.25vw;
+  top: 88vh;
+  --in: 1.25s;
+  --hop-x: 3.125vw;
+  --hop-dur: 7.5s;
+}
+/* מסך המסר של שלב 8 - כחול בלי קווי רשת; הרקע הוא מדרגות הפרקטל (s8-bg) */
+html[data-stage="8"][data-scene="s8-msg"] main .bg-layers {
+  background-image: none;
+}
+/* מסך הסיום של שלב 9 ("זה נחמד לנצח בסימולטור...") - כחול מלא עם קווי רשת
+   לבנים וטקסט לבן (בקשת המפתחת 2026-11-16). הריבועים הכחולים נבלעים
+   ברקע, ונשארים הכתומים והנייבי */
+html[data-stage="9"][data-scene="s9-close"] main .bg-layers {
+  background-color: #2a4286;
+  /* בלי קווי הרשת בכלל - לא אנכיים ולא אופקיים (בקשת המפתחת 2026-11-16).
+     הקווים של המסך הם המסגרות המסתובבות (s9-frames) */
+  background-image: none;
+}
+html[data-stage="9"][data-scene="s9-close"] main {
+  --ds-text: #ffffff;
+  --ds-text-2: rgb(255 255 255 / 0.85);
+  --ds-text-3: rgb(255 255 255 / 0.65);
+  --ed-skin-line: rgb(255 255 255 / 0.15);
+  color: #ffffff;
+}
+html[data-stage="9"][data-scene="s9-close"] .back-btn {
+  background: transparent;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.6);
+}
+html[data-stage="9"][data-scene="s9-close"] .sh-index--side {
+  color: #ffffff;
+}
+/* בלי הריבועים - הרקע כאן הוא המסגרות המקוננות (s9-frames) */
+html[data-stage="9"][data-scene="s9-close"] .sc-set > :is(.sc-block, .sc-cube, .sc-dot) {
+  display: none !important;
+}
+/* הנקודה האדומה הוסרה בשלב 9 - היא נחתה על הפודיום (2026-11-16) */
+html[data-stage="9"] .sc-dot {
+  display: none;
+}
+
+/* --- 10: עיקרון - נייר עם הרשת; הרקע עצמו ב-.s10-bg (editorial.css).
+   בלי העמודות הכחולות שבצדדים ובלי הנקודה (2026-11-16) */
+/* "10" מתחת לכפתור החזרה, מיושר אליו - כמו בשלב 7 (בקשת המפתחת 2026-11-16) */
+html[data-stage="10"] .sh-index--side {
+  left: 1.25rem;
+  top: 5rem;
+  color: #0b1b3f;
+}
+/* על הנייר - כפתור החזרה בנייבי (קודם ישב על העמודה הכחולה) */
+html[data-stage="10"] .back-btn {
+  color: #0b1b3f;
+  box-shadow: inset 0 0 0 1px #0b1b3f;
+}
+
+/* ==========================================================================
+   הופעת האלמנטים (2026-11-15)
+   --------------------------------------------------------------------------
+   בקשת המפתחת: "לא רק המעבר של הרקעים - גם הופעת האלמנטים שבדף". כל דף
+   נבנה מול העיניים, בסדר קבוע ובקצב של קריאה:
+     1. הכותרת - חתימה קבועה בכל השלבים: המספר עולה מתוך קו, הריבוע האדום
+        מסתובב פנימה, התגית נפתחת, הכותרת "נכתבת" מימין לשמאל, והקו הכתום
+        נמתח מתחתיה.
+     2. התוכן - בזה אחר זה, ובכל שלב **בתנועה אחרת** (נפילה, איריס מהמרכז,
+        ניגוב מהצד, עלייה מלמטה) - כדי שלא יחזור על עצמו.
+     3. הכפתור - אחרון, כשכבר יש מה ללחוץ עליו.
+
+   רק clip-path ו-opacity, אף פעם לא transform: יש רכיבים שממוקמים ב-transform
+   inline (קלפי השאלות בשלב 7, קרני השמש), ואנימציה של transform הייתה
+   דורסת להם את המיקום. מצב הסיום של clip-path מורחב (inset שלילי) - כדי
+   שתג שבולט מעבר לכרטיס לא ייחתך אחרי ההופעה.
+   ========================================================================== */
+
+/* --- 1. הכותרת ---------------------------------------------------------- */
+.sh-index__num {
+  display: inline-block;
+  animation: sh-num-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+@keyframes sh-num-in {
+  from {
+    clip-path: inset(100% 0 -30% 0);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(-30% -30% -30% -30%);
+    opacity: 1;
+  }
+}
+.sh-index__square {
+  animation: sh-square-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s both;
+}
+@keyframes sh-square-in {
+  from {
+    transform: scale(0) rotate(-90deg);
+  }
+  to {
+    transform: scale(1) rotate(0);
+  }
+}
+.sh-kicker {
+  animation: sh-wipe-r 0.6s cubic-bezier(0.65, 0, 0.35, 1) 0.3s both;
+}
+.sh-title .ed-h1__line {
+  animation: sh-write 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.4s both;
+}
+.sh-title .ed-h1__line::after {
+  animation-delay: 1.05s;
+}
+@keyframes sh-write {
+  from {
+    clip-path: inset(-30% 0 -30% 100%);
+  }
+  to {
+    clip-path: inset(-30% -10% -30% -10%);
+  }
+}
+@keyframes sh-wipe-r {
+  from {
+    clip-path: inset(-20% 0 -20% 100%);
+  }
+  to {
+    clip-path: inset(-20% -20% -20% -20%);
+  }
+}
+.sh-sub {
+  animation: sh-fade 0.7s ease-out 0.85s both;
+}
+@keyframes sh-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* --- 2. התוכן: בזה אחר זה. התנועה עצמה (--sh-enter) משתנה לפי השלב ----- */
+.sh-content > * > *,
+.sh-content :is(ul, ol) > li {
+  animation: var(--sh-enter, sh-rise) 0.75s cubic-bezier(0.22, 1, 0.36, 1) var(--sh-d, 0.55s) both;
+}
+.sh-content > * > :nth-child(2),
+.sh-content :is(ul, ol) > li:nth-child(2) {
+  --sh-d: 0.66s;
+}
+.sh-content > * > :nth-child(3),
+.sh-content :is(ul, ol) > li:nth-child(3) {
+  --sh-d: 0.77s;
+}
+.sh-content > * > :nth-child(4),
+.sh-content :is(ul, ol) > li:nth-child(4) {
+  --sh-d: 0.88s;
+}
+.sh-content > * > :nth-child(5),
+.sh-content :is(ul, ol) > li:nth-child(5) {
+  --sh-d: 0.99s;
+}
+.sh-content > * > :nth-child(6),
+.sh-content :is(ul, ol) > li:nth-child(6) {
+  --sh-d: 1.1s;
+}
+.sh-content > * > :nth-child(7),
+.sh-content :is(ul, ol) > li:nth-child(7) {
+  --sh-d: 1.21s;
+}
+.sh-content > * > :nth-child(n + 8),
+.sh-content :is(ul, ol) > li:nth-child(n + 8) {
+  --sh-d: 1.32s;
+}
+/* רשימה בתוך התוכן: הרשימה עצמה לא "נכנסת" - הפריטים שלה נכנסים */
+.sh-content > * > :is(ul, ol) {
+  animation: none;
+}
+
+/* מהלמטה למעלה, בעלייה רכה (ברירת המחדל) */
+@keyframes sh-rise {
+  from {
+    clip-path: inset(100% -20% -20% -20%);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(-20% -20% -20% -20%);
+    opacity: 1;
+  }
+}
+/* נפילה מלמעלה - כמו תיבות שנוחתות (שלב 2: הקבוצות "נכנסות לחדר") */
+@keyframes sh-drop {
+  from {
+    clip-path: inset(-20% -20% 100% -20%);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(-20% -20% -20% -20%);
+    opacity: 1;
+  }
+}
+/* איריס - נפתח מהמרכז החוצה (שלב 3: השמש; שלב 7: האולפן) */
+@keyframes sh-iris {
+  from {
+    clip-path: circle(0% at 50% 50%);
+    opacity: 0;
+  }
+  to {
+    clip-path: circle(120% at 50% 50%);
+    opacity: 1;
+  }
+}
+/* ניגוב מימין, בכיוון הקריאה (שלבים 4, 6) */
+@keyframes sh-wipe-in {
+  from {
+    clip-path: inset(-20% -20% -20% 100%);
+    opacity: 0.2;
+  }
+  to {
+    clip-path: inset(-20% -20% -20% -20%);
+    opacity: 1;
+  }
+}
+/* "תריס" - נפתח מקו אופקי באמצע (שלבים 5, 10) */
+@keyframes sh-shutter {
+  from {
+    clip-path: inset(50% -20% 50% -20%);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(-20% -20% -20% -20%);
+    opacity: 1;
+  }
+}
+html[data-stage="2"] .sh-content {
+  --sh-enter: sh-drop;
+}
+html:is([data-stage="3"], [data-stage="7"]) .sh-content {
+  --sh-enter: sh-iris;
+}
+html:is([data-stage="4"], [data-stage="6"]) .sh-content {
+  --sh-enter: sh-wipe-in;
+}
+html:is([data-stage="5"], [data-stage="10"]) .sh-content {
+  --sh-enter: sh-shutter;
+}
+
+/* --- "מי בחדר": קלפים שנפתחים במניפה (2026-11-15) ------------------------
+   הגרסה הראשונה (חזרה לבקשת המפתחת): קלפים לרוחב. הקלף של המסך הזה נוחת
+   ראשון באמצע, בגדול, עם תג "אתן"; שני האחרים נשלפים מאחוריו לצדדים,
+   קטנים יותר ומוטים קלות. ספציפיות (0,2,0) - גוברת על כלל ההופעה הכללי
+   של פריטי רשימה. */
+.sh-content .room-card {
+  transform: var(--room-final);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: room-deal 0.95s cubic-bezier(0.22, 1, 0.36, 1) var(--room-d) both;
+}
+.sh-content .room-card.is-mine {
+  --room-final: scale(1.06);
+  --room-d: 0.5s;
+  z-index: 2;
+  box-shadow: inset 0 0 0 3px #2a4286;
+}
+.sh-content .room-card.is-side {
+  --room-final: translateY(2.5vh) scale(0.9) rotate(var(--rot));
+  --room-d: 1.05s;
+  z-index: 1;
+}
+@keyframes room-deal {
+  from {
+    transform: translateX(var(--dx, 0)) translateY(5vh) scale(0.7);
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  to {
+    transform: var(--room-final);
+    opacity: 1;
+  }
+}
+/* תג "אתן" - ריבוע אדום בפינה העליונה של הקלף האמצעי */
+.room-card__you {
+  position: absolute;
+  top: -0.9rem;
+  right: 1.5rem;
+  padding: 0.2rem 0.8rem;
+  background: #f25740;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* --- 3. הכפתור: אחרון, נפתח מהצד ---------------------------------------- */
+.sh-actions > * {
+  animation: sh-wipe-r 0.7s cubic-bezier(0.65, 0, 0.35, 1) 1.15s both;
+}
+
+/* ==========================================================================
+   שלב 4 - כלי הסימון ודף המחברת (2026-11-15)
+   ========================================================================== */
+
+/* הכלים בצד הדף, בלי מגש ובלי מסגרת (2026-11-15): שלושה טושים שוכבים,
+   החוד מופנה אל הדף. ממורכזים לגובה הדף */
+.mk-tray {
+  gap: 1.5rem;
+  padding: 0;
+  background: transparent;
+  color: #0b1b3f;
+  justify-content: center;
+}
+@media (min-width: 1024px) {
+  .mk-tray {
+    align-self: center;
+    /* באמצע הגובה של הדף, לא מתחתיו (בקשת המפתחת) */
+    margin-top: -5rem;
+    /* חצי מהרווח שהיה עד הקצה (בקשת המפתחת): במסך רחב זזים ימינה ~55px (יותר מזה - אזור התוכן חותך את האייקון),
+       ובמסך צר כמעט לא זזים - שם הם נחתכו */
+    transform: translateX(calc(-1.5rem + 12.9vw - 140px));
+  }
+}
+
+/* הדף: במסך רחב ~4 ס"מ (151px) ימינה ממה שהיה (בקשת המפתחת 2026-11-15).
+   יחסי לרוחב - במסך צר אין מקום, והוא נשאר כמו קודם (40px שמאלה) */
+/* כפתור "הבא" באמצע הדף ולא באמצע אזור התוכן: מרכז הדף נמדד ב-1920 וב-1300
+   (1261 / 706) מול מרכז הכפתור (1200 / 812) - וזה הקו שעובר ביניהם */
+@media (min-width: 1024px) {
+  /* שורות ההסבר סנטימטר מתחת לכותרת (בקשת המפתחת 2026-11-15) */
+  .mk-screen .sh-sub {
+    margin-top: 2.2rem;
+  }
+  /* translate ולא transform: ה-fade-up של הכניסה תופס את transform */
+  .mk-screen .sh-actions {
+    translate: calc(26.9vw - 418px) 0; /* ועוד ~1 ס"מ ימינה (בקשת המפתחת) */
+  }
+  .mk-paper-area {
+    transform: translateX(calc(-40px + max(0px, (100vw - 1300px) * 0.2435)));
+  }
+}
+/* --- טושים חמודים (2026-11-15): שלושה מרקרים מצוירים שעומדים בשורה, כמו
+   בכוס עטים, לצד הדף. הכלי ביד קופץ ונוטה, ומתחתיו המילה עם קו כתום --- */
+@media (min-width: 1024px) {
+  /* בטור (בקשת המפתחת 2026-11-15): אחד מתחת לשני, אייקון ולצידו המילה */
+  .mk-tray {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.4rem;
+  }
+  .mk-tray .mk-cute {
+    flex-direction: row;
+    width: auto;
+    gap: 0.9rem;
+    padding: 0;
+  }
+}
+.mk-cute {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  width: 5.6rem;
+  min-height: 64px;
+  padding: 0.6rem 0 0;
+  background: none;
+  border: 0;
+  color: #0b1b3f;
+  font-family: "Heebo", var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  animation: mk-cute-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.mk-cute:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.mk-cute:nth-child(3) {
+  animation-delay: 0.2s;
+}
+@keyframes mk-cute-in {
+  from {
+    opacity: 0;
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(-30% -30% -30% -30%);
+  }
+}
+.mk-cute__art {
+  /* אייקון קטן, כמו האיורים של שלב 3 */
+  width: 2.1rem;
+  height: auto;
+  overflow: visible;
+  transform-origin: 50% 90%;
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mk-cute:active .mk-cute__art {
+  transform: scale(0.94);
+}
+/* ביד: קופץ למעלה ונוטה אל הדף, ומתנדנד קלות */
+.mk-cute.is-active .mk-cute__art {
+  /* בלי הגדלה - כל הכלים באותו גודל (בקשת המפתחת) */
+  transform: none;
+}
+@keyframes mk-cute-wiggle {
+  0%,
+  100% {
+    transform: translateY(-1.1rem) rotate(-14deg);
+  }
+  50% {
+    transform: translateY(-1.4rem) rotate(-10deg);
+  }
+}
+/* הטושים כקו מצויר: כל קו נשרטט בכניסה, כמו האיורים של שלב 3 */
+.mk-cute {
+  /* הדיו כקו - מעט כהה יותר מצבע ההדגשה, כדי שקו דק ייקרא על הנייר */
+  --ink-line: color-mix(in srgb, var(--ink) 75%, #0b1b3f);
+}
+.mk-cute .mk-draw {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+  animation: mk-draw 1.1s cubic-bezier(0.65, 0, 0.35, 1) 0.2s forwards;
+}
+.mk-cute:nth-child(2) .mk-draw {
+  animation-delay: 0.45s;
+}
+.mk-cute:nth-child(3) .mk-draw {
+  animation-delay: 0.7s;
+}
+@keyframes mk-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mk-cute .mk-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+.mk-cute__label {
+  position: relative;
+  font-size: 1.15rem;
+  font-weight: 500;
+  padding-bottom: 0.2rem;
+}
+.mk-cute.is-active .mk-cute__label {
+  color: #0b1b3f;
+}
+.mk-cute__label::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: #f25740;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.mk-cute.is-active .mk-cute__label::after {
+  transform: scaleX(1);
+}
+.mk-tray__title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: rgb(255 255 255 / 0.7);
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.25);
+  margin-bottom: 0.3rem;
+}
+
+.mk-tool {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 13rem;
+  min-height: 76px;
+  padding-inline: 1.2rem 1rem;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  background: transparent;
+  color: #ffffff;
+  font-family: "Heebo", var(--font-sans);
+  text-align: start;
+  transition: background 0.3s ease, color 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+.mk-tool:active {
+  transform: scale(0.96);
+}
+/* הכלי הפעיל: כרטיס לבן שבולט מהעמודה לכיוון הדף, עם פס אדום-כתום */
+.mk-tool.is-active {
+  background: #ffffff;
+  color: #0b1b3f;
+  border-color: #ffffff;
+  transform: translateX(-0.9rem);
+}
+.mk-tool.is-active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 6px;
+  background: #f25740;
+}
+
+/* המילה על משיכת המרקר */
+.mk-tool__word {
+  position: relative;
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+}
+.mk-tool__label {
+  position: relative;
+  z-index: 1;
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+/* מילה שיושבת על משיכת דיו - תמיד כהה, כמו טקסט מודגש אמיתי. לבן על
+   הדיו הבהיר נמדד 2:1 (בדיקת הניגודיות, 2026-11-15) */
+.mk-tool__swipe + .mk-tool__label {
+  color: #0b1b3f;
+}
+/* המשיכה: צורה עם קצוות "חוד" אלכסוניים, כמו מרקר אמיתי - לא מלבן */
+.mk-tool__swipe {
+  position: absolute;
+  inset: 12% -4% 6% -4%;
+  background: var(--ink);
+  clip-path: polygon(3% 8%, 100% 0, 97% 92%, 0 100%);
+  /* מלא כמעט לגמרי גם כשכבוי: דיו שקוף מעל הכחול יצא סגלגל-עכור */
+  opacity: 0.88;
+  transform-origin: right;
+  transition: opacity 0.3s ease, transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.mk-tool.is-active .mk-tool__swipe {
+  opacity: 1;
+  animation: mk-swipe 0.5s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+@keyframes mk-swipe {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+/* המחק: קו שחוצה את המילה */
+.mk-tool__strike {
+  position: absolute;
+  z-index: 2;
+  top: 52%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: currentColor;
+  transform-origin: right;
+  transform: scaleX(0.35);
+  transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.mk-tool.is-active .mk-tool__strike {
+  transform: scaleX(1);
+}
+.mk-tool__icon {
+  display: flex;
+  opacity: 0.75;
+}
+
+/* הדף: מחברת לבנה. קווים דקים בדיוק בגובה השורה (2em, כמו leading-loose)
+   ושוליים אדומים-כתומים בצד ימין */
+/* הדף מונח על בלוק כחול מוסט (גרפי, בלי טשטוש - לא "צל") ובלי מסגרת: כמו
+   דף שמונח על תיקייה. שני קווי שוליים אדומים-כתומים בצד ימין */
+/* מסגרת כחולה עבה ושלמה סביב כל הדף (בקשת המפתחת 2026-11-15, במקום הבלוק
+   המוסט שהציץ רק משמאל ומלמטה) */
+.mk-paper-frame {
+  background: #ffffff;
+  border: 12px solid #2a4286;
+}
+/* דף נקי - בלי שורות מחברת ובלי שוליים אדומים (2026-11-15: "שלא ייראה
+   כמו דפדפת"). רק לבן בתוך המסגרת הכחולה, עם ריווח נדיב */
+.mk-paper {
+  background: #ffffff;
+  padding: 2.4rem 2.8rem !important;
+}
+.mk-paper__text {
+  color: #0b1b3f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-set > * {
+    animation: none !important;
+  }
+}
+/* ==========================================================================
+   מספר השלב - בכל השלבים מתחת לכפתור "חזרה לשלב הקודם", מיושר אליו
+   (בקשת המפתחת 2026-11-17). גובר על המיקום הייחודי של כל שלב. סולם
+   ההשראות (שלבים 4-6) יורד בהתאם, כדי לא לעלות על המספר.
+   ========================================================================== */
+html[data-stage] .sh-index--side {
+  left: 1.25rem !important;
+  top: 4.6rem !important;
+}
+@media (min-width: 1024px) {
+  html[data-stage] .insp-ladder {
+    top: 10.5rem;
+  }
+}

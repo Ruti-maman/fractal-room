@@ -32,6 +32,47 @@ const corsHeaders = {
 // כזו. אם Google מוציאה מהמחזור, מחליפים כאן בלבד.
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
+/*
+  2026-11-16: נבדק ביומן - Gemini החזיר 503 ("currently experiencing high
+  demand") לאורך כל היום, והמסך הציג "לא הצלחנו לנסח". לכן: כל מודל מקבל
+  כמה ניסיונות עם המתנה ביניהם, ואם הוא עדיין עמוס (או לא קיים) - עוברים
+  למודל הבא ברשימה. הראשון שעונה - מנצח.
+*/
+const GEMINI_FALLBACK_MODELS = [GEMINI_MODEL, "gemini-3.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-flash"];
+/** ניסיונות לכל מודל כשהשגיאה זמנית (עומס / מכסה לדקה / תקלת שרת). */
+const TRIES_PER_MODEL = 2;
+const RETRY_DELAY_MS = 1500;
+/** שגיאות שווה לנסות שוב (או לעבור בגללן למודל אחר). */
+const TRANSIENT = new Set([429, 500, 502, 503, 504]);
+
+class GeminiHttpError extends Error {
+  constructor(public status: number) {
+    super(`Gemini API error ${status}`);
+  }
+}
+
+/** askGemini עם ניסיונות חוזרים ומעבר בין מודלים. */
+async function askGeminiWithFallback(prompt: string): Promise<FunctioningPictureData> {
+  let lastError: unknown = null;
+  for (const model of GEMINI_FALLBACK_MODELS) {
+    for (let t = 1; t <= TRIES_PER_MODEL; t++) {
+      try {
+        return await askGemini(prompt, model);
+      } catch (err) {
+        lastError = err;
+        const status = err instanceof GeminiHttpError ? err.status : 0;
+        // מודל שלא קיים/לא זמין למפתח הזה - ישר למודל הבא
+        if (status === 404 || status === 400) break;
+        // שגיאה זמנית - ממתינים ומנסים שוב; אחרת (תשובה משובשת) - למודל הבא
+        if (!TRANSIENT.has(status)) break;
+        if (t < TRIES_PER_MODEL) await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * t));
+      }
+    }
+    console.warn(`Gemini model ${model} failed, trying next`);
+  }
+  throw lastError ?? new Error("Gemini: all models failed");
+}
+
 interface TaggedPhrase {
   color: "green" | "red";
   category: string;
@@ -69,7 +110,7 @@ function stripForeignScript(text: string): string {
     .trim();
 }
 
-async function askGemini(prompt: string): Promise<FunctioningPictureData> {
+async function askGemini(prompt: string, model: string = GEMINI_MODEL): Promise<FunctioningPictureData> {
   const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
     method: "POST",
     headers: {
@@ -77,7 +118,7 @@ async function askGemini(prompt: string): Promise<FunctioningPictureData> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: GEMINI_MODEL,
+      model,
       input: prompt,
       response_format: {
         type: "text",
@@ -96,8 +137,8 @@ async function askGemini(prompt: string): Promise<FunctioningPictureData> {
 
   if (!geminiResponse.ok) {
     const errText = await geminiResponse.text();
-    console.error("Gemini API error:", geminiResponse.status, errText);
-    throw new Error(`Gemini API error ${geminiResponse.status}`);
+    console.error("Gemini API error:", model, geminiResponse.status, errText);
+    throw new GeminiHttpError(geminiResponse.status);
   }
 
   const geminiData = await geminiResponse.json();
@@ -231,7 +272,7 @@ Deno.serve(async (req) => {
     // גם הניסיון האחרון משובש - מסירים את התווים הזרים.
     let result: FunctioningPictureData | null = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      const candidate = await askGemini(prompt);
+      const candidate = await askGeminiWithFallback(prompt);
       if (!hasForeignScript(candidate.sentence1) && !hasForeignScript(candidate.sentence2)) {
         result = candidate;
         break;
