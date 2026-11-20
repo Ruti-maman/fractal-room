@@ -72,8 +72,10 @@ function RoomScreen({ allGroups, stageNumbers, roomContent, stage2Content, stage
   const roomStage = majorityStage(groups.map((g) => g.current_stage));
   const content = roomContent?.[roomStage];
 
-  // תצוגה מקדימה בשרת הפיתוח: /screen/4?loop=5&slide=3 מציג לופ (ושקף) מסוים
-  const params = import.meta.env.DEV ? new URLSearchParams(location.search) : null;
+  // תצוגה מקדימה: /screen/4?loop=5&slide=3 מציג לופ (ושקף) מסוים. פתוח גם באתר
+  // שבענן (2026-11-20, בקשת המפתחת) - כדי שהלקוחה תוכל לעבור על כל הלופים בלי
+  // להריץ סדנה. רק מציג, לא כותב כלום. בלי ?loop= - לפי שלב הקבוצות, כרגיל.
+  const params = new URLSearchParams(location.search);
   const previewLoop = params?.get("loop");
   if (previewLoop === "1") return <RoomWelcome title={content?.title} />;
   // /screen/4?loop=2&part=tips|fractal|room - חלק מסוים בסבב של שלב 2
