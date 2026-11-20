@@ -77,6 +77,8 @@ function RoomScreen({ allGroups, stageNumbers, roomContent, stage2Content, stage
   // להריץ סדנה. רק מציג, לא כותב כלום. בלי ?loop= - לפי שלב הקבוצות, כרגיל.
   const params = new URLSearchParams(location.search);
   const previewLoop = params?.get("loop");
+  // /screen/4?loop=all - הדגמה: כל הלופים בזה אחר זה, בלי סדנה
+  if (previewLoop === "all") return <AllLoopsDemo />;
   if (previewLoop === "1") return <RoomWelcome title={content?.title} />;
   // /screen/4?loop=2&part=tips|fractal|room - חלק מסוים בסבב של שלב 2
   const previewPart = params?.get("part") as Stage2Part | null;
@@ -343,6 +345,30 @@ function WhoIsInRoom({ groups, content }: { groups: Group[]; content?: Stage2Con
         <p className="wr-foot__bold">{t.after_bold}</p>
       </footer>
     </main>
+  );
+}
+
+/* --- הדגמה: כל הלופים ברצף (/screen/4?loop=all, 2026-11-20) -------------
+ * למסירה ללקוחה: מסך הפתיחה, ואחריו כל לופ במלואו לפי סדר השלבים, וחוזר
+ * להתחלה. רק להדגמה - בחדר עצמו /screen/4 עוקב אחרי שלב הקבוצות. */
+const DEMO_ORDER = ["2", "3", "4", "4b", "5", "6", "8", "9"];
+const DEMO_WELCOME_SECONDS = 10;
+
+function AllLoopsDemo() {
+  const [i, setI] = useState(-1); // -1 = מסך הפתיחה
+  useEffect(() => {
+    if (i !== -1) return;
+    const t = window.setTimeout(() => setI(0), DEMO_WELCOME_SECONDS * 1000);
+    return () => window.clearTimeout(t);
+  }, [i]);
+  if (i === -1) return <RoomWelcome />;
+  const key = DEMO_ORDER[i];
+  return (
+    <RoomLoop
+      key={key}
+      loop={ROOM_LOOPS[key]}
+      onComplete={() => setI((n) => (n + 1 >= DEMO_ORDER.length ? -1 : n + 1))}
+    />
   );
 }
 
