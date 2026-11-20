@@ -465,6 +465,16 @@ media            id, workshop_id, group_id, stage_number, url, created_at
 הבא בתור: בדיקה על מסך אמיתי בחדר, והחלטה מול הלקוחה על שמירה מול מחיקה
 של הפעלות קודמות (סעיף 10).
 
+**ספריית דילמות (2026-11-19, דרישת הלקוחה: "ספריית דילמות, מסך ראשוני שמרוכזים
+בו כל הדילמות, ויש אפשרות לבחור את הדילמה שתוביל את הסדנה").** טבלה חדשה
+`dilemmas` (כותרת, summary לשמש בשלב 3, profile_text לסימון בשלב 4, video_url
+לשלב 2) ועמודה `workshops.dilemma_id` - `supabase/add_dilemmas.sql` (כבר הורץ).
+הבחירה ב-`/admin` (`DilemmaLibrary`); `applyDilemma` מכניס אותה לתוכן שלבים 2-4,
+וה-Edge Function של תמונת התפקוד קוראת את profile_text שלה. בלי בחירה - תוכן
+השלבים כמו קודם. חמשת הסרטונים ב-Storage (`media/dilemmas/`), והטקסטים נכתבו
+לפי הסרטונים - **ממתינים לאישור הלקוחה**. NetFree חוסם את הסרטונים, ולכן בשרת
+הפיתוח הם מוגשים מ-`public/dilemmas-local/` (לא ב-Git, `src/lib/dilemmaVideo.ts`).
+
 ---
 
 ## 9. דומיינים שהמערכת פונה אליהם

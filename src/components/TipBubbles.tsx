@@ -38,6 +38,7 @@ function TipBubbles({
   title,
   tips,
   confirmLabel = "הבנו, בואו נבחר שם!",
+  displayOnly = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -45,6 +46,11 @@ function TipBubbles({
   tips: Tip[];
   /** הכפתור היחיד בפופ-אפ. */
   confirmLabel?: string;
+  /**
+   * תצוגה בלבד - למסך הגדול (/screen/4, 2026-11-19, בקשת הלקוחה "את המסך
+   * הזה על המסך הגדול"): בלי כפתור, בלי מיקוד ובלי Escape. הזרקור רץ לבד.
+   */
+  displayOnly?: boolean;
 }) {
   const btnRef = useRef<HTMLButtonElement>(null);
   /**
@@ -76,7 +82,7 @@ function TipBubbles({
 
   // המיקוד עובר לכפתור היחיד, ו-Escape סוגר - כמו בחלון רגיל
   useEffect(() => {
-    if (!open) return;
+    if (!open || displayOnly) return;
     btnRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") leave();
@@ -109,8 +115,8 @@ function TipBubbles({
   return createPortal(
     <div
       className={`tp-page ${leaving ? "is-leaving" : ""}`}
-      role="dialog"
-      aria-modal="true"
+      role={displayOnly ? undefined : "dialog"}
+      aria-modal={displayOnly ? undefined : "true"}
       aria-labelledby="tp-title"
     >
       <h2 id="tp-title" className="tp-title">
@@ -141,6 +147,8 @@ function TipBubbles({
             className={`tp-tip ${i === active ? "is-active" : ""}`}
             style={{ "--tp-i": i } as CSSProperties}
             onPointerDown={() => {
+              // במסך הגדול - בלי אינטראקציה (האפיון), הזרקור רץ לבד
+              if (displayOnly) return;
               setActive(i);
               setTick((n) => n + 1);
             }}
@@ -158,7 +166,7 @@ function TipBubbles({
         ))}
       </ol>
 
-      <div className="tp-foot">
+      <div className="tp-foot" hidden={displayOnly}>
         <button ref={btnRef} type="button" className="bt-btn ed-btn tp-btn" onClick={leave}>
           <span className="bt-btn__label">
             {confirmLabel}

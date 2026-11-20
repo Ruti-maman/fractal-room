@@ -28,8 +28,8 @@ export type SlideVisual =
   | { type: "bigNumber"; value: string }
   /** שעון שיורד + איור קווי של מהדק (השקף נשאר עד תום הספירה) */
   | { type: "countdown"; seconds: number }
-  /** רשימה שמתארכת כלפי מטה, הפריטים האחרונים באדום (בצד המסך) */
-  | { type: "growingList" }
+  /** רשימה שמתארכת כלפי מטה, הפריטים האחרונים באדום (בצד המסך). items = הטקסט של כל פריט */
+  | { type: "growingList"; items: string[] }
   /** נוסחה בגדול במרכז */
   | { type: "formula"; value: string }
   /** חיצים מקדמים (כחול) מול בולמים (אדום) משני צידי קו; released = חץ אדום נעלם והקו זז */
@@ -57,7 +57,7 @@ export type SlideVisual =
 
 export type RoomSlide =
   | { kind: "riddle"; label?: string; text: string; options?: string[]; seconds?: number; visual?: SlideVisual }
-  | { kind: "answer"; text: string; correct?: number; source?: string; visual?: SlideVisual }
+  | { kind: "answer"; text: string; correct?: number; source?: string; visual?: SlideVisual; label?: string }
   | { kind: "explain"; lead?: string; text: string; source?: string; label?: string; visual?: SlideVisual }
   | { kind: "fact"; text: string; source?: string; visual?: SlideVisual }
   | { kind: "now"; text: string }
@@ -89,6 +89,25 @@ export const CLOSING_SECONDS = 12;
 /** מעל כמה מילים השקף נחשף בשני שלבים (האפיון: עד כ-25 מילים בשקף). */
 export const MAX_WORDS = 25;
 
+/**
+ * שלב 3, שקפים 2-3: "רשימה שמתארכת כלפי מטה; הפריטים האחרונים מודגשים באדום".
+ * שימושים למהדק, מהשכיח אל המקורי - בדיוק מה שהשקף מסביר: הרעיונות הראשונים
+ * הם של כולן, המקוריים מגיעים בסוף. (טיוטה, 2026-11-19 - לאישור הלקוחה)
+ */
+const CLIP_USES = [
+  "להדק דפים",
+  "סימנייה",
+  "וו לתלייה",
+  "פותחן למגש הסים",
+  "מנקה חריצים",
+  "מחזיק כבלים",
+  "אנטנה לרדיו",
+  "שרשרת ממהדקים",
+  "פסל תיל זעיר",
+  "מחוג לשעון שמש",
+  "ידית לרוכסן שנשבר",
+];
+
 export const ROOM_LOOPS: Record<string, RoomLoop> = {
   /* --- שלב 02: הזדהות ובחירת שם --------------------------------------- */
   "2": {
@@ -104,7 +123,7 @@ export const ROOM_LOOPS: Record<string, RoomLoop> = {
       {
         kind: "answer",
         correct: 2,
-        text: "ג. במחקר שפורסם ב־Science, א ו־ב כמעט לא ניבאו דבר. מה שכן ניבא: חלוקה שוויונית של הדיבור, ורגישות חברתית.",
+        text: "ג׳ במחקר שפורסם ב־Science, א׳ ו־ב׳ כמעט לא ניבאו דבר. מה שכן ניבא: חלוקה שוויונית של הדיבור, ורגישות חברתית.",
         source: "וולי ועמיתים, 2010; 699 נבדקים",
       },
       {
@@ -150,10 +169,10 @@ export const ROOM_LOOPS: Record<string, RoomLoop> = {
         seconds: 30,
         visual: { type: "countdown", seconds: 30 },
       },
-      { kind: "fact", visual: { type: "growingList" }, text: "עכשיו חִזרנה לרשימה. הרעיון הכי מקורי, היכן הוא? כמעט בטוח: לקראת הסוף." },
+      { kind: "fact", visual: { type: "growingList", items: CLIP_USES }, text: "עכשיו חִזרנה לרשימה. הרעיון הכי מקורי, היכן הוא? כמעט בטוח: לקראת הסוף." },
       {
         kind: "explain",
-        visual: { type: "growingList" },
+        visual: { type: "growingList", items: CLIP_USES },
         text: "הרעיונות הראשונים הם הזמינים ביותר, אלה שעולים לכולן. רק אחרי שהם \"יוצאים\", המחשבה נאלצת להרחיק לכת. התופעה תועדה כבר ב־1957 ונבחנה מחדש ב־2012: ככל שהרשימה מתארכת, הרעיונות נעשים מקוריים יותר.",
         source: "ביטי וסילביה, 2012",
       },
@@ -218,7 +237,7 @@ export const ROOM_LOOPS: Record<string, RoomLoop> = {
         kind: "answer",
         correct: 1,
         visual: { type: "forces" },
-        text: "ב. לפי \"ניתוח שדה הכוחות\" של לוין, מצב תקוע הוא שיווי משקל בין כוחות מקדמים לכוחות בולמים.",
+        text: "ב׳ לפי \"ניתוח שדה הכוחות\" של לוין, מצב תקוע הוא שיווי משקל בין כוחות מקדמים לכוחות בולמים.",
       },
       {
         kind: "explain",
@@ -248,7 +267,7 @@ export const ROOM_LOOPS: Record<string, RoomLoop> = {
         kind: "answer",
         correct: 2,
         visual: { type: "countDown", from: 1.5, to: 0.8, suffix: "%" },
-        text: "ג. רשימת תיוג בת 19 פריטים, על פי הנחיות ארגון הבריאות העולמי. אחרי הכנסתה ירדו הסיבוכים הקשים מ־11% ל־7%, והתמותה מ־1.5% ל־0.8%.",
+        text: "ג׳ רשימת תיוג בת 19 פריטים, על פי הנחיות ארגון הבריאות העולמי. אחרי הכנסתה ירדו הסיבוכים הקשים מ־11% ל־7%, והתמותה מ־1.5% ל־0.8%.",
         source: "NEJM, 2009",
       },
       {
@@ -308,6 +327,7 @@ export const ROOM_LOOPS: Record<string, RoomLoop> = {
       },
       {
         kind: "answer",
+        label: "הפתרון",
         visual: { type: "converge" },
         text: "מפצלים את הצבא לקבוצות קטנות, שולחים כל אחת בדרך אחרת, וכולן נפגשות במבצר.",
       },
@@ -317,7 +337,7 @@ export const ROOM_LOOPS: Record<string, RoomLoop> = {
         visual: { type: "converge" },
         text: "רופא צריך להשמיד גידול בקרינה. קרן חזקה תפגע גם ברקמה הבריאה שבדרך; קרן חלשה לא תספיק. מה עושים?",
       },
-      { kind: "answer", visual: { type: "converge" }, text: "הרבה קרניים חלשות מכיוונים שונים, שנפגשות בגידול." },
+      { kind: "answer", label: "הפתרון", visual: { type: "converge" }, text: "הרבה קרניים חלשות מכיוונים שונים, שנפגשות בגידול." },
       {
         kind: "explain",
         visual: { type: "converge" },
@@ -492,7 +512,7 @@ export const ROOM_LOOPS: Record<string, RoomLoop> = {
       {
         kind: "answer",
         correct: 2,
-        text: "ג. ברוס ג'ויס ובוורלי שואורס מצאו שאחרי השתלמות כזו, רק כ־5% מהמורות מעבירות את המיומנות לכיתה.",
+        text: "ג׳ ברוס ג'ויס ובוורלי שואורס מצאו שאחרי השתלמות כזו, רק כ־5% מהמורות מעבירות את המיומנות לכיתה.",
         source: "ג'ויס ושואורס, 2002",
       },
       {
@@ -540,4 +560,21 @@ export function slideSeconds(slide: RoomSlide): number {
   if (slide.kind === "riddle") return slide.seconds ?? RIDDLE_SECONDS;
   if (slide.kind === "closing") return CLOSING_SECONDS;
   return SLIDE_SECONDS;
+}
+
+/**
+ * "שלב החדר" = השלב של הרוב (החלטת המפתחת 2026-11-19): השלב שהכי הרבה
+ * קבוצות נמצאות בו. כשאין רוב (כל קבוצה בשלב אחר) - השלב האמצעי.
+ */
+export function majorityStage(stages: number[]): number {
+  if (stages.length === 0) return 1;
+  const counts = new Map<number, number>();
+  for (const s of stages) counts.set(s, (counts.get(s) ?? 0) + 1);
+  const best = Math.max(...counts.values());
+  if (best > 1) {
+    // שוויון בין שני "רובים" (למשל 2-2 בארבע קבוצות) - הנמוך מביניהם
+    return Math.min(...[...counts].filter(([, c]) => c === best).map(([s]) => s));
+  }
+  const sorted = stages.slice().sort((a, b) => a - b);
+  return sorted[Math.floor((sorted.length - 1) / 2)];
 }

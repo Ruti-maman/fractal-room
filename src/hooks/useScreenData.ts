@@ -9,6 +9,8 @@ interface Workshop {
   created_at: string;
   shared_stage_started_at: string | null;
   shared_stage_number: number | null;
+  /** הדילמה שנבחרה מהספרייה (null = תוכן השלבים) */
+  dilemma_id: string | null;
 }
 
 interface ScreenData {
@@ -44,7 +46,7 @@ export function useScreenData(screenNumber: number): ScreenData {
   useEffect(() => {
     supabase
       .from("workshops")
-      .select("id, program_id, created_at, shared_stage_started_at, shared_stage_number")
+      .select("id, program_id, created_at, shared_stage_started_at, shared_stage_number, dilemma_id")
       .eq("status", "active")
       .limit(1)
       .maybeSingle()
@@ -65,7 +67,7 @@ export function useScreenData(screenNumber: number): ScreenData {
         supabase.from("groups").select("*").eq("workshop_id", workshopId),
         supabase
           .from("workshops")
-          .select("id, program_id, created_at, shared_stage_started_at, shared_stage_number")
+          .select("id, program_id, created_at, shared_stage_started_at, shared_stage_number, dilemma_id")
           .eq("id", workshopId)
           .single(),
       ]);

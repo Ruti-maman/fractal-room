@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useScreenData } from "../hooks/useScreenData";
 import { useProgramStages } from "../hooks/useProgramStages";
+import { useDilemma } from "../hooks/useDilemmas";
+import { applyDilemma } from "../lib/applyDilemma";
 import { useKioskMode } from "../hooks/useKioskMode";
 import StageRouter from "../components/StageRouter";
 import RoomScreen from "../components/RoomScreen";
@@ -19,7 +21,11 @@ function ScreenPage() {
   const screenNumber = Number(screenNumberParam);
   const { loading, workshop, myGroup, allGroups, advanceMyStage, goBackStage } =
     useScreenData(screenNumber);
-  const { stages, loading: stagesLoading } = useProgramStages(workshop?.program_id);
+  const { stages: programStages, loading: programStagesLoading } = useProgramStages(workshop?.program_id);
+  // הדילמה שנבחרה מהספרייה ב-/admin נכנסת לתוכן של שלבים 2-4 (applyDilemma)
+  const { dilemma, loading: dilemmaLoading } = useDilemma(workshop?.dilemma_id);
+  const stages = useMemo(() => applyDilemma(programStages, dilemma), [programStages, dilemma]);
+  const stagesLoading = programStagesLoading || dilemmaLoading;
 
   // השלב הקיים הבא / הקודם בתוכנית. המספרים לא בהכרח רציפים (שלב 9 הוסר),
   // ולכן לא מוסיפים/מחסירים 1 - אחרת הקבוצה נוחתת על שלב שלא קיים.
@@ -80,7 +86,25 @@ function ScreenPage() {
     const roomContent = Object.fromEntries(
       stages.map((st) => [st.stage_number, (st.content as { room?: { title?: string } } | null)?.room]),
     );
-    return <RoomScreen allGroups={allGroups} stageNumbers={stageNumbers} roomContent={roomContent} />;
+    // תוכן שלב 2 - הטיפים, "כלל הפרקטל" ו"מי בחדר" מוצגים גם במסך הגדול
+    const stage2Content = stages.find((st) => st.stage_number === 2)?.content as
+      | { identification?: Record<string, unknown>; room?: Record<string, unknown> }
+      | null
+      | undefined;
+    return (
+      <RoomScreen
+        allGroups={allGroups}
+        stageNumbers={stageNumbers}
+        roomContent={roomContent}
+        stage2Content={stage2Content ?? undefined}
+        stage6Content={
+          (stages.find((st) => st.stage_number === 6)?.content as
+            | { tips_title?: string; tips?: { title: string; text: string }[]; fractal_title?: string; fractal_text?: string }
+            | null
+            | undefined) ?? undefined
+        }
+      />
+    );
   }
 
   // יש הפעלה, אבל אין קבוצה שמשויכת למסך הזה - כאן זו כן תקלת נתונים.

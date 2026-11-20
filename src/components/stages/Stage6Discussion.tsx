@@ -5,8 +5,8 @@ import type { Group } from "../../types/group";
 import { useDiscussionStart } from "../../hooks/useDiscussionStart";
 import StageShell from "../StageShell";
 import Hourglass from "../Hourglass";
-import type { Tip } from "../TipPopups";
 import TipChat from "../TipChat";
+import { DEFAULT_TIPS } from "../../lib/stage6Texts";
 import FractalFullscreen from "../FractalFullscreen";
 import { GlassButton } from "../ui/Glass";
 import { cx } from "../../lib/cx";
@@ -45,13 +45,7 @@ const DEFAULT_INTRO: Stage6Line[] = [
   { text: "שמתייחס לדפוס שזיהיתן — ולא רק לסימפטום." },
 ];
 
-const DEFAULT_TIPS: Tip[] = [
-  { title: "קודם מבינות. אחר כך פותרות.", text: "אל תקפצו לפתרון בדקה הראשונה." },
-  { title: "תתווכחו עם הרעיון, לא עם מי שהציעה אותו.", text: "רעיון טוב שורד כמה שאלות קשות." },
-  { title: "חפשו את נקודת המינוף.", text: "מה שינוי קטן יחסית שיכול לייצר שינוי גדול?" },
-  { title: "אל תסתפקו ב\"צריך\".", text: "\"צריך לתת יותר יחס\" זה לא פתרון. מה בדיוק עושים אחרת?" },
-  { title: "אם כולן מסכימות מיד — תעצרו.", text: "כנראה עוד לא עשיתן מספיק זום." },
-];
+
 
 const DEFAULTS = {
   start_label: "בואו נדבר על זה",

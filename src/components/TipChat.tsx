@@ -24,12 +24,15 @@ function TipChat({
   title,
   tips,
   confirmLabel,
+  displayOnly = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   tips: Tip[];
   confirmLabel: string;
+  /** תצוגה בלבד - למסך הגדול (/screen/4): בלי כפתור "הבנו!" */
+  displayOnly?: boolean;
 }) {
   // כמה בועות כבר נחתו; typing = הנקודות של הבאה בתור מוצגות עכשיו
   const [shown, setShown] = useState(0);
@@ -72,11 +75,11 @@ function TipChat({
   return (
     <GlassModal
       open={open}
-      onClose={onClose}
+      onClose={displayOnly ? undefined : onClose}
       title={title}
       icon={false}
-      confirmLabel={confirmLabel}
-      onConfirm={onClose}
+      confirmLabel={displayOnly ? undefined : confirmLabel}
+      onConfirm={displayOnly ? undefined : onClose}
       hideCancel
       dismissable={false}
       // רקע צ'אט עכשווי ובועות לבנות (בקשת הלקוחה, 2026-11-08) - ראו .chat-surface

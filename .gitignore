@@ -17,3 +17,7 @@ recordings/
 
 # סקריפטים זמניים של בדיקה ויזואלית (לא חלק מהמוצר)
 *.tmp.mjs
+
+# עותקים מקומיים של סרטוני הדילמות (רק לשרת הפיתוח - NetFree חוסם וידאו מ-Supabase).
+# המקור: Supabase Storage, media/dilemmas/. ראו src/lib/dilemmaVideo.ts
+public/dilemmas-local/

@@ -81,9 +81,21 @@ async function deleteWorkshop(workshopId: string): Promise<string | null> {
  * ב-CLAUDE.md ("הנתונים הישנים נשמרים"), ולכן לפני הסדנה האמיתית חייבים
  * ייצוא נתונים - אחרת לחיצה על "סדנה חדשה" אחרי סדנה אמיתית מוחקת הכול.
  */
-export async function startNewWorkshop(): Promise<{ error: string | null }> {
+export async function startNewWorkshop(dilemmaId?: string | null): Promise<{ error: string | null }> {
   const { programId, error: findError } = await findProgramId();
   if (findError || !programId) return { error: findError ?? "לא נמצאה תוכנית." };
+
+  // הדילמה שנבחרה בספרייה עוברת להפעלה החדשה (אלא אם נבחרה אחרת במפורש)
+  let chosenDilemma = dilemmaId;
+  if (chosenDilemma === undefined) {
+    const { data: active } = await supabase
+      .from("workshops")
+      .select("dilemma_id")
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    chosenDilemma = (active?.dilemma_id as string | null | undefined) ?? null;
+  }
 
   // מחיקת כל ההפעלות הקודמות (כולל הפעילה), עם כל הנתונים שלהן
   const { data: previous, error: listError } = await supabase.from("workshops").select("id");
@@ -95,7 +107,7 @@ export async function startNewWorkshop(): Promise<{ error: string | null }> {
 
   const { data: newWorkshop, error: createError } = await supabase
     .from("workshops")
-    .insert({ program_id: programId, status: "active" })
+    .insert({ program_id: programId, status: "active", dilemma_id: chosenDilemma })
     .select("id")
     .single();
   if (createError || !newWorkshop) return { error: createError?.message ?? "יצירת ההפעלה נכשלה." };
@@ -122,4 +134,27 @@ export async function startNewWorkshop(): Promise<{ error: string | null }> {
   }
 
   return { error: null };
+}
+
+/** ההפעלה הפעילה (או האחרונה) והתוכנית שלה - למסך ספריית הדילמות ב-/admin. */
+export async function getAdminWorkshop(): Promise<{
+  workshopId: string | null;
+  programId: string | null;
+  dilemmaId: string | null;
+  error: string | null;
+}> {
+  const { programId, activeId, error } = await findProgramId();
+  if (error) return { workshopId: null, programId: null, dilemmaId: null, error };
+  if (!activeId) return { workshopId: null, programId, dilemmaId: null, error: null };
+  const { data } = await supabase.from("workshops").select("dilemma_id").eq("id", activeId).maybeSingle();
+  return { workshopId: activeId, programId, dilemmaId: (data?.dilemma_id as string | null) ?? null, error: null };
+}
+
+/**
+ * בוחרת את הדילמה שתוביל את הסדנה הפעילה. המסכים מתעדכנים לבד (realtime על
+ * workshops), כך שאפשר לבחור גם אחרי שהמסכים בחדר כבר פתוחים.
+ */
+export async function setWorkshopDilemma(workshopId: string, dilemmaId: string | null): Promise<string | null> {
+  const { error } = await supabase.from("workshops").update({ dilemma_id: dilemmaId }).eq("id", workshopId);
+  return error ? error.message : null;
 }

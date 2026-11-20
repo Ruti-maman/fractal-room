@@ -4623,68 +4623,6 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   }
 }
 
-/* --- המסך הרביעי, שלב 1: ברוכות הבאות + שני הלוגואים (2026-11-19) ------- */
-.rs-welcome__body {
-  position: absolute;
-  inset: var(--ed-top) 0 calc(var(--full-h, 100vh) - var(--ed-bottom)) 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7vh;
-}
-.rs-welcome__title {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0 0.28em;
-  color: var(--ed-ink);
-  font-size: min(17vh, 11rem);
-  font-weight: 800;
-  line-height: 0.95;
-}
-/* כל מילה עולה מתוך פס סמוי - כמו כותרות הפתיחה */
-.rs-welcome__word {
-  display: inline-block;
-  animation: rs-word 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@keyframes rs-word {
-  from {
-    clip-path: inset(0 0 100% 0);
-    translate: 0 40%;
-  }
-  to {
-    clip-path: inset(0 0 -10% 0);
-    translate: 0 0;
-  }
-}
-.rs-logos {
-  display: flex;
-  align-items: center;
-  gap: 4vw;
-  animation: pod-fade 0.9s ease 1s both;
-}
-.rs-logo {
-  height: min(20vh, 12rem);
-  width: auto;
-  object-fit: contain;
-}
-.rs-logos__sep {
-  width: 1px;
-  height: min(14vh, 8rem);
-  background: var(--ed-line-strong);
-}
-@media (prefers-reduced-motion: reduce) {
-  .rs-welcome__word,
-  .rs-logos {
-    animation: none;
-  }
-}
-/* בלי הבלוק הכחול - הקווים האופקיים לכל הרוחב */
-.rs-welcome .ed-hline {
-  left: 0;
-}
-
 /* ==========================================================================
    לופים של המסך הרביעי (RoomLoop, 2026-11-19) - לפי האפיון של הלקוחה:
    חידה/תשובה - כחול מלא, טקסט לבן, כרטיסים לבנים; הנכון באדום.
@@ -4692,6 +4630,392 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
    "ועכשיו אצלכן" - אדום מלא, טקסט לבן, הגדול מכולם.
    כותרת הלופ קבועה בימין למעלה עם ריבוע אדום; פס התקדמות דק בתחתית.
    ========================================================================== */
+/* --- המסך הגדול, שלב 10: העיקרון (rp-*, 2026-11-20) --- */
+.rp-page {
+  display: grid;
+  place-items: center;
+  padding: 14vh 10vw;
+}
+.rp-quote {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  max-width: 72rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 3vh;
+  margin: 0;
+  text-align: center;
+}
+.rp-qm {
+  width: auto;
+  height: min(12vh, 7.5rem);
+  fill: #f25740;
+  animation: rl-in 0.8s ease both;
+}
+.rp-sentence {
+  font-size: min(7vh, 4.4rem);
+  font-weight: 800;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+/* המילים עולות אחת-אחת, כמו במסך הסיום של הקבוצות */
+.rp-word {
+  display: inline-block;
+  white-space: pre;
+  animation: rl-in 0.7s ease both;
+}
+.rp-wait {
+  position: relative;
+  z-index: 1;
+  font-size: min(5vh, 3rem);
+  font-weight: 700;
+  opacity: 0.85;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp-qm,
+  .rp-word {
+    animation: none;
+  }
+}
+
+/* --- המסך הגדול, שלב 7: ההקלטות של הקבוצות (rr-*, 2026-11-20) --- */
+.rr-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4vh;
+  padding: 14vh 8vw 8vh;
+}
+.rr-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  place-items: center;
+}
+.rr-featured {
+  display: flex;
+  height: 100%;
+  max-height: 58vh;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5vh;
+  margin: 0;
+  animation: rl-in 0.8s ease both;
+}
+.rr-featured video {
+  height: calc(100% - 6vh);
+  max-width: 80vw;
+  border: 3px solid #ffffff;
+  background: #0b1b3f;
+}
+.rr-featured video::cue {
+  background: rgb(11 27 63 / 0.8);
+  color: #ffffff;
+  font-size: 1.6rem;
+  font-family: "Heebo", sans-serif;
+}
+.rr-featured__name {
+  font-size: min(4.4vh, 2.6rem);
+  font-weight: 800;
+}
+.rr-empty {
+  max-width: 40rem;
+  font-size: min(5vh, 3rem);
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+}
+.rr-groups {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 100%;
+  max-width: 80rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2vw;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rr-group {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  padding: 2vh 1.5vw;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  transition: background 0.4s ease, color 0.4s ease;
+}
+.rr-group__dot {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 2px solid #ffffff;
+}
+.rr-group.is-done .rr-group__dot {
+  border-color: #f25740;
+  background: #f25740;
+}
+.rr-group__name {
+  flex: 1;
+  font-size: min(3.2vh, 1.9rem);
+  font-weight: 800;
+}
+.rr-group__state {
+  font-size: min(2.4vh, 1.4rem);
+  opacity: 0.8;
+}
+/* הקבוצה שההקלטה שלה מתנגנת - בלוק לבן הפוך */
+.rr-group.is-playing {
+  background: #ffffff;
+  color: #0b1b3f;
+}
+
+/* --- ספריית הדילמות ב-/admin (dl-*, 2026-11-19) - כרטיסים מרובעים בשפת העיתונאי --- */
+.dl-library {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  border: 1px solid rgb(11 27 63 / 0.15);
+  background: #ffffff;
+  color: #0b1b3f;
+}
+.dl-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.dl-title {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 2rem;
+  font-weight: 800;
+}
+.dl-title__sq {
+  width: 14px;
+  height: 14px;
+  background: #f25740;
+}
+.dl-sub {
+  font-size: 1.15rem;
+  color: rgb(11 27 63 / 0.75);
+}
+.dl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dl-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgb(11 27 63 / 0.2);
+  background: #f4f6fb;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.dl-card.is-chosen {
+  border-color: #f25740;
+  box-shadow: inset 0 0 0 2px #f25740;
+}
+.dl-card__media {
+  aspect-ratio: 16 / 9;
+  background: #0b1b3f;
+}
+.dl-card__media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dl-card__novideo {
+  display: grid;
+  height: 100%;
+  place-items: center;
+  color: #ffffff;
+  font-weight: 600;
+}
+.dl-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem 1.1rem 0.6rem;
+}
+.dl-card__num {
+  color: #f25740;
+  font-size: 2rem;
+  font-weight: 200;
+  line-height: 1;
+}
+.dl-card__title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.dl-card__summary {
+  font-size: 1rem;
+  line-height: 1.45;
+  color: rgb(11 27 63 / 0.75);
+}
+.dl-card__foot {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  padding: 0.6rem 1.1rem 1.1rem;
+}
+.dl-card__chosen {
+  color: #f25740;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+/* --- המסך הגדול, שלב 2: "מי בחדר" (wr-*) - כמו המסך של הקבוצות, בלי כפתור --- */
+.wr-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 6vh 8vw;
+  text-align: center;
+}
+.wr-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4vh;
+}
+.wr-title {
+  padding-bottom: 0.6vh;
+  border-bottom: 4px solid #f25740;
+  font-size: min(5vh, 3rem);
+  font-weight: 800;
+}
+.wr-intro {
+  font-size: min(2.8vh, 1.7rem);
+  opacity: 0.85;
+}
+.wr-journey {
+  position: relative;
+  z-index: 1;
+  font-size: min(9vh, 5.6rem);
+  font-weight: 800;
+  line-height: 1;
+}
+.wr-cards {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 100%;
+  max-width: 82rem;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  gap: 2.5vw;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wr-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2vh;
+  padding: 3vh 2vw;
+  background: #ffffff;
+  color: #0b1b3f;
+  text-align: start;
+  animation: rl-in 0.8s ease both;
+}
+/* הצדדיים מוטים קלות, כמו הקלפים במסך של הקבוצות */
+.wr-card:first-child {
+  rotate: 2deg;
+}
+.wr-card:last-child {
+  rotate: -2deg;
+}
+.wr-card__badge {
+  position: absolute;
+  top: 2.4vh;
+  left: 1.6vw;
+  display: grid;
+  width: 5vh;
+  height: 5vh;
+  place-items: center;
+  border: 1.5px solid rgb(11 27 63 / 0.35);
+  font-size: min(2.4vh, 1.4rem);
+  font-weight: 800;
+}
+.wr-card.is-in .wr-card__badge {
+  border-color: #2a4286;
+  background: #2a4286;
+  color: #ffffff;
+}
+.wr-card__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6vw;
+  padding-inline-end: 4vw;
+  font-size: min(3.2vh, 1.9rem);
+  font-weight: 700;
+}
+.wr-card__row b {
+  font-weight: 800;
+}
+.wr-empty {
+  color: rgb(11 27 63 / 0.45);
+  font-style: italic;
+  font-weight: 600;
+  /* אות נטויה אחרונה נחתכת בקצה בלי ריווח (אותה מלכודת כמו בשלב 2) */
+  padding-inline-end: 0.3em;
+}
+.wr-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5vw;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wr-names li {
+  padding: 0.3vh 0.8vw;
+  border: 1px solid rgb(11 27 63 / 0.25);
+  font-size: min(2.4vh, 1.4rem);
+  font-weight: 600;
+}
+.wr-foot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6vh;
+  font-size: min(3vh, 1.8rem);
+}
+.wr-foot__bold {
+  font-size: min(4.4vh, 2.7rem);
+  font-weight: 800;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wr-card {
+    animation: none;
+  }
+}
+
+/* לוגו הסמינר במסך הפתיחה של המסך הגדול - במקום כפתור "התחילו" */
+.rs-seminar-logo {
+  height: min(12vh, 7rem);
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
 .rl-page {
   position: relative;
   height: var(--full-h, 100dvh);
@@ -4827,7 +5151,8 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   opacity: 0.3;
 }
 .rl-answer {
-  max-width: 64rem;
+  /* ברוחב שורת הכרטיסים שמעליה - כך כל משפט נכנס בשורה אחת */
+  max-width: min(64vw, 78rem);
   font-size: min(4.4vh, 2.7rem);
   font-weight: 700;
   line-height: 1.35;
@@ -4853,7 +5178,13 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   line-height: 1.35;
 }
 .rl-second {
+  display: block;
   transition: opacity 1.2s ease;
+}
+/* כל משפט בשורה משלו; השבירה בתוכו מאוזנת (דפדפן ישן מתעלם - ונשאר תקין) */
+.rl-line {
+  display: block;
+  text-wrap: balance;
 }
 /* --- ועכשיו אצלכן --- */
 .rl-now {
@@ -5086,17 +5417,21 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   font-weight: 300;
   font-variant-numeric: tabular-nums;
 }
-.rl-list__bar {
-  height: 2px;
-  background: #0b1b3f;
+.rl-list__text {
+  padding-bottom: 0.4vh;
+  border-bottom: 1px solid rgb(11 27 63 / 0.2);
+  font-size: min(2.7vh, 1.6rem);
+  font-weight: 600;
+  line-height: 1.2;
 }
-.rl-list li.is-late .rl-list__n {
+/* הפריטים האחרונים - המקוריים - באדום: המספר, הטקסט והקו */
+.rl-list li.is-late .rl-list__n,
+.rl-list li.is-late .rl-list__text {
   color: #f25740;
-  font-weight: 700;
+  font-weight: 800;
 }
-.rl-list li.is-late .rl-list__bar {
-  height: 5px;
-  background: #f25740;
+.rl-list li.is-late .rl-list__text {
+  border-bottom: 3px solid #f25740;
 }
 /* --- שלב 4: שדה כוחות --- */
 .rl-forces {
@@ -5195,11 +5530,10 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   text-align: center;
 }
 .rl-quote-mark {
-  height: min(16vh, 10rem);
-  color: #f25740;
-  font-size: min(30vh, 19rem);
-  font-weight: 800;
-  line-height: 0.9;
+  width: auto;
+  height: min(11vh, 7rem);
+  fill: #f25740;
+  margin-bottom: 1vh;
 }
 .rl-quote {
   max-width: 60rem;
@@ -5214,9 +5548,13 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   font-weight: 500;
   opacity: 0.75;
 }
+/* המירכאות הסוגרות - אותה צורה, בגובה השורה, צמודות למילה האחרונה (כמו בשלב 10) */
 .rl-quote__close {
-  color: #f25740;
-  margin-inline-start: 0.1em;
+  display: inline-block;
+  width: auto;
+  height: 0.6em;
+  fill: #f25740;
+  vertical-align: top;
 }
 /* --- שלב 5: חיצים שמתכנסים --- */
 .rl-converge {

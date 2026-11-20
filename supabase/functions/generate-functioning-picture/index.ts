@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
           .order("created_at", { ascending: true })
           .limit(1)
           .maybeSingle(),
-        supabase.from("workshops").select("program_id").eq("id", workshop_id).maybeSingle(),
+        supabase.from("workshops").select("program_id, dilemma_id").eq("id", workshop_id).maybeSingle(),
       ]);
 
     // הטקסט המקורי המלא של שלב 4 (לא רק הקטעים שהודגשו ממנו) - כדי שה-AI
@@ -213,7 +213,17 @@ Deno.serve(async (req) => {
     // ולא רק שרשור של הביטויים שסומנו. גנרי לגמרי: אם מחר יעלה תוכן אחר
     // לגמרי (תוכנית אחרת, נושא אחר) - זה פשוט מה שיישלף וישמש כהקשר.
     let profileText = "";
-    if (workshopRow?.program_id) {
+    // ספריית הדילמות (2026-11-19): אם נבחרה דילמה להפעלה - הטקסט שלה, לא של תוכן השלב
+    const dilemmaId = (workshopRow as { dilemma_id?: string | null } | null)?.dilemma_id;
+    if (dilemmaId) {
+      const { data: dilemmaRow } = await supabase
+        .from("dilemmas")
+        .select("profile_text")
+        .eq("id", dilemmaId)
+        .maybeSingle();
+      profileText = (dilemmaRow?.profile_text as string | null) ?? "";
+    }
+    if (!profileText && workshopRow?.program_id) {
       const { data: stageRow } = await supabase
         .from("program_stages")
         .select("content")

@@ -11,6 +11,7 @@ import { GlassButton, GlassIconButton } from "../components/ui/Glass";
 import { InlineNotice } from "../components/ui/Feedback";
 import { ThemeToggle } from "../components/ui/SystemControls";
 import { useToast } from "../components/ui/Toast";
+import DilemmaLibrary from "../components/DilemmaLibrary";
 
 /**
  * מסך ניהול - עדיין לא סוכם עם הלקוחה איפה כפתור "סדנה חדשה" צריך להיות
@@ -80,7 +81,7 @@ function AdminPage() {
         <ThemeToggle />
       </div>
 
-      <div className="relative flex w-full max-w-2xl flex-col gap-6">
+      <div className="relative flex w-full max-w-6xl flex-col gap-6 [&>section:not(.dl-library)]:mx-auto [&>section:not(.dl-library)]:w-full [&>section:not(.dl-library)]:max-w-2xl">
         <header
           className="flex flex-col items-center gap-3 text-center"
           style={{ animation: "fade-up var(--ds-dur-slow) var(--ds-ease) both" }}
@@ -92,6 +93,10 @@ function AdminPage() {
           <h1 className="glass-title text-5xl">חדר פרקטל</h1>
           <p className="text-ink-2 text-lg">הפעלת סדנה והגדרות המסכים בחדר</p>
         </header>
+
+        {/* --- ספריית הדילמות --- "מסך ראשוני" (דרישת הלקוחה): בוחרים קודם כל
+            את הדילמה שתוביל את הסדנה */}
+        <DilemmaLibrary />
 
         {/* --- ייצוא נתונים --- לפני "סדנה חדשה", כי זה מה שעושים קודם */}
         <section

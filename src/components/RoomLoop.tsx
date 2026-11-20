@@ -51,7 +51,16 @@ function splitInTwo(text: string): [string, string] | null {
 /** תוספות שיושבות בצד השמאלי של המסך ולא מעל הטקסט */
 const SIDE_VISUALS = new Set<SlideVisual["type"]>(["growingList", "squares"]);
 
-function RoomLoop({ loop, startAt = 0 }: { loop: Loop; startAt?: number }) {
+function RoomLoop({
+  loop,
+  startAt = 0,
+  onComplete,
+}: {
+  loop: Loop;
+  startAt?: number;
+  /** נקרא בסוף הלופ (אחרי שקף הסיום) במקום לחזור להתחלה - למסך שמשלב עוד תצוגות */
+  onComplete?: () => void;
+}) {
   const [index, setIndex] = useState(startAt);
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
@@ -66,6 +75,10 @@ function RoomLoop({ loop, startAt = 0 }: { loop: Loop; startAt?: number }) {
   }, [loop]);
 
   const next = () => {
+    if (onComplete && index === loop.slides.length - 1) {
+      onComplete();
+      return;
+    }
     setIndex((i) => (i + 1) % loop.slides.length);
     setStartedAt(Date.now());
   };
@@ -119,7 +132,7 @@ function RoomLoop({ loop, startAt = 0 }: { loop: Loop; startAt?: number }) {
       {visual?.type === "link" && <LinkBand key={`link-${index}`} visual={visual} />}
       {side && (
         <div key={`side-${index}`} className="rl-side" aria-hidden="true">
-          {side.type === "growingList" ? <GrowingList /> : <Squares />}
+          {side.type === "growingList" ? <GrowingList items={side.items} /> : <Squares />}
         </div>
       )}
 
@@ -156,7 +169,7 @@ function SlideBody({ slide, options, reveal, elapsedMs }: BodyProps) {
     const riddle = slide.kind === "riddle";
     const opts = riddle ? slide.options : options;
     const correct = slide.kind === "answer" ? slide.correct : undefined;
-    const label = riddle ? (slide.label ?? "חידה") : "התשובה";
+    const label = slide.label ?? (riddle ? "חידה" : "התשובה");
     const alone = visual?.type === "alone";
     // הספירה היורדת בשקף התשובה יושבת בין הכרטיסים להסבר
     const afterOptions = visual?.type === "countDown";
@@ -164,7 +177,11 @@ function SlideBody({ slide, options, reveal, elapsedMs }: BodyProps) {
       <div className={`rl-qa${visual ? " rl-qa--visual" : ""}${alone ? " rl-qa--alone" : ""}`}>
         {!afterOptions && top}
         {!alone && <span className="rl-label">{label}</span>}
-        {riddle && <p className="rl-question">{slide.text}</p>}
+        {riddle && (
+          <p className="rl-question">
+            <Lines text={slide.text} />
+          </p>
+        )}
         {opts && opts.length > 0 && (
           <ul className="rl-options">
             {opts.map((o, i) => (
@@ -180,7 +197,8 @@ function SlideBody({ slide, options, reveal, elapsedMs }: BodyProps) {
           </ul>
         )}
         {afterOptions && top}
-        {!riddle && <TwoStep text={slide.text} reveal={reveal} className="rl-answer" />}
+        {/* התשובה ממורכזת מתחת לכרטיסים - בשורות קצרות, שבורות בין ביטויים */}
+        {!riddle && <TwoStep text={slide.text} reveal={reveal} className="rl-answer" short />}
       </div>
     );
   }
@@ -193,7 +211,11 @@ function SlideBody({ slide, options, reveal, elapsedMs }: BodyProps) {
     return (
       <div className={cls.join(" ")}>
         {top}
-        {slide.kind === "explain" && slide.lead && <p className="rl-lead">{slide.lead}</p>}
+        {slide.kind === "explain" && slide.lead && (
+          <p className="rl-lead">
+            <Lines text={slide.lead} />
+          </p>
+        )}
         {slide.kind === "explain" && <span className="rl-label">{slide.label ?? "ההסבר"}</span>}
         {visual?.type === "stairs" && <Stairs steps={visual.steps} />}
         {visual?.type === "quote" ? (
@@ -213,7 +235,9 @@ function SlideBody({ slide, options, reveal, elapsedMs }: BodyProps) {
     return (
       <div className="rl-now">
         <span className="rl-now__label">ועכשיו אצלכן</span>
-        <p className="rl-now__text">{slide.text}</p>
+        <p className="rl-now__text">
+          <Lines text={slide.text} />
+        </p>
       </div>
     );
   }
@@ -221,15 +245,96 @@ function SlideBody({ slide, options, reveal, elapsedMs }: BodyProps) {
   return null;
 }
 
+/**
+ * פיסוק לשורות (בקשת המפתחת 2026-11-19: "תרד שורות ותפסק בצורה מתאימה"):
+ * כל משפט מתחיל בשורה חדשה, והשבירה בתוך משפט מאוזנת (text-wrap: balance
+ * ב-CSS), כדי שלא תישאר מילה בודדת בסוף. שבירה רק אחרי סימן פיסוק שאחריו
+ * רווח - כך "1.5%" או "B = f(P, E)" לא נחתכים.
+ */
+/**
+ * שורות קצרות (בקשת המפתחת 2026-11-19: "תקצר את השורות בצורה יפה"): משפט
+ * ארוך נחתך גם בגבולות פסוקית (פסיק / נקודתיים / נקודה-פסיק), והפסוקיות
+ * מצורפות לשורה כל עוד היא עד LINE_WORDS מילים. כך השבירה תמיד בין ביטויים,
+ * אף פעם לא באמצע.
+ */
+const LINE_WORDS = 6;
+function toShortLines(text: string): string[] {
+  const out: string[] = [];
+  for (const sentence of toLines(text)) {
+    if (wordCount(sentence) <= LINE_WORDS + 1) {
+      out.push(sentence);
+      continue;
+    }
+    const clauses = sentence.split(/(?<=[,:;])\s+/);
+    let line = "";
+    for (const c of clauses) {
+      if (line && wordCount(line) + wordCount(c) > LINE_WORDS) {
+        out.push(line);
+        line = c;
+      } else line = line ? `${line} ${c}` : c;
+    }
+    if (line) out.push(line);
+  }
+  return out;
+}
+
+function toLines(text: string): string[] {
+  const parts = text
+    // רק אחרי סוף משפט (. ? !) - לא אחרי נקודתיים: "מה שכן ניבא:" נשאר עם ההמשך
+    .split(/(?<=[.?!]["״']?)\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // מקטע קצרצר (כמו "ג." בתחילת תשובה) לא עומד לבד בשורה - מוצמד למשפט שאחריו
+  const out: string[] = [];
+  let carry = "";
+  for (const p of parts) {
+    if (p.length <= 3) {
+      carry += (carry ? " " : "") + p;
+      continue;
+    }
+    out.push(carry ? `${carry} ${p}` : p);
+    carry = "";
+  }
+  if (carry) out.length ? (out[out.length - 1] += ` ${carry}`) : out.push(carry);
+  return out;
+}
+
+function Lines({ text, short }: { text: string; short?: boolean }) {
+  return (
+    <>
+      {(short ? toShortLines(text) : toLines(text)).map((l, i) => (
+        <span key={i} className="rl-line">
+          {l}
+        </span>
+      ))}
+    </>
+  );
+}
+
 /** טקסט שנחשף בשני שלבים אם הוא ארוך (האפיון: עד כ-25 מילים בשקף). */
-function TwoStep({ text, reveal, className }: { text: string; reveal: boolean; className: string }) {
+function TwoStep({
+  text,
+  reveal,
+  className,
+  short,
+}: {
+  text: string;
+  reveal: boolean;
+  className: string;
+  short?: boolean;
+}) {
   const parts = splitInTwo(text);
-  if (!parts) return <p className={className}>{text}</p>;
+  if (!parts)
+    return (
+      <p className={className}>
+        <Lines text={text} short={short} />
+      </p>
+    );
   return (
     <p className={className}>
-      {parts[0]}{" "}
+      <Lines text={parts[0]} short={short} />
       <span className="rl-second" style={{ opacity: reveal ? 1 : 0 }}>
-        {parts[1]}
+        <Lines text={parts[1]} short={short} />
       </span>
     </p>
   );
@@ -278,11 +383,8 @@ function TopVisual({ visual, elapsedMs }: { visual: SlideVisual; elapsedMs: numb
     case "icon":
       return <LineIcon name={visual.name} className="rl-tool-icon" />;
     case "quote":
-      return (
-        <span className="rl-quote-mark" aria-hidden="true">
-          ״
-        </span>
-      );
+      // "מירכאות אדומות גדולות, כמו במסך הסיום של שלב 10" - אותה צורה בדיוק
+      return <QuoteMark className="rl-quote-mark" />;
     default:
       return null;
   }
@@ -394,20 +496,18 @@ function Countdown({ seconds, elapsedMs }: { seconds: number; elapsedMs: number 
 }
 
 /** רשימה שמתארכת כלפי מטה; הפריטים האחרונים באדום (שלב 3, שקפים 2-3). */
-function GrowingList() {
-  const rows = 11;
-  // אורכי שורות קבועים (לא אקראיים), כדי שהרשימה תיראה כמו כתב יד
-  const widths = [62, 48, 70, 40, 56, 66, 44, 58, 72, 52, 64];
+function GrowingList({ items }: { items: string[] }) {
+  // השלושה האחרונים - המקוריים - באדום, גם המספר וגם הטקסט (בקשת המפתחת 2026-11-19)
   return (
     <ol className="rl-list">
-      {Array.from({ length: rows }, (_, i) => (
+      {items.map((item, i) => (
         <li
           key={i}
-          className={i >= rows - 3 ? "is-late" : undefined}
+          className={i >= items.length - 3 ? "is-late" : undefined}
           style={{ animationDelay: `${0.4 + i * 0.75}s` }}
         >
           <span className="rl-list__n">{i + 1}</span>
-          <span className="rl-list__bar" style={{ width: `${widths[i]}%` }} />
+          <span className="rl-list__text">{item}</span>
         </li>
       ))}
     </ol>
@@ -526,6 +626,16 @@ function Stairs({ steps }: { steps: string[] }) {
   );
 }
 
+/** המירכאות המצוירות של מסך הסיום בשלב 10 (Stage10Principles) - שתי "טיפות" חדות. */
+function QuoteMark({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 120 90" aria-hidden="true">
+      <path d="M70 0 H110 L92 60 Q88 78 70 86 L66 78 Q76 70 78 58 H62 Z" />
+      <path d="M18 0 H58 L40 60 Q36 78 18 86 L14 78 Q24 70 26 58 H10 Z" />
+    </svg>
+  );
+}
+
 /** ציטוט עם מירכאות אדומות גדולות; המירכאות הישרות שבטקסט מוחלפות בהן. */
 function QuoteText({ text }: { text: string }) {
   const m = text.match(/^(.*?)"(.+)"\s*$/);
@@ -533,10 +643,7 @@ function QuoteText({ text }: { text: string }) {
   return (
     <p className="rl-quote">
       {m[1] && <span className="rl-quote__pre">{m[1]}</span>}
-      {m[2]}
-      <span className="rl-quote__close" aria-hidden="true">
-        ״
-      </span>
+      {m[2]} <QuoteMark className="rl-quote__close" />
     </p>
   );
 }

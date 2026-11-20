@@ -12,6 +12,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useProgramStages } from "../hooks/useProgramStages";
+import { useDilemmaLibrary } from "../hooks/useDilemmas";
+import { applyDilemma } from "../lib/applyDilemma";
 import StageRouter from "../components/StageRouter";
 import type { Group } from "../types/group";
 
@@ -25,16 +27,27 @@ export default function StagePreview() {
   const screen = Number(params.get("screen")) || 1;
   const navigate = useNavigate();
   const [programId, setProgramId] = useState<string | undefined>();
+  const [activeDilemmaId, setActiveDilemmaId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
       .from("workshops")
-      .select("program_id")
+      .select("program_id, dilemma_id")
       .eq("status", "active")
       .limit(1)
-      .then(({ data }) => setProgramId((data?.[0] as { program_id?: string } | undefined)?.program_id));
+      .then(({ data }) => {
+        const row = data?.[0] as { program_id?: string; dilemma_id?: string | null } | undefined;
+        setProgramId(row?.program_id);
+        setActiveDilemmaId(row?.dilemma_id ?? null);
+      });
   }, []);
-  const { stages } = useProgramStages(programId);
+  const { stages: programStages } = useProgramStages(programId);
+  // הדילמה: &dilemma=3 - הדילמה השלישית בספרייה; בלי - זו שנבחרה להפעלה הפעילה
+  const { dilemmas } = useDilemmaLibrary(programId);
+  const pickN = Number(params.get("dilemma"));
+  const dilemma =
+    (pickN ? dilemmas.find((d) => d.sort_order === pickN) : dilemmas.find((d) => d.id === activeDilemmaId)) ?? null;
+  const stages = applyDilemma(programStages, dilemma);
 
   const startedAt = new Date().toISOString();
   const groups: Group[] = [1, 2, 3].map((s) => ({
@@ -50,7 +63,8 @@ export default function StagePreview() {
 
   if (stages.length === 0) return null;
   const numbers = stages.map((s) => s.stage_number).sort((a, b) => a - b);
-  const go = (to: number | undefined) => to && navigate(`/preview/stage?n=${to}&screen=${screen}`);
+  const keepDilemma = params.get("dilemma") ? `&dilemma=${params.get("dilemma")}` : "";
+  const go = (to: number | undefined) => to && navigate(`/preview/stage?n=${to}&screen=${screen}${keepDilemma}`);
 
   return (
     <StageRouter
