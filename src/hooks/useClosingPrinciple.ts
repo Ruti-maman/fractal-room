@@ -59,7 +59,19 @@ export function useClosingPrinciple(workshopId: string, groupId: string) {
             setSentence(result.sentence);
             setLoading(false);
           } else if (fnError || result.error) {
-            setError(result.error ?? "הניסוח נכשל");
+            // תשובה שאינה 200 (למשל 400 "אין עדיין תוכן מהסדנה") מגיעה ב-fnError,
+            // והסיבה האמיתית יושבת בגוף התשובה - מציגים אותה ולא "הניסוח נכשל"
+            let reason = result.error;
+            if (!reason && fnError) {
+              try {
+                const ctx = (fnError as { context?: Response }).context;
+                reason = ((await ctx?.json()) as { error?: string } | undefined)?.error;
+              } catch {
+                // אין גוף קריא - נשארים עם ההודעה הכללית
+              }
+            }
+            if (cancelled) return;
+            setError(reason ?? "הניסוח נכשל");
             setLoading(false);
           }
         } catch {
