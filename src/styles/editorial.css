@@ -5059,8 +5059,9 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   font-weight: 800;
 }
 .rl-title__sq {
-  width: 14px;
-  height: 14px;
+  /* ב-rem ולא px - כדי שיגדל יחד עם המסך הגדול ב-4K */
+  width: 0.875rem;
+  height: 0.875rem;
   background: #f25740;
 }
 .rl-page--now .rl-title__sq {
@@ -5221,7 +5222,7 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   right: 0;
   bottom: 0;
   left: 0;
-  height: 4px;
+  height: 0.25rem;
   background: rgb(127 127 127 / 0.2);
 }
 .rl-progress span {
