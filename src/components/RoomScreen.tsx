@@ -67,7 +67,37 @@ interface Props {
   stage6Content?: Stage6Content;
 }
 
+/*
+ * התאמה לגודל המסך (2026-11-23). המסך הגדול בחדר: כ-196×116 ס"מ (בערך 90
+ * אינץ', כמעט בוודאות 4K - 3840×2160). העיצוב נבנה ונבדק על 1920×1080, וחלק
+ * מהטקסטים מוגבלים בגודל מרבי ב-rem - ולכן ב-4K הכול יצא בחצי גודל.
+ * הפתרון: גודל הגופן הבסיסי (rem) גדל ביחס בין המסך ל-1920×1080. מה שנמדד
+ * ב-vw/vh ממילא גדל עם המסך, ועכשיו גם מה שנמדד ב-rem - כך שב-4K הכול נראה
+ * בדיוק כמו ב-1920, רק חד פי שניים. (zoom לא מתאים כאן: הוא מכפיל גם את
+ * vw/vh, שכבר גדלו עם המסך, והם יצאו כפולים.)
+ * המינימום בין רוחב לגובה - כדי שמסך ביחס אחר לא יחתוך כלום.
+ */
+const DESIGN_W = 1920;
+const DESIGN_H = 1080;
+
+function useFitToScreen() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const apply = () => {
+      const fit = Math.min(window.innerWidth / DESIGN_W, window.innerHeight / DESIGN_H);
+      root.style.fontSize = `${16 * fit}px`;
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+      root.style.fontSize = "";
+    };
+  }, []);
+}
+
 function RoomScreen({ allGroups, stageNumbers, roomContent, stage2Content, stage6Content }: Props) {
+  useFitToScreen();
   const groups = allGroups.slice().sort((a, b) => a.screen_number - b.screen_number);
   const roomStage = majorityStage(groups.map((g) => g.current_stage));
   const content = roomContent?.[roomStage];
