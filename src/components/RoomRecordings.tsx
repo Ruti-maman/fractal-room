@@ -3,6 +3,7 @@ import type { Group } from "../types/group";
 import { useMedia } from "../hooks/useMedia";
 import { segmentsToVtt, useClipTranscripts } from "../hooks/useClipTranscripts";
 import { listProjectClips, projectClipUrl } from "../lib/projectClips";
+import PosterizeOverlay from "./PosterizeOverlay";
 
 /**
  * המסך הגדול, שלב 7 (2026-11-20). מהאפיון של הלקוחה, סעיף 25:
@@ -44,9 +45,15 @@ function RoomRecordings({
       groups
         .map((g) => {
           const rows = media.filter((m) => m.group_id === g.id);
-          const last = rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+          const last = rows.sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime(),
+          )[0];
           if (!last) return null;
-          const src = projectClips.includes(g.id) ? projectClipUrl(workshopId, g.id) : last.url;
+          const src = projectClips.includes(g.id)
+            ? projectClipUrl(workshopId, g.id)
+            : last.url;
           return { group: g, src };
         })
         .filter((c): c is { group: Group; src: string } => c !== null),
@@ -55,7 +62,10 @@ function RoomRecordings({
 
   const [autoIndex, setIndex] = useState(0);
   const index = manual ? manualIndex : autoIndex;
-  const current = clips.length > 0 ? clips[((index % clips.length) + clips.length) % clips.length] : null;
+  const current =
+    clips.length > 0
+      ? clips[((index % clips.length) + clips.length) % clips.length]
+      : null;
   const next = () => setIndex((i) => i + 1);
 
   return (
@@ -76,7 +86,9 @@ function RoomRecordings({
             onEnd={manual ? undefined : next}
           />
         ) : (
-          <p className="rr-empty">ההקלטות יופיעו כאן ברגע שהקבוצות יסיימו להקליט.</p>
+          <p className="rr-empty">
+            ההקלטות יופיעו כאן ברגע שהקבוצות יסיימו להקליט.
+          </p>
         )}
       </section>
 
@@ -85,10 +97,17 @@ function RoomRecordings({
           const has = clips.some((c) => c.group.id === g.id);
           const playing = current?.group.id === g.id;
           return (
-            <li key={g.id} className={`rr-group${has ? " is-done" : ""}${playing ? " is-playing" : ""}`}>
+            <li
+              key={g.id}
+              className={`rr-group${has ? " is-done" : ""}${playing ? " is-playing" : ""}`}
+            >
               <span className="rr-group__dot" aria-hidden="true" />
-              <span className="rr-group__name">{g.name ?? `מסך ${g.screen_number}`}</span>
-              <span className="rr-group__state">{playing ? "מתנגן עכשיו" : has ? "הוקלט" : "עוד מקליטות..."}</span>
+              <span className="rr-group__name">
+                {g.name ?? `מסך ${g.screen_number}`}
+              </span>
+              <span className="rr-group__state">
+                {playing ? "מתנגן עכשיו" : has ? "הוקלט" : "עוד מקליטות..."}
+              </span>
             </li>
           );
         })}
@@ -110,10 +129,15 @@ function Featured({
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [vtt, setVtt] = useState<string | null>(null);
+  // "הצגת ההסרטה לפי פריימים - שקופיות" (2026-11-25): כמו במסכי הקבוצות - 6
+  // תמונות בשנייה (PosterizeOverlay), גם במסך הגדול
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     if (!segments || segments.length === 0) return;
-    const url = URL.createObjectURL(new Blob([segmentsToVtt(segments)], { type: "text/vtt" }));
+    const url = URL.createObjectURL(
+      new Blob([segmentsToVtt(segments)], { type: "text/vtt" }),
+    );
     setVtt(url);
     return () => URL.revokeObjectURL(url);
   }, [segments]);
@@ -127,20 +151,40 @@ function Featured({
 
   return (
     <figure className="rr-featured">
-      <video
-        ref={ref}
-        src={clip.src}
-        autoPlay
-        muted
-        playsInline
-        loop={!onEnd}
-        onEnded={onEnd}
-        // סרטון שלא נטען (למשל חסום) - לא נתקעים עליו
-        onError={() => onEnd && window.setTimeout(onEnd, 4000)}
-      >
-        {vtt && <track kind="subtitles" srcLang="he" label="עברית" src={vtt} default />}
-      </video>
-      <figcaption className="rr-featured__name">{clip.group.name ?? `מסך ${clip.group.screen_number}`}</figcaption>
+      <div className="rr-featured__frame">
+        <video
+          ref={ref}
+          src={clip.src}
+          autoPlay
+          muted
+          playsInline
+          loop={!onEnd}
+          onPlaying={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={onEnd}
+          // סרטון שלא נטען (למשל חסום) - לא נתקעים עליו
+          onError={() => onEnd && window.setTimeout(onEnd, 4000)}
+        >
+          {vtt && (
+            <track
+              kind="subtitles"
+              srcLang="he"
+              label="עברית"
+              src={vtt}
+              default
+            />
+          )}
+        </video>
+        <PosterizeOverlay
+          videoRef={ref}
+          active={playing}
+          fit="contain"
+          drawCaptions
+        />
+      </div>
+      <figcaption className="rr-featured__name">
+        {clip.group.name ?? `מסך ${clip.group.screen_number}`}
+      </figcaption>
     </figure>
   );
 }

@@ -51,7 +51,9 @@ function FractalFullscreen({
         text={text}
         letters="פרקטל"
         solid={false}
-        grain={6}
+        // ברור יותר (2026-11-25): כתב כמעט מלא מתחת, ואותיות צפופות יותר
+        underlay={0.8}
+        grain={5}
         once
         // נבנה פעם אחת בלבד (בקשת הלקוחה 2026-11-11: "שיהיה פעם אחת").
         // קודם: שלוש פעמים (2026-11-08).
@@ -144,7 +146,9 @@ function EditorialFractal({ title, text, onDone }: { title: string; text: string
         text={text}
         letters="פרקטל"
         solid={false}
-        grain={6}
+        // ברור יותר (2026-11-25): כתב כמעט מלא מתחת, ואותיות צפופות יותר
+        underlay={0.8}
+        grain={5}
         once
         repeats={1}
         color="#ffffff"

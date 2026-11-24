@@ -40,7 +40,8 @@ const TEXT_SPACING = 3;
 /* --- מצב "פעם אחת" (מסך מלא): שדה זורם, התגבשות, החזקה - ואז onDone --- */
 const ONCE_SWIRL_MS = 1800;
 const ONCE_BUILD_MS = 3000;
-const ONCE_HOLD_MS = 4000;
+// 2026-11-25 ("כלל הפרקטל לא מספיק ברור"): המשפט הבנוי נשאר יותר זמן לקריאה
+const ONCE_HOLD_MS = 6500;
 /* חזרות (repeats > 1): בין בנייה לבנייה המשפט מחזיק, מתפרק חזרה לשדה, ונבנה שוב */
 const REPEAT_HOLD_MS = 1800;
 const REPEAT_BREAK_MS = 1800;
@@ -139,6 +140,12 @@ interface Props {
    * לא (לבקשת הלקוחה: "ולא יהיו צבע מלא") - רק צל מלא עדין מתחתן.
    */
   solid?: boolean;
+  /**
+   * כמה אטום הכתב המלא שמתחת לאותיות הקטנות כשהמשפט נבנה (0-1), כשאין solid.
+   * ברירת מחדל 0.3 - צל עדין. 2026-11-25: בכלל הפרקטל 0.8, כי ב-0.3 המשפט לא
+   * נקרא מרחוק - האותיות הקטנות נשארות על גבי כתב כמעט מלא.
+   */
+  underlay?: number;
   /** מרווח הרשת של האותיות שבונות את המשפט, בפיקסלים. */
   grain?: number;
   /** בונה את המשפט פעם אחת (בלי לופ), מחזיק אותו, וקורא ל-onDone. */
@@ -158,6 +165,7 @@ function FractalSentence({
   className,
   letters: letterPool,
   solid = true,
+  underlay = 0.3,
   grain = TEXT_SPACING,
   once = false,
   repeats = 1,
@@ -462,7 +470,7 @@ function FractalSentence({
         ctx!.textBaseline = "middle";
         ctx!.font = fontSpec;
         ctx!.direction = "rtl";
-        ctx!.globalAlpha = ready * (solid ? 1 : 0.3);
+        ctx!.globalAlpha = ready * (solid ? 1 : underlay);
         ctx!.fillStyle = coralCss;
         ctx!.fillText(text, cx, textY);
         ctx!.direction = "ltr";
@@ -574,7 +582,7 @@ function FractalSentence({
       window.clearTimeout(doneTimer);
       ro.disconnect();
     };
-  }, [text, letterPool, solid, grain, once, repeats, color]);
+  }, [text, letterPool, solid, underlay, grain, once, repeats, color]);
 
   return (
     <div className={className}>

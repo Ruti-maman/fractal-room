@@ -90,9 +90,19 @@ function Timer({
   const remainingMs = Math.max(0, totalMs - elapsedMs);
   const isTimeUp = remainingMs <= 0;
 
+  /*
+   * מעבר אוטומטי רק אם המסך **ראה** את הזמן נגמר (2026-11-25, "שיראו את כל
+   * השלבים ולא יעקפו"): מסך שנפתח/חזר אחרי שהזמן של השלב כבר עבר (למשל שלב 1
+   * שהטיימר שלו נספר מיצירת הסדנה, או קבוצה שחזרה אחרי הפסקה) נשאר בשלב שלו
+   * ולא מדלג הלאה. קודם כל כניסה כזו העבירה מיד לשלב הבא - ומכאן הקפיצות לאמצע.
+   */
+  const sawRunningRef = useRef<string | null>(null);
+  if (!pending && !isTimeUp) sawRunningRef.current = startedAt;
+
   useEffect(() => {
     if (!isTimeUp || !onTimeUp) return;
     if (firedForRef.current === startedAt) return;
+    if (sawRunningRef.current !== startedAt) return;
     firedForRef.current = startedAt;
     onTimeUp();
   }, [isTimeUp, onTimeUp, startedAt]);

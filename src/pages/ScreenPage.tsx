@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useScreenData } from "../hooks/useScreenData";
 import { useProgramStages } from "../hooks/useProgramStages";
@@ -8,10 +8,21 @@ import { useKioskMode } from "../hooks/useKioskMode";
 import StageRouter from "../components/StageRouter";
 import RoomScreen from "../components/RoomScreen";
 import { EmptyState, ErrorState, LoadingState, GlassButton } from "../components/ui";
+import { startNewWorkshop } from "../lib/workshopActions";
 
 const VALID_SCREENS = [1, 2, 3, 4];
 /** המסך הרביעי - פלזמה משותפת לכל החדר, לא קבוצה (RoomScreen). */
 const ROOM_SCREEN = 4;
+
+/*
+ * כניסה מקישור (2026-11-25, דרישת הלקוחה: "כשנכנסים לסדנה מתוך אחד הקישורים
+ * להגיע להתחלה ולא לאמצע, אבל אם נכנסים שוב באמצע סדנה - למקום האחרון").
+ * סדנה שהסתיימה (כל הקבוצות בשלב האחרון) או שאין בה פעילות כבר STALE_HOURS
+ * שעות - נחשבת ישנה, ומי שנכנס מקבל בחירה: סדנה חדשה מההתחלה, או להמשיך.
+ * לא פותחים סדנה חדשה לבד: "סדנה חדשה" מוחקת את הנתונים של הקודמת, ולכן זו
+ * תמיד לחיצה מפורשת. סדנה פעילה ועדכנית - חוזרים בדיוק למקום, כמו קודם.
+ */
+const STALE_HOURS = 3;
 
 function ScreenPage() {
   useKioskMode();
@@ -36,6 +47,24 @@ function ScreenPage() {
 
   // התאוששות: קבוצה שכבר נתקעה על שלב שלא קיים בתוכנית (למשל 9, מלפני
   // התיקון) ממשיכה לבד לשלב הקיים הבא, בלי מסך שגיאה.
+  // "להמשיך מאיפה שעצרנו" - נזכר לסדנה הזו בלבד (בדפדפן הזה)
+  const [resumeChosen, setResumeChosen] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem("fractal-resume");
+    } catch {
+      return null;
+    }
+  });
+  const [starting, setStarting] = useState(false);
+  const lastStage = stageNumbers[stageNumbers.length - 1];
+  const lastActivity = Math.max(
+    workshop ? new Date(workshop.created_at).getTime() : 0,
+    ...allGroups.map((g) => (g.stage_started_at ? new Date(g.stage_started_at).getTime() : 0)),
+  );
+  const finished = allGroups.length > 0 && lastStage !== undefined && allGroups.every((g) => g.current_stage >= lastStage);
+  const stale = !!workshop && allGroups.length > 0 && (finished || Date.now() - lastActivity > STALE_HOURS * 3600_000);
+  const askFresh = stale && screenNumber !== ROOM_SCREEN && resumeChosen !== workshop?.id;
+
   const stuckOnMissingStage =
     !stagesLoading && !!myGroup && stageNumbers.length > 0 && !stageNumbers.includes(current) && nextStage !== undefined;
   useEffect(() => {
@@ -104,6 +133,45 @@ function ScreenPage() {
             | undefined) ?? undefined
         }
       />
+    );
+  }
+
+  if (askFresh) {
+    return (
+      <EmptyState
+        title={finished ? "הסדנה הקודמת הסתיימה" : "הסדנה הקודמת לא פעילה כבר כמה שעות"}
+        description="להתחיל סדנה חדשה מההתחלה? הנתונים של הסדנה הקודמת יימחקו - אם צריך אותם, אפשר לייצא אותם קודם במסך הניהול."
+        icon="hourglass"
+      >
+        <GlassButton
+          variant="primary"
+          disabled={starting}
+          onClick={async () => {
+            setStarting(true);
+            const { error } = await startNewWorkshop();
+            if (error) {
+              setStarting(false);
+              window.alert(error);
+            }
+            // שלושת המסכים עוברים לסדנה החדשה לבד (useScreenData)
+          }}
+        >
+          {starting ? "פותחות סדנה חדשה..." : "סדנה חדשה מההתחלה"}
+        </GlassButton>
+        <GlassButton
+          variant="glass"
+          onClick={() => {
+            try {
+              sessionStorage.setItem("fractal-resume", workshop.id);
+            } catch {
+              // בלי אחסון - הבחירה תישאר רק עד הרענון
+            }
+            setResumeChosen(workshop.id);
+          }}
+        >
+          להמשיך מאיפה שעצרנו
+        </GlassButton>
+      </EmptyState>
     );
   }
 

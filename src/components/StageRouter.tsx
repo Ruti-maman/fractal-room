@@ -4,6 +4,7 @@ import type { ProgramStage } from "../types/stage";
 import { startSharedStage } from "../lib/stageActions";
 import { coverWithGrid, curtainBusy, revealGrid, type CurtainMode } from "../lib/gridCurtain";
 import ProjectProgressBar from "./ProjectProgressBar";
+import { ROOM_LOOPS } from "../lib/roomLoops";
 import WaitingScreen from "./WaitingScreen";
 import PlaceholderStage from "./PlaceholderStage";
 import Stage1Opening from "./stages/Stage1Opening";
@@ -196,6 +197,13 @@ function StageRouter({
   // מחליטים אם הוא רלוונטי בכלל.
   const canGoBack = myGroup.current_stage > 1 && Boolean(onGoBack);
 
+  // "חומר עזר לשלב N: ..." - הלופים של השלב במסך הגדול (מרכז ההעשרה והידע)
+  const resourceTitles = Object.entries(ROOM_LOOPS)
+    .filter(([key]) => parseInt(key, 10) === stage.stage_number)
+    .map(([, loop]) => loop.title);
+  const resourceLine =
+    resourceTitles.length > 0 ? `חומר עזר לשלב ${stage.stage_number}: ${resourceTitles.join(" / ")}` : undefined;
+
   // שלבים 2 ו-7 מנהלים את שער הסנכרון שלהם בעצמם בתוך הרכיב (הזדהות/הקלטה
   // עצמאית, מעבר רק כשכולן סיימו) - ראו הסבר ב-CLAUDE.md, לא משתמשים במסך ההמתנה הגנרי.
   const selfManagedGate = stage.stage_number === 2 || stage.stage_number === 7;
@@ -208,6 +216,7 @@ function StageRouter({
           myGroup={myGroup}
           screenNumber={screenNumber}
           onGoBack={canGoBack ? onGoBack : undefined}
+          resourceLine={resourceLine}
         />
         {progressBar}
         {/* השעון המשותף מתחיל רק כשכולן מגיעות - עד אז הטיימר מוצג מלא
@@ -326,6 +335,7 @@ function StageRouter({
           myGroup={myGroup}
           screenNumber={screenNumber}
           onGoBack={canGoBack ? onGoBack : undefined}
+          resourceLine={resourceLine}
         />
       )}
       {isOpeningScreen ? null : progressBar}

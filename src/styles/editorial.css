@@ -16,7 +16,8 @@
 /* הטוקנים משותפים למסך הפתיחה ולמסכים שבאים אחריו בשפה הזו (.ed-page) */
 .opening-editorial,
 .ed-page,
-.tp-page {
+.tp-page,
+.ri-page {
   /* צבעים */
   --ed-ink-2: rgb(11 27 63 / 0.6);
   --ed-line-strong: rgb(11 27 63 / 0.22);
@@ -222,7 +223,8 @@
    שקוף, צליל) לא השתנתה - היא מ-StartKeyButton. */
 .opening-editorial .ed-btn,
 .ed-page .ed-btn,
-.tp-page .ed-btn {
+.tp-page .ed-btn,
+.ri-page .ed-btn {
   box-shadow: none;
   padding-inline: 2.5rem;
   font-size: 1.2rem;
@@ -236,7 +238,8 @@
 }
 .opening-editorial .ed-btn .bt-btn__label,
 .ed-page .ed-btn .bt-btn__label,
-.tp-page .ed-btn .bt-btn__label {
+.tp-page .ed-btn .bt-btn__label,
+.ri-page .ed-btn .bt-btn__label {
   display: inline-flex;
   align-items: center;
   gap: 1.75rem;
@@ -4707,8 +4710,15 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   margin: 0;
   animation: rl-in 0.8s ease both;
 }
-.rr-featured video {
+/* התיבה של ההקלטה - שכבת ה"שקופיות" (PosterizeOverlay) יושבת עליה בדיוק */
+.rr-featured__frame {
+  position: relative;
   height: calc(100% - 6vh);
+  max-width: 80vw;
+}
+.rr-featured video {
+  display: block;
+  height: 100%;
   max-width: 80vw;
   border: 3px solid #ffffff;
   background: #0b1b3f;
@@ -6302,4 +6312,78 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   border-color: #0b1b3f;
   background: #ffffff;
   color: #0b1b3f;
+}
+
+/* ==========================================================================
+   מסך ההסבר אחרי "ברוכות הבאות" (Stage1OpeningEditorial, 2026-11-25)
+   עמוד כחול מלא עם קווי רשת לבנים (בעמוד כחול מלא - כן קווים), משפט גדול,
+   ושורה על המסך הגדול עם החץ הדק. הכפתור בחצי התחתון, כמו בכל הסדנה.
+   ========================================================================== */
+.ri-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: calc(16 * var(--sh, 1vh)) calc(12.5 * var(--sw, 1vw)) calc(10 * var(--sh, 1vh));
+  background-color: var(--ed-blue);
+  background-image: linear-gradient(to right, var(--ed-line-on-blue) 1px, transparent 1px);
+  background-size: var(--ed-col) 100%;
+  color: #ffffff;
+}
+.ri-body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--sh, 1vh));
+}
+.ri-kicker {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+  font-size: clamp(1.3rem, 3vh, 2rem);
+  font-weight: 700;
+}
+.ri-kicker__sq {
+  width: 1rem;
+  height: 1rem;
+  background: var(--bt-coral);
+}
+.ri-text {
+  max-width: 62rem;
+  margin: 0;
+  font-size: clamp(2.6rem, min(5.4vw, 9vh), 6.5rem);
+  font-weight: 800;
+  line-height: 1.12;
+}
+.ri-room {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  margin: 0;
+  padding-top: calc(3 * var(--sh, 1vh));
+  border-top: 1px solid rgb(255 255 255 / 0.35);
+  max-width: 62rem;
+  font-size: clamp(1.3rem, 3.2vh, 2.1rem);
+  font-weight: 400;
+}
+.ri-room__arrow {
+  width: clamp(2rem, 5vh, 3.2rem);
+  height: clamp(2rem, 5vh, 3.2rem);
+  flex: none;
+  color: var(--bt-coral);
+}
+.ri-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+/* "חומר עזר לשלב N: ..." מתחת לזהות הקבוצה בסרגל העליון (TopBar, 2026-11-25) */
+.tb-resource {
+  margin: 0;
+  padding: 0.35rem 0.8rem;
+  border-inline-start: 3px solid #f25740;
+  background: rgb(255 255 255 / 0.92);
+  color: #0b1b3f;
+  font-family: "Heebo", var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
 }

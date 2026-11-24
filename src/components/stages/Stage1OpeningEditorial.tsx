@@ -17,7 +17,7 @@
  *  שלב) והכפתור (StartKeyButton) זהים לשאר הגרסאות.
  */
 
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import type { Stage1Content } from "../../types/stage1Content";
 import { requestKioskPermissions } from "../../hooks/useKioskMode";
 import { primeAudio } from "../../lib/audioUnlock";
@@ -32,6 +32,17 @@ interface Props {
 }
 
 const delay = (s: number): CSSProperties => ({ animationDelay: `${s}s` });
+
+/*
+ * מסך ההסבר שאחרי "התחילו" (2026-11-25, דרישת הלקוחה: "להוסיף מסך הסבר לפני
+ * תחילת הסדנה אחרי ברוכות הבאות"). הטקסטים נדרסים מ-content.resources של שלב 1.
+ */
+const RESOURCES_DEFAULTS = {
+  title: "לפני שמתחילות",
+  text: "חומרי עזר תואמים לכל שלב מחכים לכן במרכז ההעשרה והידע",
+  room_line: "על המסך הגדול: מסך העשרה וידע - אינסוף צורות לפרקטל",
+  button: "הבנו, מתחילות",
+};
 
 /**
  * חץ אלכסוני דק, כמו בהשראה. ב-RTL "קדימה" הוא שמאלה-למטה (↙).
@@ -82,16 +93,50 @@ function PanelContent({ screen }: { screen: Stage1Content["screens"][string] | u
 
 function Stage1OpeningEditorial({ screenNumber, content, onAdvance }: Props) {
   const screen = content.screens[String(screenNumber)];
+  const [intro, setIntro] = useState(false);
+  const r = { ...RESOURCES_DEFAULTS, ...(content.resources ?? {}) };
 
+  // "התחילו" - פותח קול ומסך מלא (חייב נגיעה), ועובר למסך ההסבר
   function handleStart() {
     primeAudio();
     requestKioskPermissions();
+    setIntro(true);
+  }
+
+  // "הבנו, מתחילות" - המעבר לשלב 2
+  function handleContinue() {
     // מעבר "רשת הריבועים" (2026-11-12): הרשת מתמלאת בכחול, ורק כשהמסך מכוסה
     // כולו מחליפים שלב - כדי שהמסך הבא לא ייראה דרך ריבועים שעוד לא התמלאו.
     // המסך הבא (ההזדהות) מבקש את הגילוי כשהוא מוכן. בלי מעבר - מיד.
     const wait = coverWithGrid({ from: "01", to: "02", label: "הזדהות" });
     if (wait < 0) onAdvance();
     else window.setTimeout(onAdvance, wait);
+  }
+
+  if (intro) {
+    return (
+      <main className="ri-page" dir="rtl">
+        <div className="ri-body">
+          <p className="ri-kicker ed-rise" style={delay(0.1)}>
+            <span className="ri-kicker__sq" aria-hidden="true" />
+            {r.title}
+          </p>
+          <h1 className="ri-text ed-rise" style={delay(0.3)}>
+            {r.text}
+          </h1>
+          <p className="ri-room ed-rise" style={delay(0.6)}>
+            <DiagonalArrow className="ri-room__arrow" />
+            {r.room_line}
+          </p>
+        </div>
+        <div className="ri-foot ed-rise" style={delay(0.9)}>
+          <StartKeyButton onStart={handleContinue} className="ed-btn ri-btn" breathe={false}>
+            {r.button}
+            <DiagonalArrow className="ed-btn__arrow" />
+          </StartKeyButton>
+        </div>
+      </main>
+    );
   }
 
   return (

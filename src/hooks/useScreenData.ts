@@ -63,6 +63,19 @@ export function useScreenData(screenNumber: number): ScreenData {
     workshopIdRef.current = workshopId;
 
     async function refetch() {
+      // נפתחה סדנה חדשה (במסך אחר או ב-/admin)? עוברים אליה מיד - בלי רענון ידני
+      const { data: active } = await supabase
+        .from("workshops")
+        .select("id, program_id, created_at, shared_stage_started_at, shared_stage_number, dilemma_id")
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+      if (active && active.id !== workshopId) {
+        setAllGroups([]);
+        setWorkshop(active);
+        return;
+      }
+
       const [groupsRes, workshopRes] = await Promise.all([
         supabase.from("groups").select("*").eq("workshop_id", workshopId),
         supabase

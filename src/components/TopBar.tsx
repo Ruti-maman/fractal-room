@@ -27,13 +27,21 @@ interface Props {
   center?: React.ReactNode;
   /** חזרה לשלב הקודם. לא מוצג בשלב הראשון, שאין לו קודם. */
   onGoBack?: () => void;
+  /**
+   * "חומר עזר לשלב N: ..." (2026-11-25, דרישת הלקוחה): שורה קטנה מתחת לזהות
+   * הקבוצה, שמפנה ללופ של השלב במסך הגדול (מרכז ההעשרה והידע).
+   */
+  resourceLine?: string;
 }
 
-function TopBar({ myGroup, screenNumber, center, onGoBack }: Props) {
+function TopBar({ myGroup, screenNumber, center, onGoBack, resourceLine }: Props) {
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex items-start justify-between gap-4 p-4 sm:p-5">
       {/* זהות הקבוצה - בצד ההתחלה (ימין ב-RTL). נגיעה/ריחוף מציגים את המשתתפות. */}
-      <GroupBadge myGroup={myGroup} screenNumber={screenNumber} />
+      <div className="flex flex-none flex-col items-start gap-2">
+        <GroupBadge myGroup={myGroup} screenNumber={screenNumber} />
+        {resourceLine && <p className="tb-resource">{resourceLine}</p>}
+      </div>
 
       {/* המסקנה המעשית, כשיש */}
       <div className="pointer-events-auto flex min-w-0 flex-1 justify-center">{center}</div>
