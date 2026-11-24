@@ -6059,6 +6059,8 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   border: 2px solid #0b1b3f;
   background: #0b1b3f;
   transform-origin: center;
+  /* "הצגת כל הלופים" מסדר מחדש גם לופים שכבר פתוחים - הם גולשים למקום */
+  transition: left 0.5s cubic-bezier(.2, .8, .2, 1), top 0.5s cubic-bezier(.2, .8, .2, 1);
 }
 /* הלופ מצויר בגודל מסך מלא ומוקטן לתוך המסגרת. transform יוצר גם "מסגרת"
    לשכבות fixed שבתוכו - כך הטיפים וכלל הפרקטל נשארים בתוכה. */
@@ -6346,4 +6348,38 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
 /* חלון "טיפים לדיון טוב" קטן מדי בלופ פתוח (30×21 ס"מ) - בתוך הגלריה מגדילים אותו */
 .lg-grown .chat-surface {
   scale: 1.9;
+}
+
+/* "הצגת כל הלופים" / "סגירת הכל" - בפינה השמאלית העליונה, מול הכותרת */
+.lg-actions {
+  position: absolute;
+  z-index: 30;
+  top: 0;
+  left: 3vw;
+  height: 12vh;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.lg-action {
+  height: 4rem;
+  min-height: 64px;
+  padding: 0 2.4rem;
+  border: 1.5px solid #f25740;
+  border-radius: 0;
+  background: #f25740;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.14s ease;
+}
+.lg-action:active {
+  transform: scale(0.94);
+}
+.lg-action--quiet {
+  border-color: #0b1b3f;
+  background: #ffffff;
+  color: #0b1b3f;
 }

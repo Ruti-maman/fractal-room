@@ -167,6 +167,32 @@ function findSpot(from: DOMRect, taken: Box[]): Box {
   return best;
 }
 
+/*
+ * "הצגת כל הלופים" (2026-11-25, "שיוכלו להיות מוצגים כל הסרטונים במקביל"):
+ * כולם פתוחים יחד ברשת מסודרת וממורכזת, לפי סדר השלבים (מימין לשמאל), בלי
+ * חפיפה. בפיקסלים של המסך.
+ */
+function gridSpots(n: number): Box[] {
+  const iw = window.innerWidth;
+  const ih = window.innerHeight;
+  const { w, h } = openSize();
+  const gap = iw * GAP * 2;
+  const top0 = ih * 0.12;
+  const H = ih - iw * EDGE - top0;
+  const maxCols = Math.max(1, Math.floor((iw - 2 * iw * EDGE + gap) / (w + gap)));
+  const rows = Math.ceil(n / maxCols);
+  const cols = Math.ceil(n / rows);
+  const blockW = cols * w + (cols - 1) * gap;
+  const blockH = rows * h + (rows - 1) * gap;
+  const x0 = (iw - blockW) / 2;
+  const y0 = top0 + Math.max(0, (H - blockH) / 2);
+  return Array.from({ length: n }, (_, i) => {
+    const r = Math.floor(i / cols);
+    const c = i % cols;
+    return { left: x0 + blockW - (c + 1) * w - c * gap, top: y0 + r * (h + gap) };
+  });
+}
+
 interface Grown {
   i: number;
   /** הריבוע שממנו הלופ נפתח (מיקום על המסך) */
@@ -199,6 +225,18 @@ function Gallery({
 
   const shrink = (i: number) => setGrown((g) => g.filter((x) => x.i !== i));
 
+  const showAll = () => {
+    const spots = gridSpots(items.length);
+    setGrown(
+      items.map((_, i) => ({
+        i,
+        from: buttons.current[i]?.getBoundingClientRect() ?? new DOMRect(),
+        at: spots[i],
+      })),
+    );
+  };
+  const allOpen = grown.length === items.length;
+
   // מסגרת אדומה שעוברת לאט בין הריבועים - מזמינה לגעת
   const [hint, setHint] = useState(0);
   useEffect(() => {
@@ -219,6 +257,19 @@ function Gallery({
           <path d="M19 5 L5 19 M5 8 L5 19 L16 19" />
         </svg>
       </header>
+
+      <div className="lg-actions">
+        {!allOpen && (
+          <button type="button" className="lg-action" onClick={showAll}>
+            הצגת כל הלופים
+          </button>
+        )}
+        {grown.length > 0 && (
+          <button type="button" className="lg-action lg-action--quiet" onClick={() => setGrown([])}>
+            סגירת הכל
+          </button>
+        )}
+      </div>
 
       <ul className="lg-field">
         {items.map((item, i) => {

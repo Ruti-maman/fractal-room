@@ -453,9 +453,6 @@ function GalleryScreen({
   stage2Content?: Stage2Content;
   stage6Content?: Stage6Content;
 }) {
-  // כלל הפרקטל מסתיים אחרי כמה שניות - מתחילים אותו שוב
-  const [round, setRound] = useState(0);
-  const again = () => window.setTimeout(() => setRound((r) => r + 1), 2500);
   const t2 = { ...IDENTIFICATION_DEFAULTS, ...(stage2Content?.identification ?? {}) } as IdentificationTexts;
   const t6 = { ...STAGE6_FRACTAL_DEFAULTS, ...(stage6Content ?? {}) };
 
@@ -465,12 +462,13 @@ function GalleryScreen({
     case "2-tips":
       return (
         <main className="rl-page rl-page--riddle" dir="rtl">
-          <TipBubbles open displayOnly onClose={() => {}} title={t2.tips_title} tips={t2.tips} />
+          <TipBubbles open displayOnly onClose={() => {}} title={t2.tips_title} tips={t2.tips} manualIndex={step} />
         </main>
       );
     case "2-fractal":
       // בגלריה - גרסה נקייה וקריאה (אפקט החול לא נקרא כשהחלון קטן)
-      return <FractalRuleCard key={round} title={t2.fractal_title} text={t2.fractal_text} onDone={again} />;
+      // נגיעה = הכלל נכתב שוב מההתחלה
+      return <FractalRuleCard key={step} title={t2.fractal_title} text={t2.fractal_text} />;
     case "2-room":
       return <WhoIsInRoom groups={groups} content={stage2Content} />;
     case "6-tips":
@@ -484,11 +482,12 @@ function GalleryScreen({
             title={t6.tips_title}
             tips={stage6Content?.tips?.length ? stage6Content.tips : DEFAULT_TIPS}
             confirmLabel=""
+            manualCount={step}
           />
         </main>
       );
     case "7":
-      return <RoomRecordings groups={groups} />;
+      return <RoomRecordings groups={groups} manualIndex={step} />;
     case "10":
       return <RoomPrinciple workshopId={groups[0]?.workshop_id ?? ""} />;
     default:
@@ -500,16 +499,9 @@ function GalleryScreen({
  * "כלל הפרקטל" בגלריית הלופים (2026-11-24, "שכלל הפרקטל יהיה ברור יותר"):
  * במסך המלא הכלל נבנה מגרגרי חול (FractalFullscreen), אבל בחלון קטן הגרגרים
  * נראים כפסיפס שלא נקרא. כאן - דף כחול עם הכותרת, המשפט בגדול מילה אחר מילה,
- * וריבועים בתוך ריבועים כסמל הפרקטל. אחרי כמה שניות onDone, והוא מתחיל שוב.
+ * וריבועים בתוך ריבועים כסמל הפרקטל. בגלריה הכול עובר בנגיעה: נגיעה = הכלל נכתב שוב.
  */
-const RULE_HOLD_MS = 9000;
-
-function FractalRuleCard({ title, text, onDone }: { title: string; text: string; onDone: () => void }) {
-  useEffect(() => {
-    const t = window.setTimeout(onDone, RULE_HOLD_MS);
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+function FractalRuleCard({ title, text }: { title: string; text: string }) {
   const words = text.split(/\s+/).filter(Boolean);
   return (
     <main className="rl-page rl-page--answer fr-page" dir="rtl">

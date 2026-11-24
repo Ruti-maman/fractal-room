@@ -40,6 +40,7 @@ function TipBubbles({
   tips,
   confirmLabel = "הבנו, בואו נבחר שם!",
   displayOnly = false,
+  manualIndex,
 }: {
   open: boolean;
   onClose: () => void;
@@ -52,6 +53,11 @@ function TipBubbles({
    * הזה על המסך הגדול"): בלי כפתור, בלי מיקוד ובלי Escape. הזרקור רץ לבד.
    */
   displayOnly?: boolean;
+  /**
+   * מעבר ידני (גלריית הלופים, 2026-11-25): הזרקור על הטיפ הזה (מסתובב), ולא
+   * עובר לבד. כל נגיעה בגלריה = הטיפ הבא.
+   */
+  manualIndex?: number;
 }) {
   const host = usePortalHost();
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -95,8 +101,16 @@ function TipBubbles({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // מעבר ידני - הזרקור נקבע מבחוץ
+  const manual = manualIndex !== undefined;
+  useEffect(() => {
+    if (!manual || tips.length === 0) return;
+    setActive(((manualIndex % tips.length) + tips.length) % tips.length);
+  }, [manual, manualIndex, tips.length]);
+
   // הזרקור: מתחיל אחרי הכניסה, ועובר טיפ-טיפ בלולאה
   useEffect(() => {
+    if (manual) return;
     if (!open || tips.length === 0) {
       setActive(-1);
       return;
@@ -110,7 +124,7 @@ function TipBubbles({
       window.clearTimeout(first);
       window.clearInterval(loop);
     };
-  }, [open, tips.length, tick]);
+  }, [open, tips.length, tick, manual]);
 
   if (!open) return null;
 

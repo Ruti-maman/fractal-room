@@ -25,6 +25,7 @@ function TipChat({
   tips,
   confirmLabel,
   displayOnly = false,
+  manualCount,
 }: {
   open: boolean;
   onClose: () => void;
@@ -33,14 +34,26 @@ function TipChat({
   confirmLabel: string;
   /** תצוגה בלבד - למסך הגדול (/screen/4): בלי כפתור "הבנו!" */
   displayOnly?: boolean;
+  /**
+   * מעבר ידני (גלריית הלופים, 2026-11-25): כמה נגיעות היו - כל נגיעה מנחיתה
+   * עוד בועה (אחרי האחרונה מתחילים שוב מהראשונה). בלי טיימר.
+   */
+  manualCount?: number;
 }) {
   // כמה בועות כבר נחתו; typing = הנקודות של הבאה בתור מוצגות עכשיו
   const [shown, setShown] = useState(0);
   const [typing, setTyping] = useState(false);
   const timers = useRef<number[]>([]);
 
+  const manual = manualCount !== undefined;
   useEffect(() => {
-    if (!open) return;
+    if (!manual || tips.length === 0) return;
+    setTyping(false);
+    setShown((((manualCount % tips.length) + tips.length) % tips.length) + 1);
+  }, [manual, manualCount, tips.length]);
+
+  useEffect(() => {
+    if (!open || manual) return;
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
       setShown(tips.length);
@@ -67,7 +80,7 @@ function TipChat({
     // tips.length ולא tips: תוכן מה-DB מגיע כאובייקט חדש בכל עדכון realtime,
     // וזה היה מתחיל את הצ'אט מחדש באמצע
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, tips.length]);
+  }, [open, tips.length, manual]);
 
   // צד הבועה: הראשונה מימין (תחילת השורה ב-RTL), ואז לסירוגין
   const sideOf = (i: number) => (i % 2 === 0 ? "start" : "end");

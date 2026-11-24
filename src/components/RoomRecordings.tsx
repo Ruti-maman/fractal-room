@@ -16,7 +16,15 @@ import { listProjectClips, projectClipUrl } from "../lib/projectClips";
  * מקור הסרטון: קובץ בתוך הפרויקט (שרת הפיתוח), ואם אין - הכתובת מה-Storage
  * (שבחדר צריכה אישור NetFree לסרטונים - ראו סעיף 9 ב-CLAUDE.md).
  */
-function RoomRecordings({ groups }: { groups: Group[] }) {
+function RoomRecordings({
+  groups,
+  manualIndex,
+}: {
+  groups: Group[];
+  /** מעבר ידני (גלריית הלופים): ההקלטה הזו מתנגנת בלולאה, וכל נגיעה = הבאה */
+  manualIndex?: number;
+}) {
+  const manual = manualIndex !== undefined;
   const workshopId = groups[0]?.workshop_id ?? "";
   const { items: media } = useMedia(workshopId, 7);
   const transcripts = useClipTranscripts(workshopId);
@@ -45,8 +53,9 @@ function RoomRecordings({ groups }: { groups: Group[] }) {
     [groups, media, projectClips, workshopId],
   );
 
-  const [index, setIndex] = useState(0);
-  const current = clips.length > 0 ? clips[index % clips.length] : null;
+  const [autoIndex, setIndex] = useState(0);
+  const index = manual ? manualIndex : autoIndex;
+  const current = clips.length > 0 ? clips[((index % clips.length) + clips.length) % clips.length] : null;
   const next = () => setIndex((i) => i + 1);
 
   return (
@@ -60,7 +69,12 @@ function RoomRecordings({ groups }: { groups: Group[] }) {
 
       <section className="rr-stage">
         {current ? (
-          <Featured key={`${current.group.id}-${index}`} clip={current} segments={transcripts[current.group.id]} onEnd={next} />
+          <Featured
+            key={`${current.group.id}-${index}`}
+            clip={current}
+            segments={transcripts[current.group.id]}
+            onEnd={manual ? undefined : next}
+          />
         ) : (
           <p className="rr-empty">ההקלטות יופיעו כאן ברגע שהקבוצות יסיימו להקליט.</p>
         )}
@@ -91,7 +105,8 @@ function Featured({
 }: {
   clip: { group: Group; src: string };
   segments?: { start: number; end: number; text: string }[];
-  onEnd: () => void;
+  /** בלי onEnd (מעבר ידני) - ההקלטה חוזרת על עצמה עד הנגיעה הבאה */
+  onEnd?: () => void;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [vtt, setVtt] = useState<string | null>(null);
@@ -118,9 +133,10 @@ function Featured({
         autoPlay
         muted
         playsInline
+        loop={!onEnd}
         onEnded={onEnd}
         // סרטון שלא נטען (למשל חסום) - לא נתקעים עליו
-        onError={() => window.setTimeout(onEnd, 4000)}
+        onError={() => onEnd && window.setTimeout(onEnd, 4000)}
       >
         {vtt && <track kind="subtitles" srcLang="he" label="עברית" src={vtt} default />}
       </video>
