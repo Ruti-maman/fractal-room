@@ -5845,3 +5845,505 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
     opacity: 1;
   }
 }
+
+/* ==========================================================================
+   גלריית הלופים - /screen/4?loop=gallery (LoopGallery.tsx, 2026-11-24)
+   ריבועים מפוזרים על רשת העמודות (12.5vw), בין הקו העליון (12vh) לתחתון
+   (88vh). נגיעה: מתכווץ בלחיצה, גדל בשחרור, והלופ נפתח בחלון מתוכו.
+   ========================================================================== */
+.lg-welcome {
+  cursor: pointer;
+}
+.lg-page {
+  --rl-line: rgb(11 27 63 / 0.1);
+  position: relative;
+  height: var(--full-h, 100dvh);
+  overflow: hidden;
+  background: #f4f6fb;
+  color: #0b1b3f;
+  font-family: "Heebo", var(--font-sans);
+}
+.lg-field {
+  position: absolute;
+  inset: 12vh 0 12vh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* כל תא = עמודה אחת ברוחב 12.5vw ורבע מהגובה שבין הקווים; הריבוע מפוזר קצת בתוכו */
+.lg-cell {
+  --t: min(11.4vw, 17.6vh);
+  position: absolute;
+  top: calc(var(--row) * 19vh);
+  right: calc(var(--col) * 12.5vw);
+  display: grid;
+  place-items: center;
+  width: 12.5vw;
+  height: 19vh;
+  translate: calc(var(--dx) * 2vw) calc(var(--dy) * 2.4vh);
+  opacity: 0;
+  animation: lg-in 0.6s cubic-bezier(.2, .8, .2, 1) forwards;
+}
+/* הלופים גדולים, המסכים הנוספים קטנים - היררכיה, לא טבלה */
+.lg-cell--screen {
+  --t: min(8.2vw, 13.2vh);
+}
+@keyframes lg-in {
+  from {
+    opacity: 0;
+    clip-path: inset(-4rem -4rem 100% -4rem);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(-4rem -4rem -4rem -4rem);
+  }
+}
+.lg-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: var(--t);
+  height: var(--t);
+  padding: calc(var(--t) * 0.075) calc(var(--t) * 0.085);
+  border: 1.5px solid #0b1b3f;
+  border-radius: 0;
+  background: #ffffff;
+  color: #0b1b3f;
+  font-family: inherit;
+  text-align: right;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.14s ease, background-color 0.2s ease;
+}
+/* לחיצה - מתכווץ; שחרור - גדל קצת, ואז נפתח */
+.lg-tile:active {
+  transform: scale(0.9);
+}
+.lg-tile.is-pop {
+  transform: scale(1.1);
+  transition-duration: 0.18s;
+}
+.lg-tile:focus-visible {
+  outline: 3px solid #f25740;
+  outline-offset: 4px;
+}
+/* הלופים - כחול מלא; מסכים נוספים של שלב - לבן; הפתיחה - אדום */
+.lg-tile--loop {
+  border-color: #2a4286;
+  background: #2a4286;
+  color: #ffffff;
+}
+.lg-tile--welcome {
+  border-color: #f25740;
+  background: #f25740;
+  color: #ffffff;
+}
+.lg-tile__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+.lg-tile__num {
+  font-size: calc(var(--t) * 0.27);
+  font-weight: 200;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+}
+.lg-tile__glyph {
+  width: calc(var(--t) * 0.21);
+  height: calc(var(--t) * 0.21);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  opacity: 0.85;
+}
+.lg-tile--loop .lg-tile__glyph {
+  stroke: #f25740;
+  opacity: 1;
+}
+.lg-tile__title {
+  font-size: calc(var(--t) * 0.095);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.lg-tile--screen .lg-tile__title {
+  font-size: calc(var(--t) * 0.12);
+}
+/* המסגרת האדומה שמזמינה לגעת - נכנסת מבחוץ ונעצרת סביב הריבוע */
+.lg-tile {
+  position: relative;
+}
+.lg-tile::after {
+  content: "";
+  position: absolute;
+  inset: -0.7rem;
+  border: 2px solid #f25740;
+  opacity: 0;
+  pointer-events: none;
+}
+.lg-tile.is-hint::after {
+  animation: lg-hint 2.6s ease both;
+}
+@keyframes lg-hint {
+  0% {
+    inset: -2.2rem;
+    opacity: 0;
+  }
+  25%,
+  75% {
+    inset: -0.7rem;
+    opacity: 1;
+  }
+  100% {
+    inset: -0.7rem;
+    opacity: 0;
+  }
+}
+
+/* --- הכותרת: מספר ענק ודק מול טקסט קטן, וחץ אלכסוני --- */
+.lg-head {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 3vw;
+  height: 12vh;
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+.lg-head__count {
+  font-size: 6.4rem;
+  font-weight: 100;
+  line-height: 1;
+  color: #2a4286;
+  letter-spacing: -0.03em;
+}
+.lg-head__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.lg-head__title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.lg-head__sub {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #f25740;
+}
+.lg-head__arrow {
+  width: 2.8rem;
+  height: 2.8rem;
+  margin-inline-start: 0.6rem;
+  fill: none;
+  stroke: #0b1b3f;
+  stroke-width: 1.2;
+  stroke-linecap: square;
+}
+
+/* --- ריבוע מוגדל: הלופ רץ בתוכו, במקום של הריבוע (LoopGallery.GrownTile) --- */
+/* לופ פתוח - 30×21 ס"מ על המסך הגדול, על הריבוע שלו (LoopGallery.GrownTile) */
+.lg-grown {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: content-box;
+  border: 2px solid #0b1b3f;
+  background: #0b1b3f;
+  transform-origin: center;
+}
+/* הלופ מצויר בגודל מסך מלא ומוקטן לתוך המסגרת. transform יוצר גם "מסגרת"
+   לשכבות fixed שבתוכו - כך הטיפים וכלל הפרקטל נשארים בתוכה. */
+.lg-panel__stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* רוחב המסך ביחידות CSS (האתר מוקטן ב-zoom - ראו --ui-scale), כמו --full-h לגובה */
+  width: calc(100vw / var(--ui-scale, 1));
+  height: var(--full-h, 100dvh);
+  transform: scale(var(--k));
+  transform-origin: 0 0;
+  overflow: hidden;
+}
+.lg-panel__screen {
+  width: 100%;
+  height: 100%;
+}
+.lg-win__close {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  min-width: 64px;
+  min-height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #f25740;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.14s ease;
+}
+.lg-win__close:active {
+  transform: scale(0.9);
+}
+.lg-win__close svg {
+  width: 50%;
+  height: 50%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: square;
+}
+.lg-tile.is-source {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lg-cell {
+    animation: none;
+    opacity: 1;
+  }
+  .lg-tile {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   לופ בתוך ריבוע מוגדל (גלריית הלופים, 2026-11-24, "שיהיו ברורים גם כשהם
+   קטנים"): הלופ מוקטן לשליש מסך, ולכן כאן הטקסט גדל בערך פי 1.5, השוליים
+   מצטמצמים, ופרטים זעירים (מקור, הערות) מוסתרים. רק בתוך .lg-grown - המסך
+   המלא לא משתנה.
+   ========================================================================== */
+.lg-grown .rl-slide {
+  inset: 13vh 5vw 9vh;
+}
+.lg-grown .rl-page--side .rl-slide {
+  inset: 13vh 5vw 9vh calc(12.5 * var(--sw, 1vw) * 2 + 3vw);
+}
+.lg-grown .rl-title {
+  font-size: calc(5.6vh * var(--lgf, 1));
+}
+.lg-grown .rl-title__sq {
+  width: 1.6vh;
+  height: 1.6vh;
+}
+.lg-grown .rl-label {
+  font-size: calc(4.6vh * var(--lgf, 1));
+}
+.lg-grown .rl-question {
+  max-width: 88vw;
+  font-size: calc(10.5vh * var(--lgf, 1));
+  line-height: 1.15;
+}
+.lg-grown .rl-qa--alone .rl-question {
+  font-size: calc(12vh * var(--lgf, 1));
+}
+.lg-grown .rl-options li {
+  max-width: 29vw;
+  font-size: calc(5.6vh * var(--lgf, 1));
+}
+.lg-grown .rl-options__letter {
+  font-size: calc(9vh * var(--lgf, 1));
+}
+.lg-grown .rl-answer {
+  max-width: 88vw;
+  font-size: calc(7vh * var(--lgf, 1));
+}
+.lg-grown .rl-explain,
+.lg-grown .rl-now {
+  max-width: 88vw;
+}
+.lg-grown .rl-lead {
+  font-size: calc(6.2vh * var(--lgf, 1));
+}
+.lg-grown .rl-text {
+  font-size: calc(7.6vh * var(--lgf, 1));
+  line-height: 1.2;
+}
+.lg-grown .rl-now__label {
+  font-size: calc(6.4vh * var(--lgf, 1));
+}
+.lg-grown .rl-now__text {
+  font-size: calc(14vh * var(--lgf, 1));
+}
+.lg-grown .rl-quote {
+  max-width: 88vw;
+  font-size: calc(10vh * var(--lgf, 1));
+}
+.lg-grown .rl-stairs li {
+  font-size: calc(6vh * var(--lgf, 1));
+}
+.lg-grown .rl-text--after-stairs {
+  font-size: calc(5.4vh * var(--lgf, 1));
+}
+.lg-grown .rl-list__text {
+  font-size: calc(4.2vh * var(--lgf, 1));
+}
+.lg-grown .rl-list__n {
+  font-size: calc(3.6vh * var(--lgf, 1));
+}
+.lg-grown .rl-contrast__dim {
+  font-size: calc(5.6vh * var(--lgf, 1));
+}
+.lg-grown .rl-contrast__bold {
+  font-size: calc(7vh * var(--lgf, 1));
+}
+.lg-grown .rl-progress {
+  height: 1vh;
+}
+/* פרטים זעירים שלא נקראים בגודל הזה */
+.lg-grown .rl-source {
+  display: none;
+}
+
+@keyframes lg-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* --- "כלל הפרקטל" בגלריה (FractalRuleCard ב-RoomScreen) - גרסה נקייה וקריאה --- */
+.fr-page {
+  display: flex;
+  align-items: center;
+  gap: 6vw;
+  padding: 0 8vw;
+}
+.fr-squares {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 30vh;
+  height: 30vh;
+}
+.fr-squares rect {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.7);
+  stroke-width: 0.8;
+  opacity: 0;
+  animation: fr-in 0.5s ease forwards;
+}
+.fr-squares rect.is-core {
+  fill: #f25740;
+  stroke: #f25740;
+}
+@keyframes fr-in {
+  to {
+    opacity: 1;
+  }
+}
+.fr-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4vh;
+}
+.fr-title {
+  display: flex;
+  align-items: center;
+  gap: 2vh;
+  margin: 0;
+  font-size: 7vh;
+  font-weight: 800;
+  line-height: 1;
+}
+.fr-title__sq {
+  width: 3vh;
+  height: 3vh;
+  background: #f25740;
+}
+.fr-text {
+  margin: 0;
+  max-width: 62vw;
+  font-size: 11vh;
+  font-weight: 800;
+  line-height: 1.12;
+}
+.fr-word {
+  display: inline-block;
+  /* רווח בין מילים - רווח רגיל בסוף inline-block נבלע */
+  margin-inline-end: 0.26em;
+  opacity: 0;
+  animation: fr-in 0.45s ease forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fr-squares rect,
+  .fr-word {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+
+/* הלופ עצמו - נגיעה בו = השקף הבא */
+.lg-grown__view {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  cursor: pointer;
+  background: #f4f6fb;
+}
+/* פס הכפתורים בתחתית הלופ הפתוח: קודם, שם, הבא, סגירה */
+.lg-grown__bar {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  background: #0b1b3f;
+  color: #ffffff;
+}
+.lg-grown__name {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.lg-grown__btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  aspect-ratio: 1;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.14s ease;
+}
+.lg-grown__btn:active {
+  transform: scale(0.85);
+}
+.lg-grown__btn svg {
+  width: 55%;
+  height: 55%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: square;
+}
+.lg-grown__close {
+  background: #f25740;
+}
+/* חלון "טיפים לדיון טוב" קטן מדי בלופ פתוח (30×21 ס"מ) - בתוך הגלריה מגדילים אותו */
+.lg-grown .chat-surface {
+  scale: 1.9;
+}

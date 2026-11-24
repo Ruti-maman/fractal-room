@@ -55,13 +55,23 @@ function RoomLoop({
   loop,
   startAt = 0,
   onComplete,
+  manualIndex,
 }: {
   loop: Loop;
   startAt?: number;
   /** נקרא בסוף הלופ (אחרי שקף הסיום) במקום לחזור להתחלה - למסך שמשלב עוד תצוגות */
   onComplete?: () => void;
+  /**
+   * מעבר ידני (גלריית הלופים, 2026-11-24: "שיעברו בלחיצה ולא לבד, כמו שהסדנה
+   * עובדת"): השקף נקבע מבחוץ (כל לחיצה = עוד אחד), בלי טיימר. אפשר גם מספר
+   * שלילי או גדול מאורך הלופ - הוא מסתובב.
+   */
+  manualIndex?: number;
 }) {
-  const [index, setIndex] = useState(startAt);
+  const manual = manualIndex !== undefined;
+  const len = loop.slides.length;
+  const [autoIndex, setIndex] = useState(startAt);
+  const index = manual ? (((manualIndex + startAt) % len) + len) % len : autoIndex;
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
   const slide = loop.slides[index];
@@ -83,10 +93,15 @@ function RoomLoop({
     setStartedAt(Date.now());
   };
 
-  // מעבר אוטומטי (חוץ משקף הסיום - שם החלקיקים קובעים מתי לסיים)
+  // במעבר ידני - כל שקף חדש מתחיל את האנימציות שלו מההתחלה
+  useEffect(() => {
+    if (manual) setStartedAt(Date.now());
+  }, [manual, index]);
+
+  // מעבר אוטומטי (חוץ משקף הסיום - שם החלקיקים קובעים מתי לסיים; ובמעבר ידני - אף פעם)
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 200);
-    if (slide.kind === "closing") return () => clearInterval(tick);
+    if (slide.kind === "closing" || manual) return () => clearInterval(tick);
     const t = setTimeout(next, seconds * 1000);
     return () => {
       clearTimeout(t);
@@ -97,7 +112,7 @@ function RoomLoop({
 
   const elapsedMs = Math.max(0, now - startedAt);
   const elapsed = Math.min(1, elapsedMs / (seconds * 1000));
-  const progress = (index + elapsed) / loop.slides.length;
+  const progress = manual ? (index + 1) / len : (index + elapsed) / len;
 
   // אפשרויות של שקף תשובה - מהחידה האחרונה שלפניו
   const answerOptions = useMemo(() => {
@@ -111,7 +126,7 @@ function RoomLoop({
 
   if (slide.kind === "closing") {
     return (
-      <FractalFullscreen key={`closing-${index}`} variant="editorial" title={loop.title} text={slide.text} onDone={next} />
+      <FractalFullscreen key={`closing-${index}`} variant="editorial" title={loop.title} text={slide.text} onDone={manual ? () => {} : next} />
     );
   }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { usePortalHost } from "../lib/portalHost";
 import type { Tip } from "./TipPopups";
 
 /*
@@ -52,6 +53,7 @@ function TipBubbles({
    */
   displayOnly?: boolean;
 }) {
+  const host = usePortalHost();
   const btnRef = useRef<HTMLButtonElement>(null);
   /**
    * יציאה (בקשת המפתחת, 2026-11-12: "שיזוז בצורה יפה, שייעלם בצורה
@@ -184,7 +186,7 @@ function TipBubbles({
         </button>
       </div>
     </div>,
-    document.body,
+    host,
   );
 }
 

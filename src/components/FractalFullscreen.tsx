@@ -1,5 +1,6 @@
 import { useMemo, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { usePortalHost } from "../lib/portalHost";
 import { playSparkle } from "../lib/tapFeedback";
 import FractalSentence from "./FractalSentence";
 import { BackgroundLayers } from "./ui/AppBackground";
@@ -29,6 +30,7 @@ function FractalFullscreen({
   onDone: () => void;
   variant?: "glass" | "editorial";
 }) {
+  const host = usePortalHost();
   if (variant === "editorial") return <EditorialFractal title={title} text={text} onDone={onDone} />;
 
   return createPortal(
@@ -61,7 +63,7 @@ function FractalFullscreen({
       />
       <h2 className="glass-title relative z-10 flex-none text-5xl lg:text-6xl">{title}</h2>
     </div>,
-    document.body,
+    host,
   );
 }
 
@@ -86,6 +88,7 @@ function FractalFullscreen({
  *  CSS: .fx-* ב-styles/editorial.css.
  */
 function EditorialFractal({ title, text, onDone }: { title: string; text: string; onDone: () => void }) {
+  const host = usePortalHost();
   // הגאומטריה נמדדת פעם אחת: שורות הרשת, והריבוע הקטן ביותר שבאמצע
   const geo = useMemo(() => {
     const w = window.innerWidth;
@@ -155,7 +158,7 @@ function EditorialFractal({ title, text, onDone }: { title: string; text: string
         {title}
       </h2>
     </div>,
-    document.body,
+    host,
   );
 }
 
