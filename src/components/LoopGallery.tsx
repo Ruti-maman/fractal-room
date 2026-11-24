@@ -37,22 +37,19 @@ const OPEN_MS = 520;
  * התא כדי שזה ייראה מפוזר ולא כמו טבלה. לפי סדר הפריטים.
  */
 const SPOTS: { col: number; row: number; dx: number; dy: number }[] = [
-  { col: 0, row: 0, dx: 0.2, dy: 0.1 },
-  { col: 1, row: 0, dx: -0.15, dy: 0.25 },
-  { col: 3, row: 0, dx: 0.1, dy: -0.05 },
-  { col: 6, row: 0, dx: -0.2, dy: 0.15 },
-  { col: 2, row: 1, dx: 0.15, dy: -0.1 },
-  { col: 4, row: 1, dx: -0.1, dy: 0.2 },
-  { col: 5, row: 1, dx: 0.2, dy: -0.15 },
-  { col: 7, row: 1, dx: -0.1, dy: 0.05 },
-  { col: 0, row: 2, dx: -0.15, dy: -0.1 },
-  { col: 3, row: 2, dx: 0.2, dy: 0.2 },
-  { col: 6, row: 2, dx: 0.05, dy: -0.2 },
-  { col: 1, row: 3, dx: 0.1, dy: -0.15 },
-  { col: 2, row: 3, dx: -0.2, dy: 0.1 },
-  { col: 5, row: 3, dx: 0.15, dy: -0.05 },
-  { col: 7, row: 3, dx: -0.15, dy: -0.2 },
+  // 2026-11-25: תשעה ריבועים (הפתיחה ושמונת הלופים) בשלוש שורות מדורגות
+  { col: 0, row: 0, dx: 0.15, dy: 0.1 },
+  { col: 2, row: 0, dx: -0.1, dy: 0.3 },
+  { col: 5, row: 0, dx: 0.2, dy: -0.05 },
+  { col: 1, row: 1, dx: -0.2, dy: 0.15 },
+  { col: 4, row: 1, dx: 0.1, dy: -0.2 },
+  { col: 7, row: 1, dx: -0.15, dy: 0.1 },
+  { col: 0, row: 2, dx: -0.1, dy: -0.15 },
+  { col: 3, row: 2, dx: 0.2, dy: 0.1 },
+  { col: 6, row: 2, dx: -0.05, dy: -0.1 },
 ];
+/** מספר השורות בפיזור - השטח בין הקווים מתחלק ביניהן */
+const SPOT_ROWS = Math.max(...SPOTS.map((s) => s.row)) + 1;
 
 function LoopGallery({
   items,
@@ -248,7 +245,8 @@ function Gallery({
     <main className="lg-page" dir="rtl">
       <div className="rl-grid" aria-hidden="true" />
       <header className="lg-head">
-        <span className="lg-head__count">{items.length}</span>
+        {/* כמה לופים יש (מסך הפתיחה הוא לא לופ) */}
+        <span className="lg-head__count">{items.filter((it) => it.kind === "loop").length}</span>
         <span className="lg-head__text">
           <span className="lg-head__title">כל הלופים של הסדנה</span>
           <span className="lg-head__sub">נגעו בריבוע כדי לפתוח</span>
@@ -271,7 +269,7 @@ function Gallery({
         )}
       </div>
 
-      <ul className="lg-field">
+      <ul className="lg-field" style={{ "--rows": SPOT_ROWS } as CSSProperties}>
         {items.map((item, i) => {
           const spot = SPOTS[i % SPOTS.length];
           const isGrown = grown.some((g) => g.i === i);

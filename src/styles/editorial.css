@@ -5872,21 +5872,17 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
 }
 /* כל תא = עמודה אחת ברוחב 12.5vw ורבע מהגובה שבין הקווים; הריבוע מפוזר קצת בתוכו */
 .lg-cell {
-  --t: min(11.4vw, 17.6vh);
+  --t: min(11.6vw, 20vh);
   position: absolute;
-  top: calc(var(--row) * 19vh);
+  top: calc(var(--row) * 76vh / var(--rows, 4));
   right: calc(var(--col) * 12.5vw);
   display: grid;
   place-items: center;
   width: 12.5vw;
-  height: 19vh;
-  translate: calc(var(--dx) * 2vw) calc(var(--dy) * 2.4vh);
+  height: calc(76vh / var(--rows, 4));
+  translate: calc(var(--dx) * 2vw) calc(var(--dy) * 3vh);
   opacity: 0;
   animation: lg-in 0.6s cubic-bezier(.2, .8, .2, 1) forwards;
-}
-/* הלופים גדולים, המסכים הנוספים קטנים - היררכיה, לא טבלה */
-.lg-cell--screen {
-  --t: min(8.2vw, 13.2vh);
 }
 @keyframes lg-in {
   from {
@@ -6216,78 +6212,6 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   }
 }
 
-/* --- "כלל הפרקטל" בגלריה (FractalRuleCard ב-RoomScreen) - גרסה נקייה וקריאה --- */
-.fr-page {
-  display: flex;
-  align-items: center;
-  gap: 6vw;
-  padding: 0 8vw;
-}
-.fr-squares {
-  position: relative;
-  z-index: 1;
-  flex: none;
-  width: 30vh;
-  height: 30vh;
-}
-.fr-squares rect {
-  fill: none;
-  stroke: rgb(255 255 255 / 0.7);
-  stroke-width: 0.8;
-  opacity: 0;
-  animation: fr-in 0.5s ease forwards;
-}
-.fr-squares rect.is-core {
-  fill: #f25740;
-  stroke: #f25740;
-}
-@keyframes fr-in {
-  to {
-    opacity: 1;
-  }
-}
-.fr-body {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4vh;
-}
-.fr-title {
-  display: flex;
-  align-items: center;
-  gap: 2vh;
-  margin: 0;
-  font-size: 7vh;
-  font-weight: 800;
-  line-height: 1;
-}
-.fr-title__sq {
-  width: 3vh;
-  height: 3vh;
-  background: #f25740;
-}
-.fr-text {
-  margin: 0;
-  max-width: 62vw;
-  font-size: 11vh;
-  font-weight: 800;
-  line-height: 1.12;
-}
-.fr-word {
-  display: inline-block;
-  /* רווח בין מילים - רווח רגיל בסוף inline-block נבלע */
-  margin-inline-end: 0.26em;
-  opacity: 0;
-  animation: fr-in 0.45s ease forwards;
-}
-@media (prefers-reduced-motion: reduce) {
-  .fr-squares rect,
-  .fr-word {
-    animation: none;
-    opacity: 1;
-  }
-}
 
 
 /* הלופ עצמו - נגיעה בו = השקף הבא */
@@ -6344,10 +6268,6 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
 }
 .lg-grown__close {
   background: #f25740;
-}
-/* חלון "טיפים לדיון טוב" קטן מדי בלופ פתוח (30×21 ס"מ) - בתוך הגלריה מגדילים אותו */
-.lg-grown .chat-surface {
-  scale: 1.9;
 }
 
 /* "הצגת כל הלופים" / "סגירת הכל" - בפינה השמאלית העליונה, מול הכותרת */

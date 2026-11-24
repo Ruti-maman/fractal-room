@@ -117,7 +117,7 @@ function RoomScreen({ allGroups, stageNumbers, roomContent, stage2Content, stage
         items={GALLERY_ITEMS}
         welcome={<RoomWelcome title={content?.title} />}
         renderItem={(key, step) => (
-          <GalleryScreen itemKey={key} step={step} groups={groups} stage2Content={stage2Content} stage6Content={stage6Content} />
+          <GalleryScreen itemKey={key} step={step} />
         )}
       />
     );
@@ -417,126 +417,25 @@ function AllLoopsDemo() {
 
 /* --- גלריית הלופים (/screen/4?loop=gallery, 2026-11-24) -------------------
  * כל מה שהמסך הגדול יודע להציג, כריבוע אחד לכל תצוגה, לפי סדר השלבים. */
-/** שורת הפתיחה של לופ - הטקסט של השקף הראשון (בדרך כלל החידה) */
-const opening = (key: string) => ROOM_LOOPS[key]?.slides[0]?.text ?? "";
-
+/*
+ * 2026-11-25 (דרישת הלקוחה "תמחוק את כל הריבועים הלבנים"): בגלריה רק מסך
+ * הפתיחה והלופים עצמם ("פרקטל..."), בלי המסכים הנוספים של השלבים (טיפים,
+ * כלל הפרקטל, מי בחדר, הקלטות, עיקרון) - אלה ממשיכים להופיע במסך הגדול בחדר.
+ */
 const GALLERY_ITEMS: GalleryItem[] = [
-  { key: "welcome", stage: 1, title: "ברוכות הבאות", kind: "welcome", teaser: "פרקטל. עומק, מימד, חדשנות." },
-  { key: "2", stage: 2, title: ROOM_LOOPS["2"].title, kind: "loop", teaser: opening("2") },
-  { key: "2-tips", stage: 2, title: "טיפים לשם הקבוצה", kind: "screen", teaser: IDENTIFICATION_DEFAULTS.tips_title },
-  { key: "2-fractal", stage: 2, title: "כלל הפרקטל", kind: "screen", teaser: IDENTIFICATION_DEFAULTS.fractal_text },
-  { key: "2-room", stage: 2, title: "מי בחדר", kind: "screen", teaser: ROOM_DEFAULTS.intro },
-  { key: "3", stage: 3, title: ROOM_LOOPS["3"].title, kind: "loop", teaser: opening("3") },
-  { key: "4", stage: 4, title: ROOM_LOOPS["4"].title, kind: "loop", teaser: opening("4") },
-  { key: "4b", stage: 4, title: ROOM_LOOPS["4b"].title, kind: "loop", teaser: opening("4b") },
-  { key: "5", stage: 5, title: ROOM_LOOPS["5"].title, kind: "loop", teaser: opening("5") },
-  { key: "6", stage: 6, title: ROOM_LOOPS["6"].title, kind: "loop", teaser: opening("6") },
-  { key: "6-tips", stage: 6, title: "טיפים לדיון טוב", kind: "screen", teaser: DEFAULT_TIPS[0]?.title },
-  { key: "7", stage: 7, title: "ההקלטות של הקבוצות", kind: "screen", teaser: "ההקלטות של שלוש הקבוצות, בזו אחר זו." },
-  { key: "8", stage: 8, title: ROOM_LOOPS["8"].title, kind: "loop", teaser: opening("8") },
-  { key: "9", stage: 9, title: ROOM_LOOPS["9"].title, kind: "loop", teaser: opening("9") },
-  { key: "10", stage: 10, title: "העיקרון של הסדנה", kind: "screen", teaser: "העיקרון שעולה מהסדנה שלכן." },
+  { key: "welcome", stage: 1, title: "ברוכות הבאות", kind: "welcome" },
+  ...["2", "3", "4", "4b", "5", "6", "8", "9"].map((key) => ({
+    key,
+    stage: parseInt(key, 10),
+    title: ROOM_LOOPS[key].title,
+    kind: "loop" as const,
+  })),
 ];
 
-/** מה שמוצג בתוך החלון של ריבוע בגלריה. כל תצוגה חוזרת על עצמה בלי סוף. */
-function GalleryScreen({
-  itemKey,
-  step,
-  groups,
-  stage2Content,
-  stage6Content,
-}: {
-  itemKey: string;
-  /** השקף בלופ - בגלריה הלופים עוברים רק בנגיעה (RoomLoop.manualIndex) */
-  step: number;
-  groups: Group[];
-  stage2Content?: Stage2Content;
-  stage6Content?: Stage6Content;
-}) {
-  const t2 = { ...IDENTIFICATION_DEFAULTS, ...(stage2Content?.identification ?? {}) } as IdentificationTexts;
-  const t6 = { ...STAGE6_FRACTAL_DEFAULTS, ...(stage6Content ?? {}) };
-
-  switch (itemKey) {
-    case "welcome":
-      return <RoomWelcome />;
-    case "2-tips":
-      return (
-        <main className="rl-page rl-page--riddle" dir="rtl">
-          <TipBubbles open displayOnly onClose={() => {}} title={t2.tips_title} tips={t2.tips} manualIndex={step} />
-        </main>
-      );
-    case "2-fractal":
-      // בגלריה - גרסה נקייה וקריאה (אפקט החול לא נקרא כשהחלון קטן)
-      // נגיעה = הכלל נכתב שוב מההתחלה
-      return <FractalRuleCard key={step} title={t2.fractal_title} text={t2.fractal_text} />;
-    case "2-room":
-      return <WhoIsInRoom groups={groups} content={stage2Content} />;
-    case "6-tips":
-      return (
-        <main className="rl-page rl-page--riddle" dir="rtl">
-          <div className="rl-grid" aria-hidden="true" />
-          <TipChat
-            open
-            displayOnly
-            onClose={() => {}}
-            title={t6.tips_title}
-            tips={stage6Content?.tips?.length ? stage6Content.tips : DEFAULT_TIPS}
-            confirmLabel=""
-            manualCount={step}
-          />
-        </main>
-      );
-    case "7":
-      return <RoomRecordings groups={groups} manualIndex={step} />;
-    case "10":
-      return <RoomPrinciple workshopId={groups[0]?.workshop_id ?? ""} />;
-    default:
-      return ROOM_LOOPS[itemKey] ? <RoomLoop loop={ROOM_LOOPS[itemKey]} manualIndex={step} /> : null;
-  }
-}
-
-/*
- * "כלל הפרקטל" בגלריית הלופים (2026-11-24, "שכלל הפרקטל יהיה ברור יותר"):
- * במסך המלא הכלל נבנה מגרגרי חול (FractalFullscreen), אבל בחלון קטן הגרגרים
- * נראים כפסיפס שלא נקרא. כאן - דף כחול עם הכותרת, המשפט בגדול מילה אחר מילה,
- * וריבועים בתוך ריבועים כסמל הפרקטל. בגלריה הכול עובר בנגיעה: נגיעה = הכלל נכתב שוב.
- */
-function FractalRuleCard({ title, text }: { title: string; text: string }) {
-  const words = text.split(/\s+/).filter(Boolean);
-  return (
-    <main className="rl-page rl-page--answer fr-page" dir="rtl">
-      <div className="rl-grid" aria-hidden="true" />
-      <svg className="fr-squares" viewBox="0 0 100 100" aria-hidden="true">
-        {[0, 1, 2, 3, 4].map((n) => {
-          const inset = n * 10;
-          return (
-            <rect
-              key={n}
-              x={inset}
-              y={inset}
-              width={100 - inset * 2}
-              height={100 - inset * 2}
-              className={n === 4 ? "is-core" : undefined}
-              style={{ animationDelay: `${n * 0.18}s` }}
-            />
-          );
-        })}
-      </svg>
-      <section className="fr-body">
-        <h1 className="fr-title">
-          <span className="fr-title__sq" aria-hidden="true" />
-          {title}
-        </h1>
-        <p className="fr-text">
-          {words.map((w, i) => (
-            <span key={i} className="fr-word" style={{ animationDelay: `${0.9 + i * 0.16}s` }}>
-              {w}
-            </span>
-          ))}
-        </p>
-      </section>
-    </main>
-  );
+/** מה שמוצג בתוך לופ פתוח בגלריה. השקפים עוברים רק בנגיעה (RoomLoop.manualIndex). */
+function GalleryScreen({ itemKey, step }: { itemKey: string; step: number }) {
+  if (itemKey === "welcome") return <RoomWelcome />;
+  return ROOM_LOOPS[itemKey] ? <RoomLoop loop={ROOM_LOOPS[itemKey]} manualIndex={step} /> : null;
 }
 
 /* --- שלב 1: ברוכות הבאות + לוגו פרקטל + לוגו הסמינר -------------------------
