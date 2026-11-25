@@ -55,12 +55,18 @@ function LoopGallery({
   items,
   welcome,
   renderItem,
+  finale = false,
 }: {
   items: GalleryItem[];
   welcome: ReactNode;
-  renderItem: (key: string, step: number) => ReactNode;
+  /**
+   * סיום הסדנה (2026-11-25, "בסוף הפרויקט עם הסיום יוצגו כל הלופים פתוחים"):
+   * בלי מסך פתיחה, כל הלופים פתוחים מההתחלה, והשקפים עוברים לבד (אין מי שנוגע).
+   */
+  finale?: boolean;
+  renderItem: (key: string, step: number | undefined) => ReactNode;
 }) {
-  const [entered, setEntered] = useState(false);
+  const [entered, setEntered] = useState(finale);
 
   useEffect(() => {
     if (entered) return;
@@ -75,7 +81,7 @@ function LoopGallery({
       </div>
     );
   }
-  return <Gallery items={items} renderItem={renderItem} />;
+  return <Gallery items={items} renderItem={renderItem} finale={finale} />;
 }
 
 /*
@@ -201,15 +207,53 @@ interface Grown {
 function Gallery({
   items,
   renderItem,
+  finale = false,
 }: {
   items: GalleryItem[];
-  renderItem: (key: string, step: number) => ReactNode;
+  renderItem: (key: string, step: number | undefined) => ReactNode;
+  finale?: boolean;
 }) {
   const [grown, setGrown] = useState<Grown[]>([]);
   const [popping, setPopping] = useState<number | null>(null);
+
+  /*
+   * הזזת ריבועים ביד (2026-11-25, דרישת הלקוחה: "שיהיה אפשר להזיז את המשבצות
+   * באופן ידני - בשביל הגימיק"): גרירה מזיזה את הריבוע, ונגיעה קצרה פותחת
+   * כרגיל. ההזזה רק על המסך הזה ולא נשמרת.
+   */
+  const [moved, setMoved] = useState<Record<number, { x: number; y: number }>>({});
+  const drag = useRef<{ i: number; x0: number; y0: number; bx: number; by: number; active: boolean } | null>(null);
+  const justDragged = useRef(false);
+  const DRAG_PX = 10;
+
+  const onTileDown = (i: number, e: React.PointerEvent<HTMLButtonElement>) => {
+    const base = moved[i] ?? { x: 0, y: 0 };
+    drag.current = { i, x0: e.clientX, y0: e.clientY, bx: base.x, by: base.y, active: false };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const onTileMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = drag.current;
+    if (!d) return;
+    const dx = e.clientX - d.x0;
+    const dy = e.clientY - d.y0;
+    if (!d.active && Math.hypot(dx, dy) < DRAG_PX) return;
+    d.active = true;
+    // מרחק הגרירה בפיקסלים של CSS (האתר מוקטן ב-zoom - ראו uiScale)
+    const ui = uiScale();
+    setMoved((m) => ({ ...m, [d.i]: { x: d.bx + dx / ui, y: d.by + dy / ui } }));
+  };
+  const onTileUp = () => {
+    if (drag.current?.active) justDragged.current = true;
+    drag.current = null;
+  };
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
 
   const release = (i: number) => {
+    // סוף גרירה - לא פותחים
+    if (justDragged.current) {
+      justDragged.current = false;
+      return;
+    }
     // מתכווץ בלחיצה (CSS), גדל קצת בשחרור, ומיד נפתח
     setPopping(i);
     window.setTimeout(() => {
@@ -234,6 +278,12 @@ function Gallery({
   };
   const allOpen = grown.length === items.length;
 
+  // בסיום הסדנה - כולם נפתחים מיד
+  useEffect(() => {
+    if (finale) showAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finale]);
+
   // מסגרת אדומה שעוברת לאט בין הריבועים - מזמינה לגעת
   const [hint, setHint] = useState(0);
   useEffect(() => {
@@ -248,8 +298,9 @@ function Gallery({
         {/* כמה לופים יש (מסך הפתיחה הוא לא לופ) */}
         <span className="lg-head__count">{items.filter((it) => it.kind === "loop").length}</span>
         <span className="lg-head__text">
-          <span className="lg-head__title">כל הלופים של הסדנה</span>
-          <span className="lg-head__sub">נגעו בריבוע כדי לפתוח</span>
+          {/* שם המסך לפי הלקוחה (2026-11-25): "מסך העשרה וידע - אינסוף צורות לפרקטל" */}
+          <span className="lg-head__title">מסך העשרה וידע</span>
+          <span className="lg-head__sub">אינסוף צורות לפרקטל</span>
         </span>
         <svg viewBox="0 0 24 24" className="lg-head__arrow" aria-hidden="true">
           <path d="M19 5 L5 19 M5 8 L5 19 L16 19" />
@@ -283,6 +334,8 @@ function Gallery({
                   "--row": spot.row,
                   "--dx": spot.dx,
                   "--dy": spot.dy,
+                  "--mx": `${moved[i]?.x ?? 0}px`,
+                  "--my": `${moved[i]?.y ?? 0}px`,
                   animationDelay: `${0.15 + i * 0.05}s`,
                 } as CSSProperties
               }
@@ -294,6 +347,10 @@ function Gallery({
                 type="button"
                 className={`lg-tile lg-tile--${item.kind}${popping === i ? " is-pop" : ""}${isGrown ? " is-source" : ""}${hint === i && !isGrown ? " is-hint" : ""}`}
                 onClick={() => release(i)}
+                onPointerDown={(e) => onTileDown(i, e)}
+                onPointerMove={onTileMove}
+                onPointerUp={onTileUp}
+                onPointerCancel={onTileUp}
                 aria-label={`פתיחת ${item.title}`}
                 aria-expanded={isGrown}
               >
@@ -317,6 +374,7 @@ function Gallery({
           getTileRect={() => buttons.current[g.i]?.getBoundingClientRect() ?? null}
           onClose={() => shrink(g.i)}
           renderItem={renderItem}
+          auto={finale}
         />
       ))}
     </main>
@@ -334,13 +392,16 @@ function GrownTile({
   getTileRect,
   onClose,
   renderItem,
+  auto = false,
 }: {
   item: GalleryItem;
   from: DOMRect;
   at: Box;
+  /** השקפים עוברים לבד (סיום הסדנה) - בלי נגיעה */
+  auto?: boolean;
   getTileRect: () => DOMRect | null;
   onClose: () => void;
-  renderItem: (key: string, step: number) => ReactNode;
+  renderItem: (key: string, step: number | undefined) => ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   // המסגרת היא "הגוף" של הטיפים ושל כלל הפרקטל (שנפתחים ב-portal)
@@ -402,7 +463,7 @@ function GrownTile({
       >
         <div className="lg-panel__stage" ref={setHost}>
           <div className="lg-panel__screen">
-            {host && <PortalHostContext.Provider value={host}>{renderItem(item.key, step)}</PortalHostContext.Provider>}
+            {host && <PortalHostContext.Provider value={host}>{renderItem(item.key, auto ? undefined : step)}</PortalHostContext.Provider>}
           </div>
         </div>
       </div>

@@ -223,16 +223,6 @@ export function buildReadableRows(dump: WorkshopDump): string[][] {
   return rows;
 }
 
-function csvCell(value: string): string {
-  // אקסל מפרש תא שמתחיל ב-= + - @ כנוסחה; טקסט של משתתפות לא אמור לרוץ כנוסחה
-  const safe = /^[=+\-@]/.test(value) ? `'${value}` : value;
-  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
-}
-
-export function toCsv(rows: string[][]): string {
-  const lines = [HEADERS, ...rows].map((row) => row.map(csvCell).join(","));
-  return "﻿" + lines.join("\r\n");
-}
 
 // ---------------------------------------------------------------------------
 // הורדה
@@ -243,33 +233,76 @@ function fileStamp(date = new Date()): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}-${pad(date.getMinutes())}`;
 }
 
-function download(content: string, filename: string, type: string) {
-  const url = URL.createObjectURL(new Blob([content], { type }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // דפדפנים ישנים מתחילים את ההורדה רק אחרי שהאירוע מסתיים
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+/*
+ * 2026-11-25 (דרישת הלקוחה: "שיוכלו להוריד את הגיבוי בקובץ רגיל"): שני
+ * הייצואים הם קובצי אקסל אמיתיים (.xlsx), מימין לשמאל:
+ *   table  - גיליון אחד: הטבלה הקריאה (מה שהקבוצות הזינו, שורה לכל פריט).
+ *   backup - הטבלה הקריאה + גיליון לכל טבלה במסד (הגיבוי המלא). ערכים מורכבים
+ *            (JSON) נשמרים כטקסט בתא, כך שאפשר לשחזר מהם.
+ * הספרייה (write-excel-file) נטענת רק בלחיצה, וארוזה בתוך האתר - בלי דומיין חדש.
+ */
+export type ExportFormat = "table" | "backup";
+
+type XlsxCell = { value: string; fontWeight?: "bold" } | null;
+
+function headerRow(titles: string[]): XlsxCell[] {
+  return titles.map((t) => ({ value: t, fontWeight: "bold" }));
 }
 
-export type ExportFormat = "csv" | "json";
+function textCell(v: unknown): XlsxCell {
+  if (v == null || v === "") return null;
+  const text = typeof v === "object" ? JSON.stringify(v) : String(v);
+  // תא אחד באקסל מוגבל ל-32,767 תווים
+  return { value: text.length > 32000 ? text.slice(0, 32000) + "…" : text };
+}
 
-/** שולפת את כל הנתונים ומורידה קובץ. מחזירה כמה פריטים יוצאו, או שגיאה. */
+/** טבלה גולמית מהמסד -> גיליון: עמודה לכל שדה */
+function rawSheet(rows: Row[]): XlsxCell[][] {
+  const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+  return [headerRow(keys), ...rows.map((r) => keys.map((k) => textCell(r[k])))];
+}
+
+const RAW_SHEETS: { key: Exclude<keyof WorkshopDump, "exported_at">; name: string }[] = [
+  { key: "workshops", name: "סדנאות" },
+  { key: "groups", name: "קבוצות" },
+  { key: "participants", name: "משתתפות" },
+  { key: "responses", name: "תשובות" },
+  { key: "media", name: "הקלטות" },
+  { key: "programs", name: "תוכניות" },
+];
+
+/** שולפת את כל הנתונים ומורידה קובץ אקסל. מחזירה כמה פריטים יוצאו, או שגיאה. */
 export async function exportWorkshopData(format: ExportFormat): Promise<{ error: string | null; count: number }> {
   try {
     const dump = await fetchWorkshopDump();
     if (dump.workshops.length === 0) return { error: "אין במסד אף סדנה לייצא.", count: 0 };
 
-    if (format === "csv") {
-      const rows = buildReadableRows(dump);
-      download(toCsv(rows), `סדנת-פרקטל_${fileStamp()}.csv`, "text/csv;charset=utf-8");
-      return { error: null, count: rows.length };
+    const { default: writeXlsxFile } = await import("write-excel-file/browser");
+    const readable = buildReadableRows(dump);
+    const summary = {
+      sheet: "סיכום הסדנה",
+      rightToLeft: true,
+      stickyRowsCount: 1,
+      columns: [{ width: 10 }, { width: 6 }, { width: 18 }, { width: 6 }, { width: 18 }, { width: 50 }, { width: 30 }, { width: 18 }],
+      data: [headerRow(HEADERS), ...readable.map((row) => row.map((cell) => textCell(cell)))],
+    };
+
+    if (format === "table") {
+      await writeXlsxFile([summary], { fontFamily: "Arial" }).toFile(`סדנת-פרקטל_${fileStamp()}.xlsx`);
+      return { error: null, count: readable.length };
     }
 
-    download(JSON.stringify(dump, null, 2), `סדנת-פרקטל_גיבוי_${fileStamp()}.json`, "application/json");
+    const sheets = [
+      summary,
+      ...RAW_SHEETS.map(({ key, name }) => ({
+        sheet: name,
+        rightToLeft: true,
+        stickyRowsCount: 1,
+        data: rawSheet(dump[key]),
+      })),
+    ];
+    await writeXlsxFile(sheets, { fontFamily: "Arial" }).toFile(`סדנת-פרקטל_גיבוי_${fileStamp()}.xlsx`);
     return { error: null, count: dump.responses.length + dump.participants.length + dump.media.length };
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err), count: 0 };

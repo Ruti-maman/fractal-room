@@ -130,6 +130,8 @@ function RoomScreen({ allGroups, stageNumbers, roomContent, stage2Content, stage
   }
   // /screen/4?loop=10 - העיקרון של הסדנה (שלב 10)
   if (previewLoop === "10") return <RoomPrinciple workshopId={groups[0]?.workshop_id ?? ""} />;
+  // /screen/4?loop=finale - סיום הסדנה: כל הלופים פתוחים ורצים לבד
+  if (previewLoop === "finale") return <FinaleGallery />;
   // /screen/4?loop=7 - ההקלטות של הקבוצות (שלב 7)
   if (previewLoop === "7") return <RoomRecordings groups={groups} />;
   // /screen/4?loop=6&part=fractal - "כלל הפרקטל" של שלב 6
@@ -150,7 +152,11 @@ function RoomScreen({ allGroups, stageNumbers, roomContent, stage2Content, stage
   if (roomStage === 2) return <Stage2Cycle groups={groups} content={stage2Content} />;
   if (roomStage === 4) return <Stage4Room groups={groups} />;
   if (roomStage === 7) return <RoomRecordings groups={groups} />;
-  if (roomStage === 10) return <RoomPrinciple workshopId={groups[0]?.workshop_id ?? ""} />;
+  if (roomStage === 10) {
+    const lastStage = stageNumbers[stageNumbers.length - 1] ?? 10;
+    const allDone = groups.length > 0 && groups.every((g) => g.current_stage >= lastStage);
+    return <FinaleRoom workshopId={groups[0]?.workshop_id ?? ""} allDone={allDone} />;
+  }
   if (roomStage === 6) return <Stage6Cycle content={stage6Content} />;
   // לופ השלב (שלבים 2-6, 8, 9) - לפי האפיון. שלבים 7, 10: עוד לא הוגדרו
   const loop = ROOM_LOOPS[String(roomStage)];
@@ -432,8 +438,37 @@ const GALLERY_ITEMS: GalleryItem[] = [
   })),
 ];
 
+/*
+ * סיום הסדנה (2026-11-25, "בסוף הפרויקט עם הסיום יוצגו כל הלופים פתוחים"):
+ * בשלב 10 המסך הגדול מציג את העיקרון של הסדנה. כשכל הקבוצות הגיעו לשלב
+ * האחרון - אחרי FINALE_AFTER_SECONDS עוברים לכל הלופים פתוחים יחד, רצים לבד.
+ */
+const FINALE_AFTER_SECONDS = 40;
+
+function FinaleRoom({ workshopId, allDone }: { workshopId: string; allDone: boolean }) {
+  const [showLoops, setShowLoops] = useState(false);
+  useEffect(() => {
+    if (!allDone) return;
+    const t = window.setTimeout(() => setShowLoops(true), FINALE_AFTER_SECONDS * 1000);
+    return () => window.clearTimeout(t);
+  }, [allDone]);
+  if (allDone && showLoops) return <FinaleGallery />;
+  return <RoomPrinciple workshopId={workshopId} />;
+}
+
+function FinaleGallery() {
+  return (
+    <LoopGallery
+      finale
+      items={GALLERY_ITEMS}
+      welcome={null}
+      renderItem={(key, step) => <GalleryScreen itemKey={key} step={step} />}
+    />
+  );
+}
+
 /** מה שמוצג בתוך לופ פתוח בגלריה. השקפים עוברים רק בנגיעה (RoomLoop.manualIndex). */
-function GalleryScreen({ itemKey, step }: { itemKey: string; step: number }) {
+function GalleryScreen({ itemKey, step }: { itemKey: string; step?: number }) {
   if (itemKey === "welcome") return <RoomWelcome />;
   return ROOM_LOOPS[itemKey] ? <RoomLoop loop={ROOM_LOOPS[itemKey]} manualIndex={step} /> : null;
 }

@@ -118,8 +118,8 @@ function AdminPage() {
                 variant="primary"
                 size="lg"
                 icon="download"
-                onClick={() => handleExport("csv")}
-                loading={exporting === "csv"}
+                onClick={() => handleExport("table")}
+                loading={exporting === "table"}
                 disabled={exporting !== null}
               >
                 טבלה לאקסל
@@ -128,16 +128,17 @@ function AdminPage() {
                 variant="glass"
                 size="lg"
                 icon="save"
-                onClick={() => handleExport("json")}
-                loading={exporting === "json"}
+                onClick={() => handleExport("backup")}
+                loading={exporting === "backup"}
                 disabled={exporting !== null}
               >
-                גיבוי מלא
+                גיבוי מלא (אקסל)
               </GlassButton>
             </div>
             <p className="text-ink-3 text-sm leading-relaxed">
-              הטבלה נפתחת באקסל או ב-Google Sheets. הגיבוי המלא שומר את הנתונים
-              הגולמיים, למקרה שיהיה צורך לשחזר או לנתח אותם.
+              שני הקבצים נפתחים באקסל או ב-Google Sheets. הגיבוי המלא כולל גם
+              גיליון לכל סוג נתונים (קבוצות, משתתפות, תשובות, הקלטות), למקרה
+              שיהיה צורך לשחזר או לנתח אותם.
             </p>
           </div>
         </section>

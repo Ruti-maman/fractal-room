@@ -5890,7 +5890,8 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   place-items: center;
   width: 12.5vw;
   height: calc(76vh / var(--rows, 4));
-  translate: calc(var(--dx) * 2vw) calc(var(--dy) * 3vh);
+  /* --mx/--my: הזזה ביד (גרירה) */
+  translate: calc(var(--dx) * 2vw + var(--mx, 0px)) calc(var(--dy) * 3vh + var(--my, 0px));
   opacity: 0;
   animation: lg-in 0.6s cubic-bezier(.2, .8, .2, 1) forwards;
 }
@@ -5905,6 +5906,8 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   }
 }
 .lg-tile {
+  /* גרירה במגע - בלי גלילה/זום של הדפדפן */
+  touch-action: none;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
