@@ -11,6 +11,9 @@ import RoomPrinciple from "./RoomPrinciple";
 import type { Tip } from "./TipPopups";
 import { DEFAULT_TIPS } from "../lib/stage6Texts";
 import LoopGallery, { type GalleryItem } from "./LoopGallery";
+import CustomRoomLoop from "./CustomRoomLoop";
+import { fetchRoomLoops } from "../lib/libraryActions";
+import type { RoomLoopRow } from "../types/roomLoop";
 
 /** מה שהמסך הגדול צריך מתוכן שלב 6 */
 interface Stage6Content {
@@ -112,15 +115,7 @@ function RoomScreen({ allGroups, stageNumbers, roomContent, stage2Content, stage
   if (previewLoop === "all") return <AllLoopsDemo />;
   // /screen/4?loop=gallery - ברוכות הבאות, ואז כל הלופים כריבועים לבחירה (בקשת הלקוחה)
   if (previewLoop === "gallery") {
-    return (
-      <LoopGallery
-        items={GALLERY_ITEMS}
-        welcome={<RoomWelcome title={content?.title} />}
-        renderItem={(key, step) => (
-          <GalleryScreen itemKey={key} step={step} />
-        )}
-      />
-    );
+    return <RoomGallery welcome={<RoomWelcome title={content?.title} />} />;
   }
   if (previewLoop === "1") return <RoomWelcome title={content?.title} />;
   // /screen/4?loop=2&part=tips|fractal|room - חלק מסוים בסבב של שלב 2
@@ -457,12 +452,57 @@ function FinaleRoom({ workshopId, allDone }: { workshopId: string; allDone: bool
 }
 
 function FinaleGallery() {
+  return <RoomGallery finale welcome={null} />;
+}
+
+/*
+ * דף הלופים עם הלופים שנוספו ב-/admin (טבלת room_loops, 2026-11-25): אחרי
+ * הלופים המקוריים, בצבע שנבחר, עם "+" במקום מספר שלב. נטענים מחדש כל
+ * CUSTOM_LOOPS_REFRESH_MS - לופ שנוסף מופיע בלי לרענן את המסך הגדול.
+ */
+const CUSTOM_PREFIX = "custom-";
+const CUSTOM_LOOPS_REFRESH_MS = 20_000;
+
+function useCustomLoops() {
+  const [loops, setLoops] = useState<RoomLoopRow[]>([]);
+  useEffect(() => {
+    let alive = true;
+    const load = () => fetchRoomLoops().then((l) => alive && setLoops(l));
+    load();
+    const t = window.setInterval(load, CUSTOM_LOOPS_REFRESH_MS);
+    return () => {
+      alive = false;
+      window.clearInterval(t);
+    };
+  }, []);
+  return loops;
+}
+
+function RoomGallery({ welcome, finale = false }: { welcome: React.ReactNode; finale?: boolean }) {
+  const custom = useCustomLoops();
+  const items: GalleryItem[] = [
+    ...GALLERY_ITEMS,
+    ...custom.map((l) => ({
+      key: CUSTOM_PREFIX + l.id,
+      stage: 0,
+      num: "+",
+      title: l.title,
+      // לבן = ריבוע לבן עם מסגרת; כחול וכתום = ריבוע מלא
+      kind: (l.color === "white" ? "screen" : "loop") as GalleryItem["kind"],
+      tileClass: l.color === "orange" ? "lg-tile--orange" : undefined,
+    })),
+  ];
+  const byKey = new Map(custom.map((l) => [CUSTOM_PREFIX + l.id, l]));
   return (
     <LoopGallery
-      finale
-      items={GALLERY_ITEMS}
-      welcome={null}
-      renderItem={(key, step) => <GalleryScreen itemKey={key} step={step} />}
+      finale={finale}
+      items={items}
+      welcome={welcome}
+      renderItem={(key, step) => {
+        const extra = byKey.get(key);
+        if (extra) return <CustomRoomLoop loop={extra} step={step} />;
+        return <GalleryScreen itemKey={key} step={step} />;
+      }}
     />
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { PortalHostContext } from "../lib/portalHost";
 
 /**
@@ -21,6 +21,10 @@ export interface GalleryItem {
   title: string;
   /** loop - לופ "פרקטל..."; screen - מסך נוסף של אותו שלב; welcome - הפתיחה */
   kind: "loop" | "screen" | "welcome";
+  /** מה שכתוב בפינת הריבוע במקום מספר השלב (לופ שנוסף ב-/admin: "+") */
+  num?: string;
+  /** מחלקה נוספת לריבוע - צבע שנבחר ללופ שנוסף (lg-tile--orange) */
+  tileClass?: string;
   /** שורת פתיחה מתוך הלופ עצמו (החידה הראשונה וכו׳) - מוצגת בכרטיס בעמוד המסע */
   teaser?: string;
 }
@@ -49,7 +53,26 @@ const SPOTS: { col: number; row: number; dx: number; dy: number }[] = [
   { col: 6, row: 2, dx: -0.05, dy: -0.1 },
 ];
 /** מספר השורות בפיזור - השטח בין הקווים מתחלק ביניהן */
-const SPOT_ROWS = Math.max(...SPOTS.map((s) => s.row)) + 1;
+/*
+ * יותר ריבועים מהפיזור הקבוע (לופים שנוספו ב-/admin): שורות נוספות מתחת,
+ * בדירוג מתחלף, והשורות מצטופפות כדי שהכול ייכנס במסך.
+ */
+function spotsFor(n: number) {
+  const spots = SPOTS.slice(0, n);
+  const patterns = [
+    [0, 2, 4, 6],
+    [1, 3, 5, 7],
+  ];
+  let row = Math.max(...SPOTS.map((s) => s.row)) + 1;
+  while (spots.length < n) {
+    for (const col of patterns[row % 2]) {
+      if (spots.length >= n) break;
+      spots.push({ col, row, dx: ((col * 7 + row * 3) % 5) / 10 - 0.2, dy: ((col * 3 + row) % 5) / 10 - 0.2 });
+    }
+    row++;
+  }
+  return { spots, rows: Math.max(...spots.map((s) => s.row)) + 1 };
+}
 
 function LoopGallery({
   items,
@@ -277,6 +300,7 @@ function Gallery({
     );
   };
   const allOpen = grown.length === items.length;
+  const layoutSpots = useMemo(() => spotsFor(items.length), [items.length]);
 
   // בסיום הסדנה - כולם נפתחים מיד
   useEffect(() => {
@@ -320,9 +344,9 @@ function Gallery({
         )}
       </div>
 
-      <ul className="lg-field" style={{ "--rows": SPOT_ROWS } as CSSProperties}>
+      <ul className="lg-field" style={{ "--rows": layoutSpots.rows } as CSSProperties}>
         {items.map((item, i) => {
-          const spot = SPOTS[i % SPOTS.length];
+          const spot = layoutSpots.spots[i];
           const isGrown = grown.some((g) => g.i === i);
           return (
             <li
@@ -345,7 +369,7 @@ function Gallery({
                   buttons.current[i] = el;
                 }}
                 type="button"
-                className={`lg-tile lg-tile--${item.kind}${popping === i ? " is-pop" : ""}${isGrown ? " is-source" : ""}${hint === i && !isGrown ? " is-hint" : ""}`}
+                className={`lg-tile lg-tile--${item.kind}${item.tileClass ? ` ${item.tileClass}` : ""}${popping === i ? " is-pop" : ""}${isGrown ? " is-source" : ""}${hint === i && !isGrown ? " is-hint" : ""}`}
                 onClick={() => release(i)}
                 onPointerDown={(e) => onTileDown(i, e)}
                 onPointerMove={onTileMove}
@@ -355,7 +379,7 @@ function Gallery({
                 aria-expanded={isGrown}
               >
                 <span className="lg-tile__top">
-                  <span className="lg-tile__num">{String(item.stage).padStart(2, "0")}</span>
+                  <span className="lg-tile__num">{item.num ?? String(item.stage).padStart(2, "0")}</span>
                   <TileGlyph name={item.key} />
                 </span>
                 <span className="lg-tile__title">{item.title}</span>

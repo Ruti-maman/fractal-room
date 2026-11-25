@@ -5,6 +5,8 @@ import { dilemmaVideoSrc } from "../lib/dilemmaVideo";
 import { GlassButton } from "./ui/Glass";
 import { InlineNotice } from "./ui/Feedback";
 import { useToast } from "./ui/Toast";
+import GlassModal from "./ui/GlassModal";
+import { addDilemma, deleteDilemma } from "../lib/libraryActions";
 
 /**
  * ספריית הדילמות (2026-11-19, דרישת הלקוחה):
@@ -23,7 +25,27 @@ function DilemmaLibrary() {
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
-  const { dilemmas, loading } = useDilemmaLibrary(info.programId ?? undefined);
+  const { dilemmas, loading, reload } = useDilemmaLibrary(info.programId ?? undefined);
+
+  // הוספה ומחיקה (2026-11-25, דרישת הלקוחה)
+  const [adding, setAdding] = useState(false);
+  const [toDelete, setToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function confirmDelete() {
+    if (!toDelete) return;
+    setDeleting(true);
+    const err = await deleteDilemma(toDelete.id);
+    setDeleting(false);
+    if (err) {
+      toast(err, { tone: "danger" });
+      return;
+    }
+    if (toDelete.id === info.dilemmaId) setInfo((s) => ({ ...s, dilemmaId: null }));
+    setToDelete(null);
+    await reload();
+    toast("הדילמה נמחקה.", { tone: "ok" });
+  }
 
   useEffect(() => {
     getAdminWorkshop().then((r) => {
@@ -99,6 +121,14 @@ function DilemmaLibrary() {
                 {d.summary && <p className="dl-card__summary">{d.summary}</p>}
               </div>
               <div className="dl-card__foot">
+                <button
+                  type="button"
+                  className="dl-card__delete"
+                  onClick={() => setToDelete({ id: d.id, title: d.title })}
+                  aria-label={`מחיקת ${d.title}`}
+                >
+                  מחיקה
+                </button>
                 {isChosen ? (
                   <span className="dl-card__chosen">✓ הדילמה של הסדנה</span>
                 ) : (
@@ -115,8 +145,105 @@ function DilemmaLibrary() {
             </li>
           );
         })}
+        <li className="dl-card dl-card--add">
+          {adding && info.programId ? (
+            <AddDilemmaForm
+              programId={info.programId}
+              onCancel={() => setAdding(false)}
+              onSaved={async () => {
+                setAdding(false);
+                await reload();
+                toast("הדילמה נוספה לספרייה.", { tone: "ok" });
+              }}
+            />
+          ) : (
+            <button type="button" className="dl-add" onClick={() => setAdding(true)} disabled={!info.programId}>
+              <span className="dl-add__plus" aria-hidden="true">+</span>
+              הוספת דילמה
+            </button>
+          )}
+        </li>
       </ol>
+
+      <GlassModal
+        open={toDelete !== null}
+        tone="danger"
+        title="למחוק את הדילמה?"
+        description={toDelete ? `"${toDelete.title}" תימחק מהספרייה. אם היא הדילמה של הסדנה, הסדנה תחזור לתוכן הרגיל של השלבים.` : undefined}
+        confirmLabel="מחיקה"
+        confirmLoading={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => setToDelete(null)}
+      />
     </section>
+  );
+}
+
+/** טופס דילמה חדשה: כותרת, משפט לשמש (שלב 3), תיאור לסימון (שלב 4), סרטון (שלב 2) */
+function AddDilemmaForm({
+  programId,
+  onCancel,
+  onSaved,
+}: {
+  programId: string;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [summary, setSummary] = useState("");
+  const [profileText, setProfileText] = useState("");
+  const [video, setVideo] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    if (!title.trim()) {
+      setError("חסרה כותרת לדילמה.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const err = await addDilemma({ programId, title, summary, profileText, video });
+    setSaving(false);
+    if (err) setError(err);
+    else onSaved();
+  }
+
+  return (
+    <form
+      className="lib-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save();
+      }}
+    >
+      <h3 className="lib-form__title">דילמה חדשה</h3>
+      <label className="lib-field">
+        <span>כותרת</span>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} required />
+      </label>
+      <label className="lib-field">
+        <span>משפט קצר (במרכז השמש, שלב 3)</span>
+        <input value={summary} onChange={(e) => setSummary(e.target.value)} />
+      </label>
+      <label className="lib-field">
+        <span>תיאור הדילמה (מסמנים עליו חוזקות וחסמים, שלב 4)</span>
+        <textarea rows={5} value={profileText} onChange={(e) => setProfileText(e.target.value)} />
+      </label>
+      <label className="lib-field">
+        <span>סרטון הדילמה (שלב 2)</span>
+        <input type="file" accept="video/*" onChange={(e) => setVideo(e.target.files?.[0] ?? null)} />
+      </label>
+      {error && <p className="lib-form__error">{error}</p>}
+      <div className="lib-form__actions">
+        <GlassButton variant="primary" type="submit" loading={saving} disabled={saving}>
+          שמירה
+        </GlassButton>
+        <GlassButton variant="ghost" type="button" onClick={onCancel} disabled={saving}>
+          ביטול
+        </GlassButton>
+      </div>
+    </form>
   );
 }
 

@@ -10,7 +10,8 @@
 export function dilemmaVideoSrc(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
   if (import.meta.env.DEV) {
-    const m = url.match(/\/media\/dilemmas\/([^/?#]+)$/);
+    // רק חמשת הסרטונים המקוריים (dilemma-1..5) - לדילמה שהועלתה ב-/admin אין עותק מקומי
+    const m = url.match(/\/media\/dilemmas\/(dilemma-\d+\.[a-z0-9]+)$/);
     if (m) return `/dilemmas-local/${m[1]}`;
   }
   return url;

@@ -12,6 +12,7 @@ import { InlineNotice } from "../components/ui/Feedback";
 import { ThemeToggle } from "../components/ui/SystemControls";
 import { useToast } from "../components/ui/Toast";
 import DilemmaLibrary from "../components/DilemmaLibrary";
+import RoomLoopLibrary from "../components/RoomLoopLibrary";
 
 /**
  * מסך ניהול - עדיין לא סוכם עם הלקוחה איפה כפתור "סדנה חדשה" צריך להיות
@@ -97,6 +98,7 @@ function AdminPage() {
         {/* --- ספריית הדילמות --- "מסך ראשוני" (דרישת הלקוחה): בוחרים קודם כל
             את הדילמה שתוביל את הסדנה */}
         <DilemmaLibrary />
+        <RoomLoopLibrary />
 
         {/* --- ייצוא נתונים --- לפני "סדנה חדשה", כי זה מה שעושים קודם */}
         <section

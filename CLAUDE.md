@@ -475,6 +475,22 @@ media            id, workshop_id, group_id, stage_number, url, created_at
 לפי הסרטונים - **ממתינים לאישור הלקוחה**. NetFree חוסם את הסרטונים, ולכן בשרת
 הפיתוח הם מוגשים מ-`public/dilemmas-local/` (לא ב-Git, `src/lib/dilemmaVideo.ts`).
 
+**סבב דרישות 2026-11-25:**
+- **דף הלופים** (`/screen/4?loop=gallery`, `LoopGallery.tsx`) - "מסך העשרה וידע - אינסוף
+  צורות לפרקטל": ריבועים מפוזרים (אפשר לגרור), לופ נפתח במקומו בגודל 30×21 ס"מ על
+  המסך הגדול, שקפים עוברים **רק בנגיעה** (`RoomLoop.manualIndex`), "הצגת כל הלופים".
+  בסוף הסדנה (כל הקבוצות בשלב האחרון) המסך הגדול מציג את העיקרון 40 שניות ואז את
+  כל הלופים פתוחים, רצים לבד (`?loop=finale` לתצוגה).
+- **לופים נוספים** - טבלה `room_loops` (`supabase/add_room_loops.sql`, הורץ): לופ ידני
+  (שקפי טקסט) או סרטון, בצבע כתום/כחול/לבן, מנוהלים ב-/admin. **הלופים המקוריים
+  נשארים בקוד** (`roomLoops.ts`) - יש להם איורים ותנועה שאינם נתונים.
+- **דילמות** - הוספה (כולל העלאת סרטון ל-`media/dilemmas/`) ומחיקה ב-/admin.
+- **טיימר:** מעבר אוטומטי רק אם המסך **ראה** את הזמן נגמר - מסך שחוזר אחרי שהזמן
+  עבר לא מדלג (זו הייתה הסיבה ל"עקיפת שלבים").
+- **כניסה מקישור** לסדנה שהסתיימה או בלי פעילות 3 שעות: בחירה בין סדנה חדשה
+  (מוחקת את הקודמת - לכן לא אוטומטי) לבין המשך. המסכים עוברים לסדנה חדשה לבד.
+- **ייצוא:** שני הקבצים ב-/admin הם xlsx (`write-excel-file`, ארוז באתר, בלי דומיין).
+
 ---
 
 ## 9. דומיינים שהמערכת פונה אליהם
@@ -595,11 +611,12 @@ media            id, workshop_id, group_id, stage_number, url, created_at
 
 
 
+
 <!-- cloude-code-toolbox:mcp-skills-awareness-begin -->
 
 ### MCP & Skills awareness (Claude Code ToolBox)
 
-_Last synced: 2026-11-19T14:14:14.217Z._
+_Last synced: 2026-11-25T22:06:36.657Z._
 
 - **Full report:** `.claude/cloude-code-toolbox-mcp-skills-awareness.md` in this workspace (auto-overwritten on each scan). Use it as ground truth for configured servers and skill folders.
 - **MCP:** For **live tools** in Claude Code, enable the matching server via `/mcp`. Servers are configured in `~/.claude.json` (user) and `.mcp.json` (project).

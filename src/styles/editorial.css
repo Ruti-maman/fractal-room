@@ -5882,7 +5882,8 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
 }
 /* כל תא = עמודה אחת ברוחב 12.5vw ורבע מהגובה שבין הקווים; הריבוע מפוזר קצת בתוכו */
 .lg-cell {
-  --t: min(11.6vw, 20vh);
+  /* קטן יותר כשיש יותר שורות (לופים שנוספו ב-/admin) */
+  --t: min(11.6vw, 20vh, calc(60.8vh / var(--rows, 3)));
   position: absolute;
   top: calc(var(--row) * 76vh / var(--rows, 4));
   right: calc(var(--col) * 12.5vw);
@@ -6389,4 +6390,192 @@ html[data-skin="editorial"] .slot-input:focus::placeholder {
   font-size: 0.95rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* ==========================================================================
+   ספריות ב-/admin: הוספה ומחיקה של דילמות ולופים (2026-11-25)
+   ========================================================================== */
+.dl-card__foot {
+  gap: 0.8rem;
+  justify-content: space-between;
+}
+.dl-card__delete {
+  min-height: 2.75rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgb(11 27 63 / 0.3);
+  border-radius: 0;
+  background: transparent;
+  color: #0b1b3f;
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.dl-card__delete:hover {
+  border-color: #f25740;
+  color: #c2321d;
+}
+.dl-card--add {
+  border-style: dashed;
+  justify-content: center;
+}
+.dl-add {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 14rem;
+  border: 0;
+  background: transparent;
+  color: #2a4286;
+  font-family: inherit;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.dl-add:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.dl-add__plus {
+  font-size: 3rem;
+  font-weight: 200;
+  line-height: 1;
+  color: #f25740;
+}
+.lib-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.1rem;
+  color: #0b1b3f;
+  text-align: right;
+}
+.lib-form__title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+.lib-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.lib-field input:not([type="file"]),
+.lib-field textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgb(11 27 63 / 0.3);
+  border-radius: 0;
+  background: #ffffff;
+  color: #0b1b3f;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+}
+.lib-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.95rem;
+}
+.lib-choice legend {
+  width: 100%;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+.lib-choice label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  cursor: pointer;
+}
+.lib-color__chip {
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 1px solid #0b1b3f;
+}
+.lib-color--orange .lib-color__chip {
+  background: #f25740;
+  border-color: #f25740;
+}
+.lib-color--blue .lib-color__chip {
+  background: #2a4286;
+  border-color: #2a4286;
+}
+.lib-color--white .lib-color__chip {
+  background: #ffffff;
+}
+.lib-color.is-on {
+  font-weight: 800;
+}
+.lib-form__error {
+  margin: 0;
+  color: #c2321d;
+  font-weight: 600;
+}
+.lib-form__actions {
+  display: flex;
+  gap: 0.6rem;
+}
+/* כרטיס לופ ברשימה - הריבוע בצבע שנבחר */
+.ll-swatch {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  aspect-ratio: 16 / 9;
+  padding: 1rem;
+  color: #ffffff;
+}
+.ll-swatch--blue {
+  background: #2a4286;
+}
+.ll-swatch--orange {
+  background: #f25740;
+}
+.ll-swatch--white {
+  border-bottom: 1px solid rgb(11 27 63 / 0.2);
+  background: #ffffff;
+  color: #0b1b3f;
+}
+.ll-swatch__kind {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+.ll-swatch__title {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+/* לופ שנוסף ב-/admin, בתוך דף הלופים (CustomRoomLoop) */
+.cl-text {
+  max-width: 80vw;
+  text-align: center;
+}
+.cl-video {
+  position: absolute;
+  inset: 14vh 6vw 8vh;
+  display: grid;
+  place-items: center;
+}
+.cl-video video {
+  max-width: 100%;
+  max-height: 100%;
+}
+/* ריבוע בגלריה בצבע שנבחר - כתום ולבן (כחול = .lg-tile--loop) */
+.lg-tile--orange {
+  border-color: #f25740;
+  background: #f25740;
+  color: #ffffff;
+}
+.lg-tile--orange .lg-tile__glyph {
+  stroke: #ffffff;
 }
